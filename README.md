@@ -1,9 +1,11 @@
-#Aros-Finaqncial-Paradigm (Aros Studio Tokenomics) Repository
+# Aros-Finaqncial-Paradigm (Aros Studio Tokenomics) Repository
 
 Welcome to the  repository. This project outlines the comprehensive architecture for a regulated, AI-governed tokenomics system designed for tokenized assets, focusing on utility-driven mechanics, Proof of Transaction (PoT) consensus, compliance bridges, and AI oversight via The All-Seeing Eye.
 
 ## Project Overview
+
 AST is a human-centric blockchain platform that emphasizes real economic behavior over speculation. Key features include:
+
 - **Utility Token (ArosCoin - ARO)**: Activity-based emission, no pre-mining, tied to transaction processing.
 - **Proof of Transaction (PoT)**: Behavioral validation consensus, replacing PoW/PoS.
 - **Bridges & Interfaces**: Secure fiat/crypto ingress/egress with KYC/AML compliance.
@@ -14,7 +16,7 @@ AST is a human-centric blockchain platform that emphasizes real economic behavio
 The system is modular, with documentation in Markdown files organized by layers. Dates in docs reference 2025 for future-proofing.
 
 ## Repository Structure
-```
+
 aros-tokenomics/
 ├── README.md                  # This file: Project overview and setup
 ├── CHANGELOG.md               # Version history
@@ -159,9 +161,9 @@ aros-tokenomics/
 └── 14_decentralized_tx_encoding/ # Decentralized TX Encoding (governance, testing)
     ├── dte_governance_upgradability.md
     └── dte_testing_benchmarking.md
-```
 
 ## Installation & Setup
+
 1. Clone the repository: `git clone https://github.com/aros-studio/aros-tokenomics.git`.
 2. Install dependencies: `npm install` (for Hardhat, if using contracts).
 3. Compile Solidity contracts: `npx hardhat compile`.
@@ -169,6 +171,7 @@ aros-tokenomics/
 5. Run simulations: See economic_simulation.md for Python scripts.
 
 ## API
+
 An OpenAPI specification is available at `docs/api/openapi.yaml`. The current API version is **0.1.0**. Generate client libraries with:
 
 ```sh
@@ -176,6 +179,7 @@ npm run generate:client
 ```
 
 ## Contributing
+
 - Fork the repo.
 - Create a branch (`git checkout -b feature/new-doc`).
 - Commit changes (`git commit -m 'Add new file'`).
@@ -183,10 +187,12 @@ npm run generate:client
 - Open a Pull Request.
 
 ## License
+
 This project is licensed under the MIT License - see the LICENSE.md file for details (not included here, but add one).
 
 ## Contact
-For questions, contact AROS Studio at info@arosstudio.com.
+
+For questions, contact AROS Studio at <info@arosstudio.com>.
 
 Date: August 20, 2025  
 Version: 0.1.0  

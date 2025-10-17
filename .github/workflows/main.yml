@@ -1,0 +1,19 @@
+name: CI (lint)
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+  statuses: write
+jobs:
+  super-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Super Linter
+        uses: github/super-linter/slim@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: main
+          VALIDATE_ALL_CODEBASE: true
+          MARKDOWN_CONFIG_FILE: .markdownlint.json

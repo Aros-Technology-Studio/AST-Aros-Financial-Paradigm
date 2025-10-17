@@ -1,0 +1,17 @@
+name: Project sync (labels)
+on:
+  pull_request:
+    types: [opened, reopened, closed, merged]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label on open
+        if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
+        run: gh pr edit "$GITHUB_REF_NAME" --add-label "status:in-review"
+      - name: Label on merge
+        if: ${{ github.event.pull_request.merged == true }}
+        run: gh pr edit "$GITHUB_REF_NAME" --add-label "status:done" --remove-label "status:in-review"

@@ -1,0 +1,55 @@
+name: AI Review
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect diff
+        id: diff
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git diff --unified=0 origin/${{ github.base_ref }}...HEAD > pr.diff
+          echo "size=$(wc -c < pr.diff)" >> $GITHUB_OUTPUT
+
+      - name: OpenAI comment (optional)
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          PROMPT="Review this patch for clarity, bugs, security, and style. Be concise, actionable. Return markdown list.\n\n$(sed -e 's/`/\\`/g' pr.diff | head -c 120000)"
+          RESP=$(jq -n --arg p "$PROMPT" '{model:"gpt-4o-mini",messages:[{role:"user",content:$p}]}' \
+            | curl -sS https://api.openai.com/v1/chat/completions \
+              -H "Authorization: Bearer '"$OPENAI_API_KEY"'" -H "Content-Type: application/json" -d @- \
+            | jq -r '.choices[0].message.content')
+          gh pr comment "$GITHUB_REF_NAME" --body ":robot: **OpenAI review**\n\n$RESP"
+
+      - name: Grok comment (optional)
+        if: ${{ secrets.GROK_API_KEY != '' }}
+        env:
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+        run: |
+          PROMPT="Review this diff. Find defects, unclear naming, missing tests. Output bullet points with code blocks.\n\n$(sed -e 's/`/\\`/g' pr.diff | head -c 120000)"
+          BODY=$(jq -n --arg sys "You are a strict senior reviewer." --arg usr "$PROMPT" \
+                  '{model:"grok-2-latest",messages:[{role:"system",content:$sys},{role:"user",content:$usr}]}')
+          RESP=$(echo "$BODY" | curl -sS https://api.x.ai/v1/chat/completions \
+                  -H "Authorization: Bearer '"$GROK_API_KEY"'" -H "Content-Type: application/json" -d @- \
+                | jq -r '.choices[0].message.content')
+          gh pr comment "$GITHUB_REF_NAME" --body ":robot: **Grok review**\n\n$RESP"
+
+      - name: Gemini comment (optional)
+        if: ${{ secrets.GEMINI_API_KEY != '' }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          PROMPT="Act as code reviewer. Short, actionable findings about this diff:\n\n$(sed -e 's/`/\\`/g' pr.diff | head -c 30000)"
+          RESP=$(jq -n --arg t "$PROMPT" '{contents:[{parts:[{text:$t}]}]}' \
+            | curl -sS "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}" \
+              -H "Content-Type: application/json" -d @- \
+            | jq -r '.candidates[0].content.parts[0].text')
+          gh pr comment "$GITHUB_REF_NAME" --body ":robot: **Gemini review**\n\n$RESP"

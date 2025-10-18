@@ -1,0 +1,256 @@
+name: Project Setup (Codex)
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: 'GitHub Project V2 title'
+        required: true
+        default: 'AROS STUDIO TOKENOMICS PARADIGM'
+      columns_csv:
+        description: 'Status options (Project V2) CSV'
+        required: true
+        default: 'No Status,ToDo,Draft,Review,Rejected/Rework,Approved,Done'
+      create_milestones:
+        description: 'Create 16 milestones (Setup + 14 modules + Launch)'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  projects: write
+  administration: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.PAT_AST_CI }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run project bootstrap
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.GH_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+
+            // -------- helpers
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            const upsertLabel = async (name, color, description='') => {
+              try {
+                await github.request('POST /repos/{owner}/{repo}/labels', { owner, repo, name, color, description });
+              } catch (e) {
+                if (e.status !== 422) throw e; // уже существует
+              }
+            };
+            const ensureMilestone = async (title, description='') => {
+              try {
+                await github.request('POST /repos/{owner}/{repo}/milestones', { owner, repo, title, description });
+              } catch (e) {
+                if (e.status !== 422) throw e;
+              }
+            };
+
+            // -------- 1) Project V2: find or create
+            const projectName = core.getInput('project_name');
+            const colsCsv     = core.getInput('columns_csv');
+            const desiredStatuses = colsCsv.split(',').map(s => s.trim()).filter(Boolean);
+
+            // ищем у пользователя проект V2 с таким названием
+            const viewer = await github.graphql(`
+              query {
+                viewer {
+                  login
+                  projectsV2(first: 50) {
+                    nodes { id title url fields(first:50){nodes{... on ProjectV2SingleSelectField {id name options {id name}}}} }
+                  }
+                }
+              }
+            `);
+            let project = viewer.viewer.projectsV2.nodes.find(p => p.title === projectName);
+
+            if (!project) {
+              const created = await github.graphql(`
+                mutation($title:String!){
+                  createProjectV2(input:{title:$title}) {
+                    projectV2 { id title url fields(first:50){nodes{... on ProjectV2SingleSelectField {id name options {id name}}}} }
+                  }
+                }`,
+                { title: projectName }
+              );
+              project = created.createProjectV2.projectV2;
+              core.info(`Created Project: ${project.title} -> ${project.url}`);
+            } else {
+              core.info(`Using existing Project: ${project.title} -> ${project.url}`);
+            }
+
+            // -------- 2) Ensure "Status" field with desired options
+            // В Project V2 дефолтное поле "Status" может отсутствовать; создадим/обновим своё однотипное.
+            const fieldsQuery = await github.graphql(`
+              query($id:ID!){
+                node(id:$id){
+                  ... on ProjectV2 {
+                    fields(first:100){
+                      nodes {
+                        ... on ProjectV2SingleSelectField { id name options { id name } }
+                        ... on ProjectV2Field { id name }
+                      }
+                    }
+                  }
+                }
+              }`,
+              { id: project.id }
+            );
+            const fields = fieldsQuery.node.fields.nodes;
+            let statusField = fields.find(f => f.name === 'Status' && f.options);
+
+            if (!statusField) {
+              const createdField = await github.graphql(`
+                mutation($projectId:ID!){
+                  createProjectV2Field(input:{
+                    projectId:$projectId,
+                    dataType:SINGLE_SELECT,
+                    name:"Status"
+                  }){
+                    projectV2Field {
+                      ... on ProjectV2SingleSelectField { id name options { id name } }
+                    }
+                  }
+                }`,
+                { projectId: project.id }
+              );
+              statusField = createdField.createProjectV2Field.projectV2Field;
+              core.info('Created Status field.');
+            }
+
+            // добавим отсутствующие опции
+            const have = new Set(statusField.options.map(o => o.name));
+            for (const opt of desiredStatuses) {
+              if (!have.has(opt)) {
+                await github.graphql(`
+                  mutation($projectId:ID!, $fieldId:ID!, $name:String!){
+                    updateProjectV2Field(input:{
+                      projectId:$projectId,
+                      fieldId:$fieldId,
+                      singleSelectOptions: [{name:$name}]
+                    }){ projectV2 { id } }
+                  }`,
+                  { projectId: project.id, fieldId: statusField.id, name: opt }
+                );
+                core.info(`Added Status option: ${opt}`);
+                await sleep(300);
+              }
+            }
+
+            // -------- 3) Labels (core + per-module)
+            const coreLabels = [
+              ['AI-generated','5319e7','Produced by AI agent'],
+              ['needs-review','d93f0b','Human review required'],
+              ['documentation','0075ca','Docs work'],
+              ['planning','0366d6','Planning/PM'],
+              ['devops','a2eeef','DevOps/CI/CD'],
+              ['automation','c2e0c6','Automation tasks']
+            ];
+            for (const [n,c,desc] of coreLabels) await upsertLabel(n,c,desc);
+            for (let i=1; i<=14; i++) {
+              const n = `module-${String(i).padStart(2,'0')}`;
+              await upsertLabel(n,'ededed',`Module ${n}`);
+            }
+
+            // -------- 4) Milestones (optional)
+            if (core.getBooleanInput('create_milestones')) {
+              await ensureMilestone('Milestone 1: Setup & Automation');
+              const titles = [
+                'Module 01: Coin Engine','Module 02: NodeChain Engine','Module 03: Token Management',
+                'Module 04: Value Circulation','Module 05: Bridge Layer','Module 06: Governance Layer',
+                'Module 07: Processing Layer','Module 08: Emission Layer','Module 09: Crypto Ingestion',
+                'Module 10: PoT Engine','Module 11: Validator Rewards','Module 12: NodeChain AI Agents',
+                'Module 13: Supervisory Layer','Module 14: Decentralized TX Encoding'
+              ];
+              for (const t of titles) await ensureMilestone(t);
+              await ensureMilestone('Launch & Support');
+            }
+
+            // -------- 5) Link all open issues to Project, set Status=ToDo
+            const issues = await github.paginate(
+              'GET /repos/{owner}/{repo}/issues',
+              { owner, repo, state: 'open', per_page: 100 }
+            );
+            // получим заново поле Status с опциями (их id нужны)
+            const fld = await github.graphql(`
+              query($id:ID!){
+                node(id:$id){
+                  ... on ProjectV2{
+                    fields(first:100){
+                      nodes{
+                        ... on ProjectV2SingleSelectField { id name options { id name } }
+                      }
+                    }
+                  }
+                }
+              }`,
+              { id: project.id }
+            );
+            const status = fld.node.fields.nodes.find(f => f && f.name==='Status');
+            const toDoOpt = status.options.find(o => o.name==='ToDo') || status.options[0];
+
+            for (const it of issues) {
+              if (!it.pull_request) {
+                // add item
+                const add = await github.graphql(`
+                  mutation($projectId:ID!, $contentId:ID!){
+                    addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){
+                      item { id }
+                    }
+                  }`,
+                  { projectId: project.id, contentId: it.node_id }
+                ).catch(_=>null);
+
+                // set Status = ToDo (best effort)
+                if (add && add.addProjectV2ItemById && add.addProjectV2ItemById.item) {
+                  const itemId = add.addProjectV2ItemById.item.id;
+                  await github.graphql(`
+                    mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){
+                      updateProjectV2ItemFieldValue(input:{
+                        projectId:$projectId,
+                        itemId:$itemId,
+                        fieldId:$fieldId,
+                        value:{ singleSelectOptionId:$optionId }
+                      }) { projectV2Item { id } }
+                    }`,
+                    { projectId: project.id, itemId, fieldId: status.id, optionId: toDoOpt.id }
+                  ).catch(_=>{});
+                }
+                await sleep(150);
+              }
+            }
+
+            core.notice('Project bootstrap finished.');
+            core.setOutput('project_url', (project.url || ''));
+      
+      - name: Protect main branch (require PR + checks)
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          set -e
+          OWNER="${GITHUB_REPOSITORY%/*}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          curl -sS -X PUT \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${OWNER}/${REPO}/branches/main/protection \
+            -d '{
+              "required_status_checks": {"strict": true, "contexts": ["run-lint","review"]},
+              "enforce_admins": true,
+              "required_pull_request_reviews": {"required_approving_review_count": 1},
+              "restrictions": null,
+              "allow_force_pushes": false,
+              "allow_deletions": false
+            }'

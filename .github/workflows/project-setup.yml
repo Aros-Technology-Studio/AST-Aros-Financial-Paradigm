@@ -23,8 +23,6 @@ permissions:
   pull-requests: write
   actions: write
   checks: write
-  workflows: write
-
 jobs:
   setup:
     runs-on: ubuntu-latest

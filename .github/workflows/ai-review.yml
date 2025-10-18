@@ -10,9 +10,10 @@ jobs:
   review:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }} 
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Get PR diff
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
@@ -20,7 +21,8 @@ jobs:
 
       - name: OpenAI comment
         if: ${{ secrets.OPENAI_API_KEY != '' }}
-        env: { OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} }
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           BODY=$(jq -n --arg t "$(sed 's/`/\\`/g' pr.diff)" \
             '{model:"gpt-4o-mini",messages:[{role:"user",content:"Review this diff:\n```diff\n"+$t+"\n```"}],temperature:0.2}')
@@ -31,7 +33,8 @@ jobs:
 
       - name: Grok comment
         if: ${{ secrets.GROK_API_KEY != '' }}
-        env: { GROK_API_KEY: ${{ secrets.GROK_API_KEY }} }
+        env:
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
         run: |
           BODY=$(jq -n --arg t "$(sed 's/`/\\`/g' pr.diff)" \
             '{model:"grok-2-latest",messages:[{role:"user",content:"Review this diff:\n```diff\n"+$t+"\n```"}],temperature:0.2}')
@@ -42,7 +45,8 @@ jobs:
 
       - name: Gemini comment
         if: ${{ secrets.GEMINI_API_KEY != '' }}
-        env: { GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} }
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           BODY=$(jq -n --arg t "$(sed 's/`/\\`/g' pr.diff)" \
             '{contents:[{parts:[{text:"Review this diff:\n```diff\n"+$t+"\n```"}]}]}')
@@ -50,3 +54,4 @@ jobs:
             -H "Content-Type: application/json" -d "$BODY" \
             | jq -r '.candidates[0].content.parts[0].text' > gemini.md
           gh pr comment ${{ github.event.pull_request.number }} --body-file gemini.md
+          

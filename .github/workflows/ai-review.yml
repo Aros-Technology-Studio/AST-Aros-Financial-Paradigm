@@ -1,7 +1,9 @@
 name: AI Review
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+
 permissions:
   contents: read
   pull-requests: write
@@ -10,31 +12,39 @@ jobs:
   review:
     runs-on: ubuntu-latest
     env:
+      # даём gh CLI токен из встроенного GITHUB_TOKEN
       GH_TOKEN: ${{ github.token }}
+      # прокидываем секреты в env (чтобы их можно было использовать в if)
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GROK_API_KEY:   ${{ secrets.GROK_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get PR diff
+      - name: Make PR diff (max 120 KB)
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
           git diff --unified=0 origin/${{ github.base_ref }}...HEAD | head -c 120000 > pr.diff
 
-      - name: OpenAI comment
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+     - name: Comment via OpenAI
+        if: ${{ env.OPENAI_API_KEY != '' }}
         run: |
-          BODY=$(jq -n --arg t "$(sed 's/`/\\`/g' pr.diff)" \
-            '{model:"gpt-4o-mini",messages:[{role:"user",content:"Review this diff:\n```diff\n"+$t+"\n```"}],temperature:0.2}')
+          echo "Preparing diff for OpenAI..."
+          DIFF=$(cat pr.diff | jq -Rs .) # безопасно экранирует всё содержимое
+          BODY=$(jq -n --arg diff "$DIFF" \
+            '{model:"gpt-4o-mini",
+              messages:[{role:"user",content:"Review this diff:\n```diff\n"+$diff+"\n```"}],
+              temperature:0.2}')
           curl -s https://api.openai.com/v1/chat/completions \
-            -H "Authorization: Bearer $OPENAI_API_KEY" -H "Content-Type: application/json" -d "$BODY" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
             | jq -r '.choices[0].message.content' > openai.md
           gh pr comment ${{ github.event.pull_request.number }} --body-file openai.md
 
-      - name: Grok comment
-        if: ${{ secrets.GROK_API_KEY != '' }}
-        env:
-          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+      - name: Comment via Grok
+        if: ${{ env.GROK_API_KEY != '' }}
         run: |
           BODY=$(jq -n --arg t "$(sed 's/`/\\`/g' pr.diff)" \
             '{model:"grok-2-latest",messages:[{role:"user",content:"Review this diff:\n```diff\n"+$t+"\n```"}],temperature:0.2}')
@@ -43,10 +53,8 @@ jobs:
             | jq -r '.choices[0].message.content' > grok.md
           gh pr comment ${{ github.event.pull_request.number }} --body-file grok.md
 
-      - name: Gemini comment
-        if: ${{ secrets.GEMINI_API_KEY != '' }}
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      - name: Comment via Gemini
+        if: ${{ env.GEMINI_API_KEY != '' }}
         run: |
           BODY=$(jq -n --arg t "$(sed 's/`/\\`/g' pr.diff)" \
             '{contents:[{parts:[{text:"Review this diff:\n```diff\n"+$t+"\n```"}]}]}')
@@ -54,4 +62,3 @@ jobs:
             -H "Content-Type: application/json" -d "$BODY" \
             | jq -r '.candidates[0].content.parts[0].text' > gemini.md
           gh pr comment ${{ github.event.pull_request.number }} --body-file gemini.md
-          

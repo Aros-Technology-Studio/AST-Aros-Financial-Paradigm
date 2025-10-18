@@ -13,53 +13,93 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.PAT_AST_CI }}
+      GH_TOKEN: ${{ secrets.PAT_AST_CI }} # PAT с правами repo + project
+      PROJECT_TITLE: AROS STUDIO TOKENOMICS PARADIGM
     steps:
-      - uses: actions/github-script@v7
+      - name: Update Project (Status field)
+        uses: actions/github-script@v7
         with:
           github-token: ${{ env.GH_TOKEN }}
           script: |
-            const projectTitle = 'AROS STUDIO TOKENOMICS PARADIGM';
-            const pr = context.payload.pull_request;
-            const contentId = pr.node_id;
+            const core = require('@actions/core');
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+            const pr    = context.payload.pull_request;
+            if (!pr) { core.setFailed('No PR payload'); return; }
 
-            // проект
-            const viewer = await github.graphql(`query{
-              viewer { projectsV2(first:50){nodes{id title fields(first:50){
-                nodes{ ... on ProjectV2SingleSelectField { id name options{ id name } } }
-              }}}
-            }`);
-            const project = viewer.viewer.projectsV2.nodes.find(p=>p.title===projectTitle);
-            if (!project) return core.warning('Project not found.');
+            const projectTitle = process.env.PROJECT_TITLE;
+            const prNodeId = pr.node_id;
 
-            // поле Status
-            const status = project.fields.nodes.find(f=>f && f.name==='Status');
-            const getOpt = name => (status.options.find(o=>o.name===name) || status.options[0]).id;
-
-            // цель статуса
-            let target = 'ToDo';
-            if (['opened','reopened','ready_for_review'].includes(context.payload.action)) target = 'Review';
-            if (context.payload.action==='closed' && pr.merged) target = 'Done';
-            const optId = getOpt(target);
-
-            // добавить item (если нет) и обновить статус
-            const add = await github.graphql(`
-              mutation($projectId:ID!, $contentId:ID!){
-                addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){
-                  item { id }
+            // 1) Найти проект репозитория и поле "Status"
+            const query = `
+              query($owner:String!, $repo:String!, $title:String!) {
+                repository(owner:$owner, name:$repo) {
+                  projectsV2(first:50, query:$title) {
+                    nodes {
+                      id
+                      title
+                      fields(first:50) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            __typename
+                            id
+                            name
+                            options { id name }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
-              }`, { projectId: project.id, contentId }
-            ).catch(_=>null);
+              }`;
+            const data = await github.graphql(query, { owner, repo, title: projectTitle });
 
-            const itemId = add?.addProjectV2ItemById?.item?.id;
-            if (!itemId) return; // возможно уже есть; тихо выходим
+            const projects = data.repository?.projectsV2?.nodes || [];
+            const project  = projects.find(p => p.title === projectTitle);
+            if (!project) { core.setFailed(`Project not found: "${projectTitle}"`); return; }
 
-            await github.graphql(`
-              mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){
-                updateProjectV2ItemFieldValue(input:{
-                  projectId:$projectId, itemId:$itemId, fieldId:$fieldId,
-                  value:{ singleSelectOptionId:$optionId }
-                }) { projectV2Item { id } }
-              }`,
-              { projectId: project.id, itemId, fieldId: status.id, optionId: optId }
+            const statusField = (project.fields?.nodes || []).find(f => f?.name === 'Status');
+            if (!statusField) { core.setFailed('Project field "Status" not found'); return; }
+
+            // 2) Определить целевой статус по событию
+            function targetFor(action, merged) {
+              if (['opened','reopened','ready_for_review'].includes(action)) return 'Review';
+              if (action === 'closed') return merged ? 'Done' : 'Rejected/Rework';
+              return null;
+            }
+            const targetName = targetFor(context.payload.action, pr.merged);
+            if (!targetName) { core.notice('No move needed for this PR action'); return; }
+
+            const option = statusField.options.find(o => o.name === targetName);
+            if (!option) { core.setFailed(`Status option not found: "${targetName}"`); return; }
+
+            // 3) Добавить PR в проект (id item'а)
+            const addRes = await github.graphql(
+              `mutation($projectId:ID!, $contentId:ID!) {
+                 addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
+                   item { id }
+                 }
+               }`,
+              { projectId: project.id, contentId: prNodeId }
             );
+            const itemId = addRes.addProjectV2ItemById.item.id;
+
+            // 4) Проставить значение поля "Status"
+            await github.graphql(
+              `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
+                 updateProjectV2ItemFieldValue(input:{
+                   projectId:$projectId,
+                   itemId:$itemId,
+                   fieldId:$fieldId,
+                   value:{ singleSelectOptionId:$optionId }
+                 }) {
+                   projectV2Item { id }
+                 }
+               }`,
+              { projectId: project.id, itemId, fieldId: statusField.id, optionId: option.id }
+            );
+
+            core.summary.addRaw(
+              `PR #${pr.number} → Project "${projectTitle}", Status → ${targetName}`
+            ).write();
+            console.log(`Updated status to ${targetName}`);

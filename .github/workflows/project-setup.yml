@@ -21,9 +21,9 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  actions: write        # заменяем "projects" на "actions"
-  checks: write         # добавляем возможность редактировать статусы и проверки
-  metadata: read        # метаданные репозитория (без этого GraphQL падает)
+  actions: write
+  checks: write
+  workflows: write
 
 jobs:
   setup:

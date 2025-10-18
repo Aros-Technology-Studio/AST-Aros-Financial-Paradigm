@@ -1,42 +1,25 @@
-name: Project Setup (Codex)
+name: Project Auto Sync
 
 on:
-  workflow_dispatch:
-    inputs:
-      project_name:
-        description: 'GitHub Project V2 title'
-        required: true
-        default: 'AROS STUDIO TOKENOMICS PARADIGM'
-      columns_csv:
-        description: 'Status options (Project V2) CSV'
-        required: true
-        default: 'No Status,ToDo,Draft,Review,Rejected/Rework,Approved,Done'
-      create_milestones:
-        description: 'Create 16 milestones (Setup + 14 modules + Launch)'
-        required: true
-        type: boolean
-        default: true
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
 
 permissions:
-  contents: write
-  issues: write
+  contents: read
   pull-requests: write
-  actions: write
-  checks: write
+  repository-projects: write
+
 jobs:
-  setup:
+  sync:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.PAT_AST_CI }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run project bootstrap
-        uses: actions/github-script@v7
+      - uses: actions/github-script@v7
         with:
           github-token: ${{ env.GH_TOKEN }}
           script: |
+  
             const owner = context.repo.owner;
             const repo  = context.repo.repo;
 

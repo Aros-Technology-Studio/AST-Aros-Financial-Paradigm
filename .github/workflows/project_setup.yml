@@ -32,9 +32,12 @@ jobs:
       - name: Run project bootstrap
         uses: actions/github-script@v7
         with:
-          # Передаем токен напрямую из секретов.
-          # Это самый надежный способ.
+          # ИСПРАВЛЕНИЕ: Передаем параметры из workflow_dispatch напрямую в скрипт.
+          # Также передаем токен напрямую из секретов, а не через env.
           github-token: ${{ secrets.PAT_AST_CI }}
+          project_name: ${{ github.event.inputs.project_name }}
+          columns_csv: ${{ github.event.inputs.columns_csv }}
+          create_milestones: ${{ github.event.inputs.create_milestones }}
           script: |
             const { owner, repo } = context.repo;
 
@@ -53,8 +56,10 @@ jobs:
 
             // --- Main Logic ---
             async function main() {
+              // Теперь эти вызовы будут работать, так как мы передали значения в 'with:'.
               const projectName = core.getInput('project_name', { required: true });
               const desiredStatuses = core.getInput('columns_csv').split(',').map(s => s.trim()).filter(Boolean);
+              const createMilestonesFlag = core.getBooleanInput('create_milestones');
 
               const { repositoryOwner } = await github.graphql(`
                 query($owner:String!) { repositoryOwner(login:$owner){ id } }`, { owner }
@@ -64,7 +69,7 @@ jobs:
               const project = await findOrCreateProject(ownerId, projectName);
               await ensureStatusField(project.id, desiredStatuses);
               await createLabels();
-              if (core.getBooleanInput('create_milestones')) {
+              if (createMilestonesFlag) {
                 await createMilestones();
               }
               await linkIssuesToProject(project.id);
@@ -84,9 +89,7 @@ jobs:
                     }
                   }
                 }`, { owner, projectName });
-
               let project = data.repositoryOwner.projectsV2.nodes.find(p => p.title === projectName);
-
               if (!project) {
                 core.info(`Project not found. Creating...`);
                 const creationResult = await github.graphql(`
@@ -114,9 +117,7 @@ jobs:
                     }}
                   }}
                 }`, { id: projectId });
-
               let statusField = project.fields.nodes.find(f => f.name === 'Status' && f.options);
-
               if (!statusField) {
                 core.info('Status field not found. Creating...');
                 const result = await github.graphql(`
@@ -127,10 +128,8 @@ jobs:
                   }`, { projectId });
                 statusField = result.createProjectV2Field.projectV2Field;
               }
-
               const existingOptions = new Set(statusField.options.map(o => o.name));
               const optionsToAdd = desiredStatuses.filter(d => !existingOptions.has(d));
-
               if (optionsToAdd.length > 0) {
                 core.info(`Adding new status options: ${optionsToAdd.join(', ')}`);
                 const finalOptions = desiredStatuses.map(name => ({ name }));
@@ -194,21 +193,20 @@ jobs:
                 }`, { id: projectId });
               const statusField = projectData.fields.nodes.find(f => f.name === 'Status');
               const todoOption = statusField.options.find(o => o.name === 'ToDo') || statusField.options[0];
-
               if (!todoOption) {
                 core.warning('Could not find a "ToDo" status option. Skipping issue status update.');
                 return;
               }
-
               const issues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open' });
               for (const issue of issues) {
                 if (issue.pull_request) continue; // Skip PRs
                 try {
                   const { addProjectV2ItemById: { item } } = await github.graphql(`
                     mutation($projectId:ID!, $contentId:ID!) {
-                      addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){ item { id } }
+                      addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){
+                        item { ... on ProjectV2Item { id } }
+                      }
                     }`, { projectId, contentId: issue.node_id });
-
                   await github.graphql(`
                     mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
                       updateProjectV2ItemFieldValue(input:{
@@ -229,7 +227,6 @@ jobs:
       - name: Protect main branch (require PR + checks)
         if: success()
         env:
-          # Используем отдельную переменную для PAT, чтобы избежать конфликтов.
           ADMIN_PAT: ${{ secrets.PAT_AST_CI }}
         run: |
           set -e
@@ -251,7 +248,6 @@ jobs:
           }
           EOF
           )
-          # Используем ADMIN_PAT
           curl -sS --fail -X PUT \
             -H "Authorization: token ${ADMIN_PAT}" \
             -H "Accept: application/vnd.github.v3+json" \

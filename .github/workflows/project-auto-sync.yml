@@ -7,9 +7,8 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
-  repository-projects: write
+  pull-requests: read
+  projects: write
 
 jobs:
   sync:
@@ -74,6 +73,102 @@ jobs:
               target = merged ? 'Done' : 'Rejected/Rework';
             }
 
+              // Query to find project
+              let query;
+              if (ownerType === 'Organization') {
+                query = `
+                  query($owner: String!, $title: String!) {
+                    organization(login: $owner) {
+                      projectsV2(first: 50) {
+                        nodes {
+                          id
+                          title
+                          fields(first: 50) {
+                            nodes {
+                              ... on ProjectV2SingleSelectField {
+                                __typename
+                                id
+                                name
+                                options {
+                                  id
+                                  name
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `;
+              } else {
+                query = `
+                  query {
+                    viewer {
+                      projectsV2(first: 50) {
+                        nodes {
+                          id
+                          title
+                          fields(first: 50) {
+                            nodes {
+                              ... on ProjectV2SingleSelectField {
+                                __typename
+                                id
+                                name
+                                options {
+                                  id
+                                  name
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `;
+              }
+              const variables = ownerType === 'Organization' ? { owner, title: projectTitle } : {};
+              const data = await github.graphql(query, variables);
+              if (!data) {
+                core.setFailed('GraphQL query returned no data');
+                return;
+              }
+              const root = ownerType === 'Organization' ? data.organization : data.viewer;
+              if (!root) {
+                core.setFailed(`No ${ownerType.toLowerCase()} data in GraphQL response`);
+                return;
+              }
+              const projects = root.projectsV2?.nodes || [];
+              if (!Array.isArray(projects)) {
+                core.setFailed('ProjectsV2 nodes not an array');
+                return;
+              }
+              const project = projects.find(p => p.title === projectTitle);
+              if (!project) {
+                core.setFailed(`Project not found: "${projectTitle}"`);
+                return;
+              }
+              const fieldsNodes = project.fields?.nodes || [];
+              if (!Array.isArray(fieldsNodes)) {
+                core.setFailed('Project fields nodes not an array');
+                return;
+              }
+              const statusField = fieldsNodes.find(f => f?.name === 'Status');
+              if (!statusField) {
+                core.setFailed('Project field "Status" not found');
+                return;
+              }
+              const options = statusField.options || [];
+              if (!Array.isArray(options)) {
+                core.setFailed('Status field options not an array');
+                return;
+              }
+              const option = options.find(o => o.name === targetName);
+              if (!option) {
+                core.setFailed(`Status option not found: "${targetName}"`);
+                return;
+              }
             const opt = statusField.options.find(o => o.name === target);
             if (!opt) {
               core.setFailed(`Status option not found: "${target}"`);

@@ -1,3 +1,4 @@
+---
 name: Project Auto Sync
 
 on:
@@ -13,66 +14,64 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.PAT_AST_CI }} # PAT с правами repo + project
       PROJECT_TITLE: AROS STUDIO TOKENOMICS PARADIGM
     steps:
-      - name: Update Project (Status field)
+      - name: Sync PR → Project v2 (Status)
         uses: actions/github-script@v7
         with:
-          github-token: ${{ env.GH_TOKEN }}
+          github-token: ${{ secrets.PAT_AST_CI }}
           script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const pr = context.payload.pull_request;
+            const core = require('@actions/core');
+
             const action = context.payload.action;
-
-            // Input Validation: Env vars
-            const requiredEnv = ['GH_TOKEN', 'PROJECT_TITLE'];
-            for (const e of requiredEnv) {
-              if (!process.env[e]) {
-                core.setFailed(`${e} environment variable not set`);
-                return;
-              }
-            }
-            const projectTitle = process.env.PROJECT_TITLE;
-
-            // Input Validation: PR payload
-            if (!pr) {
-              core.setFailed('No PR payload in event');
-              return;
-            }
-            if (!['opened', 'reopened', 'ready_for_review', 'closed'].includes(action)) {
-              core.notice(`Unsupported PR action: ${action}. Skipping.`);
-              return;
-            }
-            const merged = pr.merged;
-            if (action === 'closed' && typeof merged !== 'boolean') {
-              core.setFailed('Merged status missing or invalid for closed PR');
-              return;
-            }
-
+            const pr = context.payload.pull_request;
             const prNodeId = pr.node_id;
+            const merged = pr.merged || false;
 
-            // Determine target status
-            function targetFor(action, merged) {
-              if (['opened', 'reopened', 'ready_for_review'].includes(action)) return 'Review';
-              if (action === 'closed') return merged ? 'Done' : 'Rejected/Rework';
-              return null;
-            }
-            const targetName = targetFor(action, merged);
-            if (!targetName) {
-              core.notice('No status update needed for this PR action');
+            // 1) Найти твой Project v2 по названию
+            const q1 = `
+              query($n:Int!){
+                viewer {
+                  projectsV2(first:$n) {
+                    nodes {
+                      id
+                      title
+                      fields(first:50) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options { id name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }`;
+            const r1 = await github.graphql(q1, { n: 50 });
+
+            const project = r1.viewer.projectsV2.nodes
+              .find(p => p.title === process.env.PROJECT_TITLE);
+
+            if (!project) {
+              core.setFailed(`Project not found: ${process.env.PROJECT_TITLE}`);
               return;
             }
 
-            try {
-              // Get owner type
-              const repoInfo = await github.rest.repos.get({ owner, repo });
-              const ownerType = repoInfo.data.owner.type; // 'User' or 'Organization'
-              if (!['User', 'Organization'].includes(ownerType)) {
-                core.setFailed(`Invalid owner type: ${ownerType}`);
-                return;
-              }
+            const statusField = project.fields.nodes
+              .find(f => f && f.name === 'Status');
+
+            if (!statusField) {
+              core.setFailed('Project field "Status" not found');
+              return;
+            }
+
+            // 2) Определить целевую колонку
+            let target = 'Review';
+            if (action === 'closed') {
+              target = merged ? 'Done' : 'Rejected/Rework';
+            }
 
               // Query to find project
               let query;
@@ -170,90 +169,47 @@ jobs:
                 core.setFailed(`Status option not found: "${targetName}"`);
                 return;
               }
-
-              // Get itemId: check if PR already in project
-              const prQuery = `
-                query($prId: ID!) {
-                  node(id: $prId) {
-                    ... on PullRequest {
-                      projectItems(first: 20) {
-                        nodes {
-                          id
-                          project {
-                            id
-                            title
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              `;
-              const prData = await github.graphql(prQuery, { prId: prNodeId });
-              if (!prData || !prData.node) {
-                core.setFailed('PR projectItems query returned no data');
-                return;
-              }
-              const projectItems = prData.node.projectItems.nodes || [];
-              if (!Array.isArray(projectItems)) {
-                core.setFailed('Project items not an array');
-                return;
-              }
-              let item = projectItems.find(pi => pi.project.id === project.id);
-              let itemId;
-              if (item) {
-                itemId = item.id;
-                core.notice('PR already in project');
-              } else {
-                // Add to project
-                const addMutation = `
-                  mutation($projectId: ID!, $contentId: ID!) {
-                    addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
-                      item {
-                        id
-                      }
-                    }
-                  }
-                `;
-                const addRes = await github.graphql(addMutation, { projectId: project.id, contentId: prNodeId });
-                if (!addRes || !addRes.addProjectV2ItemById || !addRes.addProjectV2ItemById.item) {
-                  core.setFailed('Failed to add PR to project');
-                  return;
-                }
-                itemId = addRes.addProjectV2ItemById.item.id;
-                core.notice('Added PR to project');
-              }
-
-              // Update status field
-              const updateMutation = `
-                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
-                  updateProjectV2ItemFieldValue(input: {
-                    projectId: $projectId,
-                    itemId: $itemId,
-                    fieldId: $fieldId,
-                    value: { singleSelectOptionId: $optionId }
-                  }) {
-                    projectV2Item {
-                      id
-                    }
-                  }
-                }
-              `;
-              const updateRes = await github.graphql(updateMutation, {
-                projectId: project.id,
-                itemId,
-                fieldId: statusField.id,
-                optionId: option.id
-              });
-              if (!updateRes || !updateRes.updateProjectV2ItemFieldValue) {
-                core.setFailed('Failed to update project item field');
-                return;
-              }
-
-              core.summary
-                .addRaw(`PR #${pr.number} → Project "${projectTitle}", Status → ${targetName}`)
-                .write();
-              console.log(`Updated status to ${targetName}`);
-            } catch (error) {
-              core.setFailed(`Error: ${error.message}`);
+            const opt = statusField.options.find(o => o.name === target);
+            if (!opt) {
+              core.setFailed(`Status option not found: "${target}"`);
+              return;
             }
+
+            // 3) Добавить item (если его ещё нет) и выставить статус
+            const addItemMutation = `
+              mutation($projectId:ID!, $contentId:ID!){
+                addProjectV2ItemById(
+                  input:{ projectId:$projectId, contentId:$contentId }
+                ){
+                  item { id }
+                }
+              }`;
+            const addRes = await github.graphql(addItemMutation, {
+              projectId: project.id,
+              contentId: prNodeId
+            });
+            const itemId = addRes.addProjectV2ItemById.item.id;
+
+            const setStatusMutation = `
+              mutation(
+                $projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!
+              ){
+                updateProjectV2ItemFieldValue(
+                  input:{
+                    projectId:$projectId,
+                    itemId:$itemId,
+                    fieldId:$fieldId,
+                    value:{ singleSelectOptionId:$optionId }
+                  }
+                ){
+                  item { id }
+                }
+              }`;
+            await github.graphql(setStatusMutation, {
+              projectId: project.id,
+              itemId,
+              fieldId: statusField.id,
+              optionId: opt.id
+            });
+
+            core.info(`PR moved to "${target}" in Project "${project.title}".`);

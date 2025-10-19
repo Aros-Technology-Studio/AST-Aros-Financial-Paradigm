@@ -20,7 +20,7 @@ on:
 permissions:
   contents: write
   issues: write
-  # Права для управления проектами V2 на уровне репозитория
+
   repository-projects: write
 
 jobs:

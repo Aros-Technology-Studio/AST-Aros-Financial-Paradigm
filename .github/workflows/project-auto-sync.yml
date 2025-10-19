@@ -1,4 +1,3 @@
----
 name: Project Auto Sync
 
 on:
@@ -7,78 +6,167 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
+  pull-requests: read
   repository-projects: write
-
-env:
-  PROJECT_TITLE: AROS STUDIO TOKENOMICS PARADIGM
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     env:
+      # Убедитесь, что секрет PAT_AST_CI существует и имеет права repo + project
       GH_TOKEN: ${{ secrets.PAT_AST_CI }}
+      PROJECT_TITLE: AROS STUDIO TOKENOMICS PARADIGM
     steps:
-      - uses: actions/github-script@v7
+      - name: Update Project (Status field)
+        uses: actions/github-script@v7
         with:
           github-token: ${{ env.GH_TOKEN }}
           script: |
-            const owner = context.repo.owner;
-            const repo  = context.repo.repo;
-            const title = process.env.PROJECT_TITLE;
-
-            // pick target column by PR event
-            let target = 'ToDo';
-            if (['opened','reopened','ready_for_review'].includes(context.payload.action)) target = 'Review';
-            if (context.payload.action === 'closed') {
-              target = context.payload.pull_request.merged ? 'Done' : 'Rejected/Rework';
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.setFailed('Could not get pull request from context.');
+              return;
             }
 
-            // find project
-            const repoQ = `query($owner:String!,$repo:String!){
-              repository(owner:$owner,name:$repo){
-                projectsV2(first:50){ nodes{ id title fields(first:50){
-                  nodes{ id name __typename ... on ProjectV2SingleSelectField { options{ id name } } }
-                } } }
+            const projectTitle = process.env.PROJECT_TITLE;
+            const prNodeId = pr.node_id;
+
+            // --- Main Logic ---
+            async function main() {
+              const project = await findProject();
+              if (!project) return;
+
+              const statusField = project.fields.nodes.find(f => f.name === 'Status');
+              if (!statusField) {
+                core.setFailed('Project field "Status" not found.');
+                return;
               }
-            }`;
-            const pr = await github.graphql(repoQ,{owner,repo});
-            const project = pr.repository.projectsV2.nodes.find(p=>p.title===title);
-            if (!project) return core.warning('Project not found — skipping.');
 
-            const status = project.fields.nodes.find(f=>f.name==='Status' && f.__typename==='ProjectV2SingleSelectField');
-            if (!status) return core.warning('Status field missing — skipping.');
+              const targetStatusName = getTargetStatusName(context.payload.action, pr.merged);
+              if (!targetStatusName) {
+                core.notice('No project status update needed for this PR action.');
+                return;
+              }
 
-            const opt = (status.options||[]).find(o=>o.name===target);
-            if (!opt) return core.warning(`Option "${target}" not found — skipping.`);
+              const targetOption = statusField.options.find(o => o.name === targetStatusName);
+              if (!targetOption) {
+                core.setFailed(`Status option "${targetStatusName}" not found in project.`);
+                return;
+              }
 
-            // ensure PR item exists in project
-            const nodeIdQ = `query($owner:String!,$repo:String!,$num:Int!){
-              repository(owner:$owner,name:$repo){ pullRequest(number:$num){ id } }
-            }`;
-            const prId = (await github.graphql(nodeIdQ,{owner,repo,num:context.payload.pull_request.number})).repository.pullRequest.id;
+              const itemId = await findOrCreateProjectItem(project.id, prNodeId);
+              if (!itemId) return;
 
-            // add item if needed
-            const itemsQ = `query($pid:ID!,$id:ID!){
-              node(id:$pid){ ... on ProjectV2 { items(first:100, query:""){ nodes{ id content{ ... on PullRequest { id } } } } } }
-            }`;
-            const items = (await github.graphql(itemsQ,{pid:project.id,id:prId})).node.items.nodes;
-            let item = items.find(it => it.content?.id === prId);
-
-            if (!item) {
-              const addM = `mutation($pid:ID!,$cid:ID!){
-                addProjectV2ItemById(input:{projectId:$pid, contentId:$cid}){ item { id } }
-              }`;
-              item = (await github.graphql(addM,{pid:project.id,cid:prId})).addProjectV2ItemById.item;
+              await updateItemStatus(project.id, itemId, statusField.id, targetOption.id);
+              core.summary.addRaw(
+                `PR #${pr.number} → Project "${projectTitle}", Status → ${targetStatusName}`
+              ).write();
+              console.log(`Updated status for PR #${pr.number} to ${targetStatusName}`);
             }
 
-            // set Status value
-            const setM = `mutation($pid:ID!,$iid:ID!,$fid:ID!,$opt: String!){
-              updateProjectV2ItemFieldValue(input:{
-                projectId:$pid, itemId:$iid, fieldId:$fid,
-                value:{ singleSelectOptionId:$opt }
-              }){ projectV2Item { id } }
-            }`;
-            await github.graphql(setM,{pid:project.id,iid:item.id,fid:status.id,opt:opt.id});
-            core.notice(`PR moved to "${target}"`);
+            // --- Functions ---
+            async function findProject() {
+              core.startGroup(`1) Finding project: "${projectTitle}"`);
+              const { repository } = await github.graphql(`
+                query($owner:String!, $repo:String!, $title:String!) {
+                  repository(owner:$owner, name:$repo) {
+                    projectsV2(first:20, query:$title) {
+                      nodes {
+                        id title
+                        fields(first:50) {
+                          nodes {
+                            ... on ProjectV2SingleSelectField {
+                              id name options { id name }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`, { owner, repo, title: projectTitle }
+              );
+
+              const project = repository.projectsV2.nodes.find(p => p.title === projectTitle);
+              if (!project) {
+                core.setFailed(`Project not found: "${projectTitle}"`);
+                return null;
+              }
+              core.info(`Found project with ID: ${project.id}`);
+              core.endGroup();
+              return project;
+            }
+
+            function getTargetStatusName(action, merged) {
+              if (['opened', 'reopened', 'ready_for_review'].includes(action)) return 'Review';
+              if (action === 'closed') return merged ? 'Done' : 'Rejected/Rework';
+              return null;
+            }
+
+            async function findOrCreateProjectItem(projectId, contentId) {
+              core.startGroup(`2) Adding or finding PR in project`);
+              try {
+                // ИСПРАВЛЕНИЕ: Добавлен фрагмент "... on ProjectV2Item" для устранения ошибки GraphQL
+                const { addProjectV2ItemById: { item } } = await github.graphql(`
+                  mutation($projectId:ID!, $contentId:ID!) {
+                    addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
+                      item {
+                        ... on ProjectV2Item {
+                          id
+                        }
+                      }
+                    }
+                  }`, { projectId, contentId }
+                );
+                core.info(`Added new item with ID: ${item.id}`);
+                core.endGroup();
+                return item.id;
+              } catch (e) {
+                core.warning(`Could not add PR to project (it might exist already). Searching for it...`);
+                // If adding fails, it might already be there. Let's find it.
+                const { node: project } = await github.graphql(`
+                  query($projectId:ID!) {
+                    node(id: $projectId) {
+                      ... on ProjectV2 {
+                        items(first: 100) {
+                          nodes {
+                            id
+                            content {
+                              ... on PullRequest { id }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }`, { projectId }
+                );
+                const projectItem = project.items.nodes.find(item => item.content && item.content.id === contentId);
+                if (projectItem) {
+                  core.info(`Found existing item with ID: ${projectItem.id}`);
+                  core.endGroup();
+                  return projectItem.id;
+                } else {
+                  core.setFailed(`Failed to add or find the PR in the project. Error: ${e.message}`);
+                  core.endGroup();
+                  return null;
+                }
+              }
+            }
+
+            async function updateItemStatus(projectId, itemId, fieldId, optionId) {
+              core.startGroup(`3) Updating item status`);
+              await github.graphql(`
+                mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
+                  updateProjectV2ItemFieldValue(input:{
+                    projectId:$projectId, itemId:$itemId, fieldId:$fieldId,
+                    value:{ singleSelectOptionId: $optionId }
+                  }) { projectV2Item { id } }
+                }`, { projectId, itemId, fieldId, optionId }
+              );
+              core.info(`Status updated for item ID: ${itemId}`);
+              core.endGroup();
+            }
+
+            await main();
+
+

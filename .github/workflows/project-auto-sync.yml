@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
-  repository-projects: write
+  projects: write
 
 jobs:
   sync:
@@ -104,7 +104,7 @@ jobs:
                 `;
               } else {
                 query = `
-                  query($title: String!) {
+                  query {
                     viewer {
                       projectsV2(first: 50) {
                         nodes {
@@ -129,7 +129,7 @@ jobs:
                   }
                 `;
               }
-              const variables = ownerType === 'Organization' ? { owner, title: projectTitle } : { title: projectTitle };
+              const variables = ownerType === 'Organization' ? { owner, title: projectTitle } : {};
               const data = await github.graphql(query, variables);
               if (!data) {
                 core.setFailed('GraphQL query returned no data');

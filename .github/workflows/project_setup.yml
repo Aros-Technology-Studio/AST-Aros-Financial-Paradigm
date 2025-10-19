@@ -259,3 +259,4 @@ jobs:
             "https://api.github.com/repos/${OWNER}/${REPO}/branches/main/protection" \
             -d "${JSON_PAYLOAD}"
           echo "Main branch protection rules applied."
+

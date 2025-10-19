@@ -21,8 +21,6 @@ jobs:
         with:
           github-token: ${{ env.GH_TOKEN }}
           script: |
-            const core = require('@actions/core');
-            const github = context.github; // already available
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const pr = context.payload.pull_request;

@@ -74,6 +74,8 @@ jobs:
             if (!option) { core.setFailed(`Status option not found: "${targetName}"`); return; }
 
             // 3) Добавить PR в проект (id item'а)
+            // Примечание: если PR уже в проекте, этот шаг вызовет ошибку, и статус не обновится.
+            // Для более надежной работы можно сначала искать item и только потом добавлять.
             const addRes = await github.graphql(
               `mutation($projectId:ID!, $contentId:ID!) {
                  addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}) {
@@ -81,8 +83,17 @@ jobs:
                  }
                }`,
               { projectId: project.id, contentId: prNodeId }
-            );
+            ).catch(err => {
+              core.warning(`Could not add PR to project (it might already be there): ${err.message}`);
+              return null;
+            });
+
+            if (!addRes || !addRes.addProjectV2ItemById || !addRes.addProjectV2ItemById.item) {
+              core.setFailed('Failed to add or find PR in the project.');
+              return;
+            }
             const itemId = addRes.addProjectV2ItemById.item.id;
+
 
             // 4) Проставить значение поля "Status"
             await github.graphql(
@@ -103,3 +114,4 @@ jobs:
               `PR #${pr.number} → Project "${projectTitle}", Status → ${targetName}`
             ).write();
             console.log(`Updated status to ${targetName}`);
+

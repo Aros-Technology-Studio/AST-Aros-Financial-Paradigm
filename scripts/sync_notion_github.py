@@ -883,44 +883,25 @@ def configure_logging(verbose: bool = False) -> None:
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
 
-def build_parser() -> argparse.ArgumentParser:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Sync Notion tasks with GitHub issues")
-    parser.add_argument(
-        "--env-file",
-        help="Path to a KEY=VALUE file with environment variables (defaults to .env if present)",
-    )
-    parser.add_argument("--notion-db")
-    parser.add_argument("--notion-key")
-    parser.add_argument("--github-token")
+    parser.add_argument("--notion-db", default=os.getenv("NOTION_DB_ID"))
     parser.add_argument("--github-owner", default="qetevanarotato-star")
     parser.add_argument("--github-repo", default="AST-Aros-Financial-Paradigm")
     parser.add_argument("--project", default="AROS STUDIO TOKENOMICS PARADIGM")
     parser.add_argument("--verbose", action="store_true")
-    return parser
+    return parser.parse_args()
 
 
 def main() -> None:
-    parser = build_parser()
-    pre_args, _ = parser.parse_known_args()
-    env_file = pre_args.env_file or os.getenv("NOTION_SYNC_ENV_FILE", ".env")
-    load_env_file(env_file)
-    args = parser.parse_args()
-
-    notion_api_key = (
-        args.notion_key
-        or os.getenv("NOTION_API_KEY")
-    )
-    notion_db_id = args.notion_db or os.getenv("NOTION_DB_ID")
-    github_token = (
-        args.github_token
-        or os.getenv("PAT_AST_CI")
-        or os.getenv("GITHUB_TOKEN")
-    )
+    args = parse_args()
+    notion_api_key = os.getenv("NOTION_API_KEY")
+    github_token = os.getenv("PAT_AST_CI") or os.getenv("GITHUB_TOKEN")
 
     if not notion_api_key:
         logging.error("NOTION_API_KEY is required")
         sys.exit(1)
-    if not notion_db_id:
+    if not args.notion_db:
         logging.error("NOTION_DB_ID is required")
         sys.exit(1)
     if not github_token:
@@ -932,7 +913,7 @@ def main() -> None:
     notion = NotionClient(notion_api_key)
     gh = GitHubClient(github_token, args.github_owner, args.github_repo)
 
-    database = notion.get_database(notion_db_id)
+    database = notion.get_database(args.notion_db)
     modules = collect_module_options(database)
 
     milestones = ensure_milestones(gh, modules)
@@ -949,7 +930,7 @@ def main() -> None:
     errors = 0
     operations: List[SyncResult] = []
 
-    for page in notion.query_database(notion_db_id):
+    for page in notion.query_database(args.notion_db):
         try:
             result = sync_page(
                 notion,

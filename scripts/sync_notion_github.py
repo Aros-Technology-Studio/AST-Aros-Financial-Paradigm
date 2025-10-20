@@ -39,6 +39,37 @@ RETRY_STATUS_CODES = {403, 429, 500, 502, 503, 504}
 MAX_RETRIES = 5
 
 
+def load_env_file(path: Optional[str]) -> None:
+    """Populate os.environ from a simple KEY=VALUE env file if provided."""
+
+    if not path:
+        return
+
+    expanded = os.path.expanduser(path)
+    if not os.path.exists(expanded):
+        logging.debug("Env file %s does not exist; skipping load", expanded)
+        return
+
+    try:
+        with open(expanded, "r", encoding="utf-8") as handle:
+            for raw_line in handle:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+
+                if "=" not in line:
+                    logging.warning("Ignoring malformed line in %s: %s", expanded, raw_line.rstrip())
+                    continue
+
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except OSError as exc:
+        logging.error("Failed to load environment file %s: %s", expanded, exc)
+
+
 class RetryableSession:
     def __init__(self, headers: Dict[str, str]):
         self.session = requests.Session()
@@ -852,25 +883,44 @@ def configure_logging(verbose: bool = False) -> None:
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
 
-def parse_args() -> argparse.Namespace:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Sync Notion tasks with GitHub issues")
-    parser.add_argument("--notion-db", default=os.getenv("NOTION_DB_ID"))
+    parser.add_argument(
+        "--env-file",
+        help="Path to a KEY=VALUE file with environment variables (defaults to .env if present)",
+    )
+    parser.add_argument("--notion-db")
+    parser.add_argument("--notion-key")
+    parser.add_argument("--github-token")
     parser.add_argument("--github-owner", default="qetevanarotato-star")
     parser.add_argument("--github-repo", default="AST-Aros-Financial-Paradigm")
     parser.add_argument("--project", default="AROS STUDIO TOKENOMICS PARADIGM")
     parser.add_argument("--verbose", action="store_true")
-    return parser.parse_args()
+    return parser
 
 
 def main() -> None:
-    args = parse_args()
-    notion_api_key = os.getenv("NOTION_API_KEY")
-    github_token = os.getenv("PAT_AST_CI") or os.getenv("GITHUB_TOKEN")
+    parser = build_parser()
+    pre_args, _ = parser.parse_known_args()
+    env_file = pre_args.env_file or os.getenv("NOTION_SYNC_ENV_FILE", ".env")
+    load_env_file(env_file)
+    args = parser.parse_args()
+
+    notion_api_key = (
+        args.notion_key
+        or os.getenv("NOTION_API_KEY")
+    )
+    notion_db_id = args.notion_db or os.getenv("NOTION_DB_ID")
+    github_token = (
+        args.github_token
+        or os.getenv("PAT_AST_CI")
+        or os.getenv("GITHUB_TOKEN")
+    )
 
     if not notion_api_key:
         logging.error("NOTION_API_KEY is required")
         sys.exit(1)
-    if not args.notion_db:
+    if not notion_db_id:
         logging.error("NOTION_DB_ID is required")
         sys.exit(1)
     if not github_token:
@@ -882,7 +932,7 @@ def main() -> None:
     notion = NotionClient(notion_api_key)
     gh = GitHubClient(github_token, args.github_owner, args.github_repo)
 
-    database = notion.get_database(args.notion_db)
+    database = notion.get_database(notion_db_id)
     modules = collect_module_options(database)
 
     milestones = ensure_milestones(gh, modules)
@@ -899,7 +949,7 @@ def main() -> None:
     errors = 0
     operations: List[SyncResult] = []
 
-    for page in notion.query_database(args.notion_db):
+    for page in notion.query_database(notion_db_id):
         try:
             result = sync_page(
                 notion,

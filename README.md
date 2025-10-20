@@ -2,6 +2,46 @@
 
 Welcome to the  repository. This project outlines the comprehensive architecture for a regulated, AI-governed tokenomics system designed for tokenized assets, focusing on utility-driven mechanics, Proof of Transaction (PoT) consensus, compliance bridges, and AI oversight via The All-Seeing Eye.
 
+## Notion → GitHub synchronisation
+
+Use `scripts/sync_notion_github.py` to synchronise tasks stored in the Notion database with this repository's GitHub issues, milestones, labels, and Project V2 board.
+
+### Prerequisites
+
+Set the following environment variables before running the script (either export them in your shell or place them in a local `.env` file using the format `KEY=VALUE`):
+
+| Variable | Description |
+| --- | --- |
+| `NOTION_API_KEY` | Notion integration token with access to the database. |
+| `NOTION_DB_ID` | Notion database identifier (`268f1989022c8007bbdec5a63c71eaaa`). |
+| `PAT_AST_CI` | GitHub personal access token with `repo`, `project`, and `issues` scopes. |
+
+The script uses the following defaults which can be overridden with CLI switches:
+
+| Parameter | Default |
+| --- | --- |
+| GitHub owner | `qetevanarotato-star` |
+| GitHub repo | `AST-Aros-Financial-Paradigm` |
+| GitHub Project V2 | `AROS STUDIO TOKENOMICS PARADIGM` |
+
+### Running the sync
+
+```bash
+python scripts/sync_notion_github.py
+```
+
+To load variables from a custom file, use the `--env-file` option (defaults to `.env` in the repository root if it exists):
+
+```bash
+python scripts/sync_notion_github.py --env-file path/to/your.env
+```
+
+Use the `--verbose` flag to enable debug logging. The script is idempotent and will create or update GitHub issues so that every Notion record in the `Ready` or `To Do` status has a corresponding issue linked to the project board with status `ToDo`. A summary of created, updated, skipped, and errored records is printed at the end of the run.
+
+#### Running from GitHub Actions
+
+For automated or on-demand runs inside GitHub, trigger the **Sync Notion to GitHub** workflow. It is scheduled daily at 06:00 UTC and can also be launched manually from the **Actions** tab. The workflow uses the repository secrets `NOTION_API_KEY` and `PAT_AST_CI` alongside the database ID `268f1989022c8007bbdec5a63c71eaaa` to execute `scripts/sync_notion_github.py` on GitHub-hosted runners.
+
 ## Project Overview
 
 AST is a human-centric blockchain platform that emphasizes real economic behavior over speculation. Key features include:

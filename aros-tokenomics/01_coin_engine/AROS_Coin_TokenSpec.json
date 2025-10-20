@@ -1,0 +1,10 @@
+{
+  "name": "ArosCoin",
+  "symbol": "ARO",
+  "decimals": 18,
+  "supplyModel": "ProofOfTransaction",
+  "governance": {
+    "upgradeAuthority": "ArosCouncil",
+    "emergencyPause": true
+  }
+}

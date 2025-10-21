@@ -1,32 +1,86 @@
-# Burn and Mint Rules
+# Burn and Mint Rules for AROS Coin
 
-Minting and burning are tightly governed to guarantee provable monetary discipline. All operations
-must pass automated checks and, depending on magnitude, human governance review.
+## Purpose
 
-## Minting Rules
+This document defines the **token lifecycle logic** for AROS Coin (ARO) through two key mechanisms:
+- **Minting** — controlled issuance of new ARO tokens.
+- **Burning** — irreversible removal of ARO tokens from circulation.
 
-1. **Authorised Triggers**: Mint operations originate from the Emission Layer or approved emergency
-liquidity programs. Smart contracts outside this perimeter cannot mint ARO.
-2. **Proof Requirements**: Each mint transaction references the corresponding emission epoch ID,
-cryptographic proofs from the PoT engine, and supervisory signatures where applicable.
-3. **Rate Limits**: Policy defines hard caps per epoch, per day, and per emergency event. Attempted
-minting beyond these limits reverts automatically.
-4. **Distribution Constraints**: Minted ARO must be delivered into pre-defined vaults (validator
-rewards, ecosystem, treasury, compliance). Any reallocation requires a governance proposal.
+Both processes are essential for:
+- Ensuring deflationary and anti-inflation control,
+- Maintaining token demand equilibrium,
+- Supporting AST’s transactional economy without uncontrolled supply growth.
 
-## Burn Rules
+---
 
-1. **Fee Recycling**: A fixed percentage of transaction fees is burned automatically to offset
-inflation and align supply with transaction throughput.
-2. **Volatility Response**: When volatility thresholds are crossed, the Supervisory Layer can activate
-accelerated burn cycles that gradually remove ARO over several epochs to avoid market shocks.
-3. **Penalty Enforcement**: Slashed validators, fraudulent bridge operators, and governance
-violations trigger instant burns from collateralised positions.
-4. **Manual Burns**: Treasury-managed burns require council approval recorded on-chain, with a
-mandatory 72-hour review window for transparency.
+## 1. Minting Logic
 
-## Auditability
+### ✅ When Minting is Allowed
 
-Every burn and mint event is hashed into the Processing Layer’s audit log, with metadata replicated to
-external compliance archives. Quarterly audits reconcile minted and burned amounts against vault
-balances to confirm that outstanding supply matches the published emission curve.
+- When new fiat is tokenized via Tokenization Pipeline → an equal value of ARO is minted.
+- When system reserves fall below liquidity threshold, per `mintThreshold` config.
+- For technical airdrops or bounty issuance, authorized by The All-Seeing Eye.
+
+### 🔒 Minting Constraints
+
+- Must be triggered via verified pipeline event.
+- All minting events are signed by validator group quorum (≥ 67%).
+- Daily hard-cap: configurable via `dailyMintLimit` parameter.
+
+### 📦 Minting Mechanism
+
+- Mint contract accepts: `{ eventType, fiatValue, recipientWallet, mintNonce }`.
+- Auto-generates `mintProof` for audit log.
+- Tokens distributed to wallet or module per purpose.
+
+---
+
+## 2. Burning Logic
+
+### ✅ When Burning is Triggered
+
+- Upon **Reverse Tokenization**: crypto is converted back to fiat.
+- When transactional fees are configured to include partial burn (per `feePolicy`).
+- In case of detected fraud, via special corrective governance vote.
+
+### 🔥 Burn Mechanism
+
+- Burn contract receives: `{ burnAmount, originTxID, burnReason }`.
+- Updates `burnLedger` with full audit metadata.
+- Emission count adjusted and pushed to public index.
+
+---
+
+## 3. Anti-Abuse Mechanisms
+
+| Scenario | Protection Mechanism |
+| --- | --- |
+| Excessive mint requests | Rate-limiter per IP/wallet group |
+| Reused mint/burn nonces | Nonce replay detection, rejection with hash log |
+| Validator collusion attempt | Randomized quorum rotation every 24h |
+
+---
+
+## 4. Emission Parameters
+
+| Parameter | Description | Example Value |
+| --- | --- | --- |
+| `dailyMintLimit` | Max ARO that can be minted in 24h | 250,000 ARO |
+| `burnRate` | % of fee to burn in each txn (configurable) | 3% of txn fee |
+| `mintThreshold` | Minimum reserve balance before new mint allowed | 500,000 ARO |
+| `fraudPenaltyBurn` | Amount burned in confirmed abuse cases | 100% of stake |
+
+---
+
+## 5. Governance Hooks
+
+- **The All-Seeing Eye** has override authority for emergency mint freeze or burn nullification.
+- Any mint/burn can be challenged within 12h via `ChallengeProtocol`.
+
+---
+
+## 6. Summary
+
+AROS Coin’s burn/mint rules ensure **transparent, controlled, and demand-driven token supply** with clear governance and security oversight. These rules anchor ARO’s economic credibility and functional resilience.
+
+⸻

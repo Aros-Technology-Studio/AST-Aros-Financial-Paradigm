@@ -1,46 +1,60 @@
-# Coin Emission Model
+# AROS Coin Emission Model
 
-The ArosCoin emission model is designed to correlate network-wide productivity with monetary supply
-while maintaining predictable macro totals. Emission is calculated each epoch using the following
-inputs:
+## Overview
 
-- **Base Curve**: A declining exponential target that caps annual inflation at 4% during the first
-three years before tapering to 2% once the circulating supply exceeds 60% of the total authorised
-cap.
-- **Activity Multipliers**: Proof of Transaction (PoT) scores, validator uptime, and transaction
-finality latency produce positive or negative adjustments up to ±35% of the base emission for the
-epoch.
-- **Supervisory Overrides**: The Extra Supervisory Layer can freeze or reduce emission when systemic
-risk indicators, such as liquidity stress or fraud detection, cross predefined thresholds.
+The emission model of AROS Coin is designed to ensure **predictability**, **non-speculative growth**, and **self-sustainability** of the ecosystem. Unlike mining-based blockchains (e.g. Bitcoin), AROS Coin uses a **transaction-fee-based emission principle** tightly coupled with decentralized transaction processing. This makes it energy-efficient, economically justified, and resistant to artificial inflation or manipulation.
 
-## Formula
+## Core Emission Principles
 
-For epoch *n*, emission is computed as:
+- **No Pre-mining**: No coins are created at launch or reserved for founders or institutions.
+- **No Fixed Supply**: AROS Coin does not enforce a hard cap. Instead, supply is organically regulated by network demand and usage intensity.
+- **Emission by Transaction Processing**: Coins are generated *only* as a result of real transactions processed on the decentralized network. Each verified transaction pays a small fee, which is then distributed as emission across processing nodes.
 
+## Emission Formula
+
+Let:
+
+- `T` be the total number of transactions in a given block period.
+- `F` be the standard transaction fee per operation.
+- `N` be the number of nodes involved in verifying that transaction.
+- `E` be the emission per node per transaction.
+
+Then:
+
+E = F / N
+Total Emission per block = Σ (F / N) over all transactions
+
+This ensures:
+- Emission is tied to network activity.
+- The more active the network, the more coins are generated.
+- No idle emission occurs without usage.
+
+## Anti-Inflationary Measures
+
+- **Burn Mechanism**: A portion of fees can be periodically burned based on systemic thresholds.
+- **Dynamic Fee Scaling**: In high-load periods, fees auto-scale to avoid flooding the system.
+- **Validator Rotation**: Prevents cartelization of emission across specific nodes.
+
+## AI-Driven Governance Adjustments
+
+The emission logic includes:
+- **Feedback loops** via The All-Seeing Eye for abuse prevention.
+- **Dynamic adjustment models** based on network stress, coin velocity, and macro indicators.
+- **Audit hooks** into every emission cycle for reproducibility and trust.
+
+## Emission Phases
+
+| Phase | Description | Trigger Condition |
+| --- | --- | --- |
+| Bootstrap | Minimal emission for early transactions | First 10,000 verified transactions |
+| Expansion | Normal fee-based emission begins | After bootstrap phase |
+| Stability | Adaptive emission scaling and partial burn | Coin velocity > threshold X |
+| Correction | Emission slows down, burn ratio increases | Inflation risk or validator overloading |
+
+## Example (JSON Spec)
+
+```json
+{  "transaction_fee": 0.05,  "nodes_involved": 5,  "emission_per_node": 0.01,  "burn_ratio": 0.10,  "phase": "Expansion"}
 ```
-E_n = min(Base(n) × (1 + α × PoT_n + β × Uptime_n − γ × Latency_n), Cap_n)
-```
 
-Where:
-
-- `Base(n)` is the scheduled emission target for the epoch.
-- `PoT_n`, `Uptime_n`, and `Latency_n` are normalised scores in the range [−1, 1].
-- `α`, `β`, and `γ` are policy coefficients approved through governance ballots.
-- `Cap_n` is the maximum allowable mint volume set by regulatory commitments for the period.
-
-## Feedback Loops
-
-- **Reserve Utilisation**: If liquidity reserves drop below 30% coverage, emission is throttled by an
-additional dampening factor `δ` until reserves recover above 45%.
-- **Demand Signals**: A velocity indicator tracks how quickly ARO rotates across vault categories.
-High velocity enables a controlled increase (max +10%) to support ecosystem growth.
-- **Inflation Guardrail**: The Supervisory agents project annualised inflation. If the rolling
-12-month rate exceeds 4.5%, the emission model enforces a hard contraction by reducing `Base(n)` by
-up to 20% for the next four epochs.
-
-## Transparency
-
-Every epoch’s emission data is published to the Processing Layer audit log and summarised in the
-Changelog. This includes the raw inputs, calculated coefficients, and supervisory decisions. External
-stakeholders can reconstruct the emission curve by replaying the deterministic event stream stored in
-the NodeChain ledger.
+⸻

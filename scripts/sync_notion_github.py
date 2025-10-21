@@ -39,6 +39,37 @@ RETRY_STATUS_CODES = {403, 429, 500, 502, 503, 504}
 MAX_RETRIES = 5
 
 
+def load_env_file(path: Optional[str]) -> None:
+    """Populate os.environ from a simple KEY=VALUE env file if provided."""
+
+    if not path:
+        return
+
+    expanded = os.path.expanduser(path)
+    if not os.path.exists(expanded):
+        logging.debug("Env file %s does not exist; skipping load", expanded)
+        return
+
+    try:
+        with open(expanded, "r", encoding="utf-8") as handle:
+            for raw_line in handle:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+
+                if "=" not in line:
+                    logging.warning("Ignoring malformed line in %s: %s", expanded, raw_line.rstrip())
+                    continue
+
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except OSError as exc:
+        logging.error("Failed to load environment file %s: %s", expanded, exc)
+
+
 class RetryableSession:
     def __init__(self, headers: Dict[str, str]):
         self.session = requests.Session()

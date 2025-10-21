@@ -8,7 +8,7 @@ Use `scripts/sync_notion_github.py` to synchronise tasks stored in the Notion da
 
 ### Prerequisites
 
-Set the following environment variables before running the script:
+Set the following environment variables before running the script (either export them in your shell or place them in a local `.env` file using the format `KEY=VALUE`):
 
 | Variable | Description |
 | --- | --- |
@@ -28,6 +28,12 @@ The script uses the following defaults which can be overridden with CLI switches
 
 ```bash
 python scripts/sync_notion_github.py
+```
+
+To load variables from a custom file, use the `--env-file` option (defaults to `.env` in the repository root if it exists):
+
+```bash
+python scripts/sync_notion_github.py --env-file path/to/your.env
 ```
 
 Use the `--verbose` flag to enable debug logging. The script is idempotent and will create or update GitHub issues so that every Notion record in the `Ready` or `To Do` status has a corresponding issue linked to the project board with status `ToDo`. A summary of created, updated, skipped, and errored records is printed at the end of the run.

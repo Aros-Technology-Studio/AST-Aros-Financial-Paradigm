@@ -1,0 +1,41 @@
+{
+  "name": "ArosCoin",
+  "symbol": "ARO",
+  "decimals": 18,
+  "supplyModel": {
+    "type": "ProofOfTransaction",
+    "epochLengthSeconds": 900,
+    "maxAnnualInflationPct": 4.0,
+    "baseSupplyCap": "2100000000",
+    "reserveFloorPct": 0.3
+  },
+  "distribution": {
+    "validatorRewardsPct": 0.5,
+    "ecosystemGrowthPct": 0.2,
+    "treasuryPct": 0.2,
+    "supervisoryPct": 0.1,
+    "rewardLockPeriodDays": 14
+  },
+  "governance": {
+    "upgradeAuthority": "ArosCouncil",
+    "upgradeDelayHours": 72,
+    "emergencyPause": true,
+    "quorumPct": 0.67,
+    "supervisoryVeto": true
+  },
+  "compliance": {
+    "kycRequired": true,
+    "amlScreeningProvider": "ArosComplianceNet",
+    "travelRuleSupport": true,
+    "auditLog": "processing-layer/audit/aro-monetary.json"
+  },
+  "bridge": {
+    "collateralRatio": 1.25,
+    "allowedNetworks": [
+      "Ethereum-Sepolia",
+      "Polygon-Cardona",
+      "AROS-Sidechain"
+    ],
+    "attestationThreshold": 5
+  }
+}

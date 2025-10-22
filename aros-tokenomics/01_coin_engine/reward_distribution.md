@@ -1,4 +1,7 @@
-[payment_distribution.md](https://github.com/user-attachments/files/23047337/payment_distribution.md)
+[reward_distribution.md](https://github.com/user-attachments/files/23047352/reward_distribution.md)
+# reward_distribution.md (1)
+
+```markdown
 # Reward Distribution Model for AST Node Infrastructure
 
 ## Purpose
@@ -88,5 +91,5 @@ node_weight = (uptime_score * trust_factor) / total_node_scores
 
 This model ensures that participation in AST’s infrastructure is **fairly incentivized, performance-oriented, and protected from manipulation**. Flexibility via governance allows long-term adaptability while securing critical economic equilibrium.
 
-
 ⸻
+```

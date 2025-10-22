@@ -1,10 +1,48 @@
-{
-  "name": "ArosCoin",
-  "symbol": "ARO",
-  "decimals": 18,
-  "supplyModel": "ProofOfTransaction",
-  "governance": {
-    "upgradeAuthority": "ArosCouncil",
-    "emergencyPause": true
+[
+  {
+    "token": {
+      "name": "AROS Coin",
+      "symbol": "ARO",
+      "decimals": 8,
+      "totalSupply": "dynamic", 
+      "supplyMechanism": {
+        "type": "transaction-fee-based",
+        "initialSupply": 0,
+        "mintOn": "verified_transaction",
+        "burnOn": "governance_rule"
+      }
+    },
+    "governance": {
+      "issuer": "AST Core Protocol",
+      "modificationRules": {
+        "changeDecimals": false,
+        "changeSymbol": false,
+        "changeSupplyMechanism": "via_smart_contract_vote"
+      }
+    },
+    "transactionFees": {
+      "feeType": "variable",
+      "calculation": "gasless_weighted + time_priority + load_balance",
+      "distribution": {
+        "nodeOperators": 0.75,
+        "AST treasury": 0.20,
+        "Audit Pool": 0.05
+      }
+    },
+    "compatibility": {
+      "blockchain": "AST_NodeChain",
+      "wallets": ["AST Wallet", "CrossChainWrapper"],
+      "bridgeable": true
+    },
+    "security": {
+      "auditTrail": true,
+      "signedPayloads": true,
+      "immutability": true
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "lastUpdated": "2025-06-20",
+      "contractRef": "contracts/aros_token_mainnet.sol"
+    }
   }
-}
+]

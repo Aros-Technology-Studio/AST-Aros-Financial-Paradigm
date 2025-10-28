@@ -1,11 +1,4 @@
-# proposal_submission_protocol.md (1)
-
----
-
-### 📑 Содержание документа:
-
-```markdown
-# Proposal Submission Protocol
+# proposal_submission_protocol.md
 
 ## 1. Purpose
 
@@ -51,7 +44,6 @@ Proposals are stored and indexed by `ProposalRegistry`.
 ---
 
 ## 4. Submission Lifecycle
-```
 
 ```mermaid
 sequenceDiagram

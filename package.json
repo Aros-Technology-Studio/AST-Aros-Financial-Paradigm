@@ -16,13 +16,14 @@
     "format:fix": "prettier -w .",
     "generate:client": "npx @openapitools/openapi-generator-cli generate -i docs/api/openapi.yaml -g typescript-fetch -o client",
     "prepare": "husky install",
-    "test": "node --test --loader tsx"
+    "test": "node --test --loader tsx",
+    "pretest": "python3 -m venv .venv || true"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0",
     "@types/node": "^20.12.12",
-    "@typescript-eslint/eslint-plugin": "^7.8.0",
-    "@typescript-eslint/parser": "^7.8.0",
-    "eslint": "^8.57.0",
+    "eslint": "8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
     "husky": "^9.0.11",

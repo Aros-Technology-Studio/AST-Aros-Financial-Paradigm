@@ -1,11 +1,4 @@
-# bridge_threat_model.md (1)
-
----
-
-### **📑 Содержание документа:**
-
-```markdown
-# Bridge Threat Model
+# bridge_threat_model.md
 
 ## 1. Purpose
 
@@ -59,7 +52,6 @@ Any component (adapter, chain, user wallet) can be paused by:
 - Governance
 - AI engine
 - Multi-signature council
-```
 
 ```solidity
 function freezeAdapter(address adapter) external onlyAIOrGov;

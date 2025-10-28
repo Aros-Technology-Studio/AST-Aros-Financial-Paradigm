@@ -1,13 +1,10 @@
-# staking_overview.md (1)
-
-```markdown
-# 📄 staking_overview.md
+# staking_overview.md
 
 ## Module: Staking Overview
-**Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

@@ -1,11 +1,4 @@
-# governance_auditability.md (1)
-
----
-
-### 📑 Содержание документа:
-
-```markdown
-# Governance Auditability
+# governance_auditability.md
 
 ## 1. Purpose
 

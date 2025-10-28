@@ -27,7 +27,6 @@ Emergencies are flagged via formal signals by Council Members or system monitors
 ## 3. Emergency Freeze Mechanism
 
 Council Members can initiate a freeze as follows:
-```
 
 ```solidity
 function freezeProposal(uint256 proposalId) external onlyCouncil;

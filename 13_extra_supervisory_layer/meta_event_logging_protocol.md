@@ -1,9 +1,4 @@
-# meta_event_logging_protocol.md (1)
-
-### 📑 Содержимое документа:
-
-```markdown
-# Meta Event Logging Protocol
+# meta_event_logging_protocol.md
 
 ## 1. Purpose
 

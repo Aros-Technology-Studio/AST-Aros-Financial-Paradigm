@@ -1,10 +1,3 @@
-# tx_execution_contexts.md (1)
-
-Отлично. Начинаем переработку `tx_execution_contexts.md`.
-
----
-
-```markdown
 # tx_execution_contexts.md
 
 ## 1. Purpose

@@ -1,9 +1,4 @@
-# emergency_governance_procedures.md (1)
-
-### 📑 Содержание документа:
-
-```markdown
-# Emergency Governance Procedures
+# emergency_governance_procedures.md
 
 ## 1. Purpose
 

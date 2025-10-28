@@ -1,11 +1,4 @@
-# reverse_tokenization_bridge.md (1)
-
----
-
-### **📑 Содержание документа:**
-
-```markdown
-# Reverse Tokenization Bridge
+# reverse_tokenization_bridge.md
 
 ## 1. Purpose
 
@@ -20,7 +13,6 @@ It ensures:
 ---
 
 ## 2. Exit Flow Overview
-```
 
 Only after compliance and irreversible burn does the system approve value release.
 

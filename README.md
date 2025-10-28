@@ -16,8 +16,8 @@ AST is a human-centric blockchain platform that emphasizes real economic behavio
 The system is modular, with documentation in Markdown files organized by layers. Dates in docs reference 2025 for future-proofing.
 
 ## Repository Structure
-
-aros-tokenomics/
+```
+AST-Aros-Finansial-Paradigm/
 ├── README.md                  # This file: Project overview and setup
 ├── CHANGELOG.md               # Version history
 ├── glossary.md                # Global terms definitions
@@ -161,7 +161,7 @@ aros-tokenomics/
 └── 14_decentralized_tx_encoding/ # Decentralized TX Encoding (governance, testing)
     ├── dte_governance_upgradability.md
     └── dte_testing_benchmarking.md
-
+```
 ## Architecture Boundaries & Team Roles
 
 For responsibilities across layers, see [docs/architecture_team_roles.md](docs/architecture_team_roles.md).

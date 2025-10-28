@@ -1,15 +1,10 @@
-# epoch_allocation_model.md (1)
-
----
-
-```markdown
-# 📄 epoch_allocation_model.md
+# epoch_allocation_model.md
 
 ## Module: Epoch Allocation Model
-**Layer**: Emission Layer — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 
@@ -101,16 +96,16 @@ This data is stored via emission_reporting_and_traceability.md.
 ---
 
 ## **Mermaid Diagram**
-
 ```
 flowchart TD
     A[New Epoch Starts] --> B[Track Emission Triggers]
-    B --> C[Check Quotas per Shard]
-    C --> D[Distribute Tokens by Role]
-    D --> E[Update Emission Counters]
-    E --> F{Cap Reached or Time Expired?}
-    F -- Yes --> G[End Epoch & Freeze Snapshot]
+    B --> C [Check Quotas per Shard]
+    C --> D [Distribute Tokens by Role]
+    D --> E [Update Emission Counters]
+    E --> F {Cap Reached or Time Expired?}
+    F -- Yes --> G [End Epoch & Freeze Snapshot]
     F -- No --> B
+
 ```
 
 ---

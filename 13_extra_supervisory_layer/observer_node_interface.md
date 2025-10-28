@@ -1,9 +1,4 @@
-# observer_node_interface.md (1)
-
-### 📑 Содержимое документа:
-
-```markdown
-# Observer Node Interface
+# observer_node_interface.md
 
 ## 1. Purpose
 

@@ -1,9 +1,4 @@
-# governance_token_logic.md (1)
-
-### 📑 Содержание документа:
-
-```markdown
-# Governance Token Logic
+# governance_token_logic.md
 
 ## 1. Purpose
 

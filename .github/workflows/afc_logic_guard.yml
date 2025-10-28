@@ -8,15 +8,29 @@ jobs:
   afc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/upload-artifact@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install guard deps (optional)
+        run: |
+          if [ -f tools/requirements.txt ]; then
+            python -m pip install --upgrade pip
+            pip install -r tools/requirements.txt
+          fi
 
       - name: Run AFC Logic Guard
         run: |
+          mkdir -p reports
           python3 tools/afc_logic_guard.py --repo . --spec tools/spec_rules.json --out reports
 
       - name: Upload AFC artifacts
         if: always()
-      - uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: afc-logic-guard
           path: reports

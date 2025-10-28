@@ -70,7 +70,6 @@ This guarantees **content immutability without excessive gas costs**.
 ## 6. Vote Audit Logs
 
 Each vote cast is stored with:
-```
 
 ```json
 {

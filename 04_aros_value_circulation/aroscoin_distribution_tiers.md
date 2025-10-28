@@ -1,10 +1,5 @@
 # aroscoin_distribution_tiers.md
 
-### **📑 Содержание документа:**
-
-```markdown
-# ArosCoin Distribution Tiers
-
 ## 1. Purpose
 
 This document defines the tiered structure through which ArosCoin is distributed across system actors, roles, and activities. Distribution tiers are designed to enforce **predictability, fairness, and anti-inflationary behavior**, while aligning with long-term utility and governance objectives.
@@ -28,7 +23,6 @@ Each tier has specific access rules, velocity caps, and validation triggers.
 ---
 
 ## 3. Distribution Flow Overview
-```
 
 ```mermaid
 flowchart TD

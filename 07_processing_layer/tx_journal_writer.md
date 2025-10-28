@@ -1,15 +1,10 @@
-# tx_journal_writer.md (1)
-
----
-
-```markdown
-# 📄 tx_journal_writer.md
+# tx_journal_writer.md
 
 ## Module: Transaction Journal Writer
-**Layer**: Processing Layer — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Processing Layer — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

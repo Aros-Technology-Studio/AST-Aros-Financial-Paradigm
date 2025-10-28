@@ -1,16 +1,10 @@
-# slashing_and_penalty_rules.md (1)
-
----
-
-```markdown
-# 📄 slashing_and_penalty_rules.md
+# slashing_and_penalty_rules.md 
 
 ## Module: Slashing and Penalty Rules
-**Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
-
+- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 ---
 
 ## Overview

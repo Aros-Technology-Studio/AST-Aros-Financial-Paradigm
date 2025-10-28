@@ -1,0 +1,35 @@
+openapi: 3.0.3
+info:
+  title: AROS-PARADIGM AST API
+  version: 0.1.0
+  description: API for AST bootstrap server.
+servers:
+  - url: http://localhost:8080
+paths:
+  /:
+    get:
+      summary: Health check
+      description: Returns service status and timestamp.
+      responses:
+        '200':
+          description: Successful response with service heartbeat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        service:
+          type: string
+        ts:
+          type: string
+          format: date-time
+      required:
+        - ok
+        - service
+        - ts

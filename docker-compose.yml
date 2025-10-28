@@ -1,0 +1,8 @@
+services:
+  ast:
+    build: .
+    environment:
+      - PORT=8080
+      - LOG_LEVEL=info
+    ports:
+      - "8080:8080"

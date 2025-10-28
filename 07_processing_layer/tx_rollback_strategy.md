@@ -1,8 +1,3 @@
-# tx_rollback_strategy.md (1)
-
----
-
-```markdown
 # tx_rollback_strategy.md
 
 ## 1. Purpose

@@ -1,9 +1,4 @@
-# TX Validation & Safety (1)
-
----
-
-```markdown
-# tx_batching_and_sharding.md
+# TX Validation & Safety 
 
 ## 1. Purpose
 

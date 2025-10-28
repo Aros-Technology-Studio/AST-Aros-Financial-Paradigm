@@ -1,9 +1,4 @@
-# tokenization_bridge_architecture.md (1)
-
-### **📑 Содержание документа:**
-
-```markdown
-# Tokenization Bridge Architecture
+# tokenization_bridge_architecture.md
 
 ## 1. Purpose
 
@@ -16,7 +11,6 @@ The Tokenization Bridge is the controlled entry point for converting external va
 ---
 
 ## 2. Entry Flow Overview
-```
 
 ```mermaid
 sequenceDiagram

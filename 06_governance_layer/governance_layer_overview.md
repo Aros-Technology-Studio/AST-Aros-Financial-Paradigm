@@ -1,10 +1,4 @@
-# governance_layer_overview.md (1)
-
-### **📑 Содержание документа:**
-
-```markdown
-# Governance Layer Overview
-
+# governance_layer_overview.md
 ## 1. Purpose
 
 The Governance Layer defines how **decisions are proposed, validated, voted on, and enacted** within the Aros Studio Tokenomics (AST) system. It ensures that control over critical parameters, funding mechanisms, and systemic evolution remains in the hands of **designated actors operating under defined protocols** — not arbitrary automation or centralized discretion.
@@ -44,7 +38,6 @@ The governance model in AST is **tiered and modular**, with the following princi
 ---
 
 ## 4. Proposal Lifecycle
-```
 
 ```mermaid
 flowchart TD

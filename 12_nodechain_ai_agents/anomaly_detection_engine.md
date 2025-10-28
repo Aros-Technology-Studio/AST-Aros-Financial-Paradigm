@@ -1,15 +1,10 @@
-# anomaly_detection_engine.md (1)
-
----
-
-```markdown
-# 📄 anomaly_detection_engine.md
+# anomaly_detection_engine.md
 
 ## Module: Anomaly Detection Engine
-**Layer**: NodeChain AI Agents – AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: NodeChain AI Agents – AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

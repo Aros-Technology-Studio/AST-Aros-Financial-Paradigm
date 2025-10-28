@@ -1,4 +1,4 @@
-# aro_emission_protocol.md (1)
+# aro_emission_protocol.md
 
 ### **I. Purpose**
 

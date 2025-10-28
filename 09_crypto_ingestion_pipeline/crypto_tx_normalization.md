@@ -1,13 +1,4 @@
-# crypto_tx_normalization.md (1)
-
-## 📄 `crypto_tx_normalization.md`
-
-📂 Путь: `ast/processing_layer/crypto_ingestion_pipeline/crypto_tx_normalization.md`
-
----
-
-```markdown
-# Crypto Transaction Normalization
+# crypto_tx_normalization.md
 
 ## 1. Purpose
 

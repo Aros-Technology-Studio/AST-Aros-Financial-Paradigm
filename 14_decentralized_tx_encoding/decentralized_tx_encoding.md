@@ -1,8 +1,5 @@
-# decentralized_tx_encoding.md (1)
+# decentralized_tx_encoding.md
 
-```markdown
-
-# **decentralized_tx_encoding.md**  
 **Module:** AST — Aros Studio Tokenomics  
 **Component:** Decentralized Transaction Encoding  
 **Status:** Draft  

@@ -1,9 +1,4 @@
-# tx_dispatch_engine.md (1)
-
----
-
-```markdown
-# tx_dispatch_engine.md
+# tx_dispatch_engine.md 
 
 ## 1. Purpose
 

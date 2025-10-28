@@ -1,9 +1,4 @@
-# anomaly_detection_patterns.md (1)
-
-### 📑 Содержимое документа:
-
-```markdown
-# Anomaly Detection Patterns
+# anomaly_detection_patterns.md
 
 ## 1. Purpose
 

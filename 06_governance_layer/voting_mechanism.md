@@ -1,9 +1,4 @@
-# voting_mechanism.md (1)
-
-### 📑 Содержание документа:
-
-```markdown
-# Voting Mechanism
+# voting_mechanism.md
 
 ## 1. Purpose
 
@@ -25,7 +20,6 @@ Voting rights are **non-transferable** and **must be actively staked** during th
 ---
 
 ## 3. Voting Lifecycle
-```
 
 ```mermaid
 sequenceDiagram

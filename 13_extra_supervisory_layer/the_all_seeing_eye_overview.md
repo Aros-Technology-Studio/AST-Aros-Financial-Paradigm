@@ -1,9 +1,4 @@
-# the_all_seeing_eye_overview.md (1)
-
-### 📑 Содержимое документа:
-
-```markdown
-# The All-Seeing Eye — Overview
+# the_all_seeing_eye_overview.md
 
 ## 1. Purpose
 

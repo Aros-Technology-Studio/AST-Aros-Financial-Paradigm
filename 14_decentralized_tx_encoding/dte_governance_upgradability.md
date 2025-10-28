@@ -1,7 +1,4 @@
-# dte_governance_upgradability. (1)
-
-```markdown
-# **dte_governance_upgradability.md**  
+# dte_governance_upgradability
 
 **Module:** AST — Aros Studio Tokenomics  
 **Component:** Decentralized Transaction Encoding (DTE)  

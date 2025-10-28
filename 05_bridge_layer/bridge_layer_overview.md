@@ -1,9 +1,4 @@
-# bridge_layer_overview.md (1)
-
-### **📑 Содержание документа:**
-
-```markdown
-# Bridge Layer Overview
+# bridge_layer_overview.md
 
 ## 1. Purpose
 
@@ -33,7 +28,6 @@ The Bridge Layer consists of the following subsystems:
 ---
 
 ## 3. Trust Boundary Model
-```
 
 ```mermaid
 flowchart LR

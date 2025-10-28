@@ -1,9 +1,4 @@
-# bridge_liquidity_routing.md (1)
-
-### **📑 Содержание документа:**
-
-```markdown
-# Bridge Liquidity Routing
+# bridge_liquidity_routing.md
 
 ## 1. Purpose
 
@@ -38,7 +33,6 @@ All pools are managed as isolated smart contracts and cannot borrow from one ano
 ---
 
 ## 4. Routing Logic
-```
 
 ```mermaid
 flowchart TD

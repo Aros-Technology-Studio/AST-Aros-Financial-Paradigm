@@ -1,11 +1,5 @@
-# dte_testing_benchmarking.md (1)
+# dte_testing_benchmarking.md
 
-```markdown
-Хорошо, тогда сразу перехожу к следующему документу по списку — `dte_testing_benchmarking.md`.  
-
----
-
-# **dte_testing_benchmarking.md**  
 **Module:** AST — Aros Studio Tokenomics  
 **Component:** Decentralized Transaction Encoding (DTE)  
 **Submodule:** Testing & Benchmarking Methodology  

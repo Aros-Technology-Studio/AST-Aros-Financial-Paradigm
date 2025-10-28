@@ -1,11 +1,4 @@
-# External Crypto Ingestion (1)
-
-📂 Путь: `ast/processing_layer/crypto_ingestion_pipeline/external_crypto_ingestion.md`
-
----
-
-```markdown
-# External Crypto Ingestion
+# External Crypto Ingestion.md
 
 ## 1. Purpose
 

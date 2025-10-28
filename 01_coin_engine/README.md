@@ -24,6 +24,7 @@ The Coin Engine (ACE) is the deterministic subsystem that defines:
 
 **2) Directory Layout**
 
+```
 01_coin_engine/
 ├── README.md                    # This file
 ├── coin_engine_overview.md      # Narrative architecture & invariants
@@ -36,7 +37,7 @@ The Coin Engine (ACE) is the deterministic subsystem that defines:
 ├── /src                         # Reference implementation (TS/Rust)
 ├── /tests                       # Unit/integration/property tests
 └── /fixtures                    # Deterministic samples for test vectors
-
+```
 If some files are missing in your repo, keep this structure and create stubs. Tests should pass with --update-snapshots only when invariants remain intact.
 
 ⸻

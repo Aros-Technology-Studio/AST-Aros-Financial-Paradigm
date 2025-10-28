@@ -1,9 +1,4 @@
-# crypto_exit_pipeline.md (1)
-
----
-
-```markdown
-# Crypto Exit Pipeline
+# crypto_exit_pipeline.md
 
 ## 1. Purpose
 

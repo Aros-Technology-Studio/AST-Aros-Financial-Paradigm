@@ -1,12 +1,5 @@
 # aroscoin_buyback_mechanism.md
 
----
-
-### **📑 Содержание документа:**
-
-```markdown
-# ArosCoin Buyback Mechanism
-
 ## 1. Purpose
 
 The Buyback Mechanism is designed to regulate ArosCoin’s active circulation by **programmatically repurchasing tokens** from users or reward channels. Its main purpose is to:
@@ -36,7 +29,6 @@ Buybacks are automatically initiated under one or more of the following conditio
 ---
 
 ## 3. Buyback Execution Pipeline
-```
 
 ```mermaid
 flowchart TD

@@ -1,15 +1,10 @@
-# tx_batching_and_sharding.md (1)
-
----
-
-```markdown
-# 📄 tx_batching_and_sharding.md
+# tx_batching_and_sharding.md
 
 ## Module: Transaction Batching & Sharding
-**Layer**: Processing Layer — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Processing Layer — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

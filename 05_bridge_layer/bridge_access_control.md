@@ -1,9 +1,4 @@
-# bridge_access_control.md (1)
-
-### **📑 Содержание документа:**
-
-```markdown
-# Bridge Access Control
+# bridge_access_control.md
 
 ## 1. Purpose
 
@@ -30,9 +25,6 @@ The goal is to enforce:
 Each role has limited scope and cannot escalate privileges across categories.
 
 ---
-```
-
-```solidity
 ## 3. Access Control Contract
 
 ```solidity

@@ -1,8 +1,5 @@
 # tx_lifecycle_management.md
 
-```markdown
-# tx_lifecycle_management.md
-
 ## 1. Purpose
 
 This document defines the complete lifecycle management for transactions within AST's internal processing queue, covering both **TTL (Time-to-Live) expiration** and **rollback mechanisms** to ensure data integrity and system reliability.

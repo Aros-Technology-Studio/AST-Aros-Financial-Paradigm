@@ -1,11 +1,4 @@
-# kyc_aml_interface_bridge.md (1)
-
----
-
-### **📑 Содержание документа:**
-
-```markdown
-# KYC/AML Interface Bridge
+# kyc_aml_interface_bridge.md
 
 ## 1. Purpose
 
@@ -30,7 +23,6 @@ This module ensures that all users crossing the AST system boundary (inward or o
 ---
 
 ## 3. Workflow Overview
-```
 
 ```mermaid
 sequenceDiagram

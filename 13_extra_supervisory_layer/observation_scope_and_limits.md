@@ -1,11 +1,4 @@
-# observation_scope_and_limits.md (1)
-
----
-
-### 📑 Содержимое документа:
-
-```markdown
-# Observation Scope and Limits
+# observation_scope_and_limits.md
 
 ## 1. Purpose
 

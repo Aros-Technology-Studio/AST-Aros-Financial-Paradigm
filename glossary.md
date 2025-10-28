@@ -1,0 +1,49 @@
+# AST Global Glossary
+
+As the Lead Blockchain Developer and Tokenomics Designer for AST, with expertise in realizing custom consensus mechanisms like PoT and architectures such as NodeChain, I define this glossary to ensure architectural precision and clarity across all layers. Drawing from my role as Institutional Relations Lead and Regulatory Strategist, terms incorporate compliance considerations (e.g., KYC/AML integration for bridges). As PR Director and Strategic Narrative Builder, I frame definitions to position AST as "financial architecture of the future," emphasizing utility over speculation. As UX Researcher, terms are explained in user-centric scenarios. As Revenue Model Architect, economic implications are highlighted. As Patent Attorney and Privacy Counsel, definitions respect IP boundaries and data privacy (e.g., GDPR in logs). As Technical Program Manager, cross-references to layers ensure modularity. As FinReg Legal Advisor, regulatory alignments (e.g., MiCA for emission) are noted.
+
+This glossary lists key terms alphabetically, with definitions, examples, dependencies, and notes for completeness. It serves as a reference for contributors, auditors, and stakeholders, evolving via governance proposals (06_governance_layer/proposal_submission_protocol.md). Terms are grounded in AST's non-speculative, behavior-based model, avoiding traditional blockchain jargon in favor of NodeChain-specific concepts.
+
+- **All-Seeing Eye**: A passive meta-observation system for monitoring architectural integrity, detecting anomalies (e.g., governance irregularities via GOV-001 patterns), logging events in JSONL format, and emitting non-blocking integrity signals. Acts as a "witness, not judge," ensuring transparency without execution interference. Example: Flags a slow supply drift in emission, triggering governance escalation. Dependencies: 13_extra_supervisory_layer/the_all_seeing_eye_overview.md. Notes: Integrates with AI agents for meta-learning; privacy ensured via zero-knowledge proofs.
+
+- **ARO_TX**: The normalized transaction object format in the processing layer, encapsulating fields like tx_id, sender, recipient, amount, metadata (e.g., risk_score, ttl_ms), nonce, and signatures. Ensures deterministic handling across NodeChain nodes. Example: A bridge ingress TX normalized to {"tx_id": "TX-001", "amount": 1000, "risk_score": 0.85}. Dependencies: 07_processing_layer/tx_structure_and_metadata.md. Notes: Compliant with GDPR (anonymized metadata); used in PoT for weighting.
+
+- **ArosCoin (ARO)**: The native utility token of AST, facilitating TX fees, governance voting, staking rewards, and ecosystem incentives. Emission is triggered by verified TX activity via PoT, with no pre-mine or ICO to avoid speculation. Example: Micro-fee (0.05 ARO) for a bridge conversion, distributed as 60% to validators. Dependencies: 01_coin_engine/coin_emission_model.md. Notes: Regulated as a utility token under MiCA; burn mechanisms ensure deflationary pressure.
+
+- **ComplianceOracle**: An external or integrated service (e.g., Chainalysis API) for real-time KYC/AML scoring during bridge operations, returning scores (0-100) based on sanctions, risk profiles, and user history. Thresholds (e.g., >80 for ingress) enforce regulatory adherence. Example: Score 92 for a fiat deposit, allowing mint. Dependencies: 05_bridge_layer/kyc_aml_interface_bridge.md. Notes: Multi-oracle fallback for resilience; data privacy compliant with CCPA (no persistent storage).
+
+- **Emission Layer**: The module governing ArosCoin issuance rules, including triggers (PoT-verified events), epoch allocations, fraud prevention (e.g., artificial trigger detection), and rollbacks. Ensures deterministic, non-continuous minting tied to economic activity. Example: Epoch allocation: 40% to validators, 30% to reserves. Dependencies: 08_emission_layer/emission_trigger_conditions.md. Notes: Aligned with World Bank digital currency pilots; audited for inflation control.
+
+- **Epoch**: A fixed time period (default: 7 days) for resetting allocations, calculating rewards, rotating nodes, and emitting tokens. Synchronizes PoT cycles and governance votes. Example: At epoch end, distribute incentives and reset performance scores. Dependencies: 08_emission_layer/epoch_allocation_model.md. Notes: Adjustable via governance; ensures predictability in urban financial scenarios (e.g., weekly settlements).
+
+- **ExitScore**: A composite compliance metric (0-100) evaluated during reverse tokenization, factoring KYC/AML, sanctions checks, transaction history, and risk flags. Threshold (e.g., >70) required for egress to prevent fraud. Example: Score drops to 45 on flagged address, blocking fiat exit. Dependencies: 05_bridge_layer/reverse_tokenization_bridge.md. Notes: Integrates with EIB risk models; privacy-focused (anonymized scoring).
+
+- **IPFS-Mirroring**: Decentralized storage protocol for audit logs, events, and state snapshots, using IPFS Content Identifiers (CIDs) for permanence and tamper-proof distribution. Enhances traceability without centralized servers. Example: Mirror PoT validation logs to IPFS for governance reviews. Dependencies: 13_extra_supervisory_layer/meta_event_logging_protocol.md. Notes: Compliant with ISO 27001; fallback to Arweave for long-term archiving.
+
+- **Lac Musa**: An external meta-validator framework referenced for AI escalations and governance overrides, providing hierarchical auditing without direct AST integration. Details external to repo. Example: Escalate anomaly (GOV-001) to Lac Musa for human review. Dependencies: 12_nodechain_ai_agents/ai_governance_escalation.md. Notes: Aligns with OECD digital finance guidelines; IP-protected.
+
+- **Merkle Root**: A cryptographic hash tree root for verifying data integrity in logs, TX batches, and state snapshots, enabling efficient proofs without full dataset access. Ensures immutability in audits. Example: Root hash for epoch logs, verifiable via NodeChain nodes. Dependencies: 05_bridge_layer/bridge_auditability_rules.md. Notes: Used in All-Seeing Eye for signal emission; supports zero-knowledge proofs for privacy.
+
+- **Meta-Learning**: A self-improving feedback loop in AI agents, using historical anomalies to refine detection models (e.g., behavioral patterns in validators) without real-time data access. Enhances accuracy over epochs. Example: Adjust anomaly thresholds based on past false positives. Dependencies: 12_nodechain_ai_agents/meta_learning_feedback_loop.md. Notes: Compliant with EU AI Act (explainable models); integrated with urban UX for real-world adaptation.
+
+- **NodeChain**: AST's proprietary decentralized validation and processing engine, handling node registration, transaction sharding, encryption, consensus via PoT, and fault tolerance. Distinct from traditional blockchains, it's closed-loop and behavior-focused. Example: Shard a high-volume TX across 10 nodes for parallel validation. Dependencies: 02_nodechain_engine/nodechain_overview.md. Notes: Scalable for GovTech (e.g., city-scale deployments); no public ledger to ensure privacy.
+
+- **NodeWeight**: A dynamic metric for node influence in PoT and emission, calculated as uptime * reputation * activity_factor. Determines role assignment and rewards. Example: Weight 0.85 grants validator role. Dependencies: 10_proof_of_transaction_engine/pot_tx_weighting_model.md. Notes: Tuned for economic balance (revenue models); slashed on misbehavior.
+
+- **PoT (Proof of Transaction)**: AST's consensus paradigm validating TX based on activity (e.g., fees paid), integrity (signatures, nonces), and contribution (ecosystem utility), deriving power from behavior rather than resources. Example: High-weight TX confirmed with 67% quorum. Dependencies: 10_proof_of_transaction_engine/pot_engine_overview.md. Notes: Patent-pending; aligns with PSD2 for open banking.
+
+- **Quorum Anchor**: The minimum participation threshold (default: 67%) for valid consensus in governance votes, PoT attestations, or node assignments, preventing capture. Example: 67% validator approval for proposal. Dependencies: 06_governance_layer/quorum_validation_rules.md. Notes: Adjustable via governance; ensures democratic, compliant decision-making.
+
+- **Slashing**: Automated penalty for node misbehavior (e.g., invalid attestation, downtime), burning a portion of stake (25-100%) and reducing reputation. Promotes integrity. Example: 50% slash for no challenge response. Dependencies: 11_validator_staking_rewards/slashing_and_penalty_rules.md. Notes: Revenue from slashes to treasury; legal alignment with SEC penalties.
+
+- **Token Lifecycle**: The end-to-end management of ArosCoin, from issuance (mint via emission triggers) to distribution, locking, circulation, auditing, and burning. Ensures non-reversible, compliant flows. Example: Mint on ingress, burn on exit. Dependencies: 03_token_management_layer/token_management_overview.md. Notes: UX-optimized for urban scenarios (e.g., seamless city payments); patent-protected processes.
+
+- **Zero-Trust Boundaries**: Security principle assuming no inherent trust at interfaces (e.g., bridges, ingress points), enforcing quarantine, validation, and sandboxing for all data flows. Example: Quarantine fiat deposit until KYC score >80. Dependencies: 05_bridge_layer/bridge_threat_model.md. Notes: Complies with BAFIN zero-trust mandates; integrated with All-Seeing Eye for monitoring.
+
+## Additional Notes
+- **Evolution**: This glossary is versioned and updated via PRs, with governance approval for new terms (06_governance_layer/proposal_submission_protocol.md).
+- **Cross-References**: Each term links to primary docs for deeper context.
+- **Style**: Definitions are concise yet detailed, with examples for UX clarity and economic notes for revenue modeling.
+
+For additions or clarifications, submit a PR referencing this file. Contact info@arosstudio.com for IP-related queries.
+

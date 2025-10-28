@@ -1,16 +1,10 @@
-# validator_registration.md (1)
-
----
-
-```markdown
-# 📄 validator_registration.md
+# validator_registration.md
 
 ## Module: Validator Registration
-**Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
-
+- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 ---
 
 ## Overview

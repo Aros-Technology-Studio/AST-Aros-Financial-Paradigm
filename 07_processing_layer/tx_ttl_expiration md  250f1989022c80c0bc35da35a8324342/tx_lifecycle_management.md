@@ -76,8 +76,6 @@ All rollback events are recorded and timestamped for full traceability.
 
 ### 3.2. Rollback Flow
 
-```
-
 ```mermaid
 flowchart TD
 F[TX Failure Detected] --> R1[Lock State Delta]

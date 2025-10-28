@@ -1,7 +1,4 @@
-# tx_validation_pipeline (1)
-
-```markdown
-# 📄 Transaction Validation Pipeline
+# tx_validation_pipeline.md
 
 ## Overview
 

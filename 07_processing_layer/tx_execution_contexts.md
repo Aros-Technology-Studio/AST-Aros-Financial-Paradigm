@@ -7,8 +7,6 @@ Execution contexts are isolated runtime containers that receive transactions aft
 
 TXECs are the final step in the **Processing Layer** pipeline:
 
-```
-
 ```mermaid
 flowchart LR
     Q[Queue Intake] --> D[Dispatch Engine]

@@ -1,9 +1,4 @@
-# Validator_performance_score.md (1)
-
----
-
-```markdown
-# 📄 validator_performance_score.md
+# Validator_performance_score.md 
 
 ## Module: Validator Performance Score
 **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)

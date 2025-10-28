@@ -1,15 +1,10 @@
-# consensus_dispute_resolver.md (1)
-
----
-
-```markdown
-# 📄 consensus_dispute_resolver.md
+# consensus_dispute_resolver.md
 
 ## Module: Consensus Dispute Resolver
-**Layer**: NodeChain AI Agents – AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: NodeChain AI Agents – AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

@@ -26,21 +26,17 @@ This document outlines the formal registration procedure for becoming a validato
 ---
 
 ## Registration Workflow
-```
-
----
-
 ```mermaid
 sequenceDiagram
     participant V as Validator Node
     participant R as Registry Contract
     participant G as Governance Layer
 
-    V->>R: submitRegistrationRequest(pubKey, nodeMetadata)
+    V->>R: submitRegistrationRequest[pubKey, nodeMetadata]
     R-->>V: assignProvisionalID + awaitStake
-    V->>R: stake(amount ≥ min)
+    V->>R: stake[amount ≥ min]
     R->>G: notifyGovernanceForReview
-    G-->>R: approveOrReject()
+    G-->>R: approveOrReject[]
     R-->>V: registrationFinalized / rejected
 ```
 

@@ -1,7 +1,5 @@
-# dte_security_threat_models.md (1)
+# dte_security_threat_models.md 
 
-```markdown
-# **dte_security_threat_models.md**  
 **Module:** AST — Aros Studio Tokenomics  
 **Component:** Decentralized Transaction Encoding (DTE)  
 **Submodule:** Threat Model and Mitigations  

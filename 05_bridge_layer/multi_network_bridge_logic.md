@@ -1,9 +1,4 @@
-# multi_network_bridge_logic.md (1)
-
-### **📑 Содержание документа:**
-
-```markdown
-# Multi-Network Bridge Logic
+# multi_network_bridge_logic.md
 
 ## 1. Purpose
 

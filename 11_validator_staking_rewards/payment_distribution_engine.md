@@ -1,15 +1,10 @@
-# reward_distribution_engine.md (1)
-
----
-
-```markdown
-# 📄 reward_distribution_engine.md
+# reward_distribution_engine.md
 
 ## Module: Reward Distribution Engine
-**Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

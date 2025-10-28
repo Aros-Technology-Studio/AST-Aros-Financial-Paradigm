@@ -1,10 +1,3 @@
-# tx_queue_handler.md (1)
-
-# Purpose and Context
-
----
-
-```markdown
 # tx_queue_handler.md
 
 ## 1. Purpose and Context

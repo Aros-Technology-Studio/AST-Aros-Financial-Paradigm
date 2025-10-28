@@ -1,15 +1,10 @@
-# tx_hash_map_index.md (1)
-
----
-
-```markdown
-# 📄 tx_hash_map_index.md
+# tx_hash_map_index.md
 
 ## Module: Transaction Hash Map Index
-**Layer**: Processing Layer — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Processing Layer — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

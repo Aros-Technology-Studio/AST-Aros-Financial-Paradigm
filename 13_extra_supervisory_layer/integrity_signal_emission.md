@@ -1,9 +1,4 @@
-# integrity_signal_emission.md (1)
-
-### 📑 Содержимое документа:
-
-```markdown
-# Integrity Signal Emission
+# integrity_signal_emission.md
 
 ## 1. Purpose
 

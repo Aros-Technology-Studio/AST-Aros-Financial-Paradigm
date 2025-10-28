@@ -11,28 +11,30 @@ The burn logic is embedded directly in the transaction processing layer of AST. 
 ⸻
 
 ## III. Burn Logic Overview
-1.Transaction-Based Burning
-•A fixed percentage of each transaction fee is automatically burned.
-•Example:
 
+**1.Transaction-Based Burning**
+- A fixed percentage of each transaction fee is automatically burned.
+- Example:
 fee = 2.00 ARO  
 burn_rate = 15%  
 → 0.30 ARO burned, 1.70 ARO distributed to validators
 
 
-2.NodeChain Incentive Alignment
-•Nodes benefit from reduced emission in high-burn epochs.
-•A feedback loop is established:
-•More burn → Less total supply → Potentially higher value per ARO → Higher validator incentive per unit
-3.Overflow Burn (Emergency Throttle)
-•If total circulation exceeds predefined threshold, additional burn rate is applied per epoch.
-•Triggered by:
-•total_supply > target_ceiling
-•velocity_of_token < minimum_velocity_threshold
-4.Dead Wallet Strategy
-•Burned tokens are sent to a verifiable unspendable address.
-•Example: aro1dead0000000000000000000000000000000000000000000burn
-•This address is monitored by an independent audit service (burn_audit_agent).
+**2.NodeChain Incentive Alignment**
+- Nodes benefit from reduced emission in high-burn epochs.
+- A feedback loop is established:
+- More burn → Less total supply → Potentially higher value per ARO → Higher validator incentive per unit
+
+**3.Overflow Burn (Emergency Throttle)**
+- If total circulation exceeds predefined threshold, additional burn rate is applied per epoch.
+- Triggered by:
+- total_supply > target_ceiling
+- velocity_of_token < minimum_velocity_threshold
+
+**4.Dead Wallet Strategy**
+- Burned tokens are sent to a verifiable unspendable address.
+- Example: aro1dead0000000000000000000000000000000000000000000burn
+- This address is monitored by an independent audit service (burn_audit_agent).
 
 ⸻
 
@@ -51,6 +53,7 @@ burn_rate = 15%
 
 ## V. Execution Flow
 
+
 flowchart TD
     A[New Transaction] --> B[Calculate Fee]
     B --> C[Apply Burn Rate]
@@ -59,7 +62,6 @@ flowchart TD
     A --> F[Trigger Overflow Check]
     F -->|Yes| G[Apply Extra Burn Rate]
     F -->|No| H[Continue Standard Flow]
-
 
 ⸻
 

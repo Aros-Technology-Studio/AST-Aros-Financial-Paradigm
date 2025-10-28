@@ -1,13 +1,4 @@
-# multi_chain_bridge_registry.md (1)
-
-## 📄 `multi_chain_bridge_registry.md`
-
-📂 Путь: `ast/processing_layer/crypto_ingestion_pipeline/multi_chain_bridge_registry.md`
-
----
-
-```markdown
-# Multi-Chain Bridge Registry
+# multi_chain_bridge_registry.md 
 
 ## 1. Purpose
 

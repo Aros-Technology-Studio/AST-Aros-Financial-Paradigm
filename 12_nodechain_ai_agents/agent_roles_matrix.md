@@ -1,9 +1,4 @@
-# agent_roles_matrix.md (1)
-
----
-
-```markdown
-# 📄 agent_roles_matrix.md
+# agent_roles_matrix.md
 
 ## Module: Agent Roles Matrix
 **Layer**: NodeChain AI Agents – AST (Aros Studio Tokenomics)

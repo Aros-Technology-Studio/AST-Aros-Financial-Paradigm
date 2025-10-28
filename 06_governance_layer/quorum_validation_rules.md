@@ -1,9 +1,4 @@
-# quorum_validation_rules.md (1)
-
-### 📑 Содержание документа:
-
-```markdown
-# Quorum Validation Rules
+# quorum_validation_rules.md
 
 ## 1. Purpose
 

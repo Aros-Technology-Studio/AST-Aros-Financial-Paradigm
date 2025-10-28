@@ -1,11 +1,4 @@
-# external_protocol_adapter.md (1)
-
----
-
-### **📑 Содержание документа:**
-
-```markdown
-# External Protocol Adapter
+# external_protocol_adapter.md
 
 ## 1. Purpose
 
@@ -35,9 +28,7 @@ The adapter ensures:
 - **KYC/AML inheritance** (compliance data attached to cross-network operations)
 
 ---
-```
 
-```solidity
 **## 4. Adapter Contract Interface**
 
 ```solidity

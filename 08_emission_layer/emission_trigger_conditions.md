@@ -71,6 +71,7 @@ Certain transactions are **automatically disqualified** from triggering emission
 
 ```mermaid
 flowchart TD
+
     A[Validated TX] --> B[PoT Confirmed?]
     B -- No --> X[Reject Trigger]
     B -- Yes --> C[Quota Available?]
@@ -84,6 +85,8 @@ flowchart TD
     F -- Yes --> G[NodeChain Anchored?]
     G -- Yes --> H[Emit Flag = TRUE]
 ```
+---
+
 
 ## Output Example
 

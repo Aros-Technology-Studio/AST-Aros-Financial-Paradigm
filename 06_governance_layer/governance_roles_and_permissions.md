@@ -1,9 +1,4 @@
-# governance_roles_and_permissions.md (1)
-
-### 📑 Содержание документа:
-
-```markdown
-# Governance Roles and Permissions
+# governance_roles_and_permissions.md
 
 ## 1. Purpose
 

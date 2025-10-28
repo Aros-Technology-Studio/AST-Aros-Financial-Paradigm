@@ -1,15 +1,10 @@
-# stake_freeze_unlock_rules.md (1)
-
----
-
-```markdown
-# 📄 stake_freeze_unlock_rules.md
+# stake_freeze_unlock_rules.md 
 
 ## Module: Stake Freeze & Unlock Rules
-**Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

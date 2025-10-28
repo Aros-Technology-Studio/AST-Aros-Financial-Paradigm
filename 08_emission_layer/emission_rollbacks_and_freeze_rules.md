@@ -1,15 +1,10 @@
-# emission_rollbacks_and_freeze_rules.md (1)
-
----
-
-```markdown
-# 📄 emission_rollbacks_and_freeze_rules.md
+# emission_rollbacks_and_freeze_rules.md
 
 ## Module: Emission Rollbacks & Freeze Rules
-**Layer**: Emission Layer — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

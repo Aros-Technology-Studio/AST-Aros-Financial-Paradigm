@@ -1,15 +1,10 @@
-# tx_failure_modes.md (1)
-
----
-
-```markdown
-# 📄 tx_failure_modes.md
+# tx_failure_modes.md
 
 ## Module: Transaction Failure Modes
-**Layer**: Processing Layer — AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Processing Layer — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

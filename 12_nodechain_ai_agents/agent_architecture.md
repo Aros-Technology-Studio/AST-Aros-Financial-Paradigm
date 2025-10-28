@@ -1,15 +1,10 @@
-# agent_architecture.md (1)
-
----
-
-```markdown
-# 📄 agent_architecture.md
+# agent_architecture.md
 
 ## Module: NodeChain AI Agents – Architecture Overview
-**Layer**: NodeChain Core – AST (Aros Studio Tokenomics)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: NodeChain Core – AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
 
 ---
 

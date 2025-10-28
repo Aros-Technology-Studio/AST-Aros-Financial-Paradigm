@@ -1,15 +1,11 @@
-# emission_layer_overview.md (1)
-
----
-
-```markdown
-# 📄 emission_layer_overview.md
+# emission_layer_overview.md
 
 ## Module: Emission Layer Overview
-**Layer**: Aros Studio Tokenomics (AST)
-**Status**: Production-grade
-**Author**: Aros Studio Blockchain Division
-**Last Updated**: 2025-07-05
+- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+- **Status**: Production-grade
+- **Author**: Aros Studio Blockchain Division
+- **Last Updated**: 2025-07-05
+
 
 ---
 

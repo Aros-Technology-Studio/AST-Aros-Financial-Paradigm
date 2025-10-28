@@ -1,9 +1,4 @@
-# crypto_to_aroscoin_conversion.md (1)
-
----
-
-```markdown
-# Crypto to ArosCoin Conversion
+# crypto_to_aroscoin_conversion.md
 
 ## 1. Purpose
 

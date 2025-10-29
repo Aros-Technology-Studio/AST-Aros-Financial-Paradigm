@@ -28,7 +28,7 @@ Upgrades may be initiated for:
 ```mermaid
 flowchart TD
     A[Initiate Upgrade Proposal] --> B[All-Seeing Eye Validation]
-    B --> C{Multi-Sig Governance Approval [L2+]}
+    B --> C{Multi-Sig Governance Approval L2+}
     C -- Yes --> D[Contract Freezing & Backup]
     D --> E[Code Audit Passes]
     E --> F[New Version Deployment]

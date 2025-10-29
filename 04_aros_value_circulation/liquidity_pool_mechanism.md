@@ -1,12 +1,5 @@
 # liquidity_pool_mechanism.md
 
----
-
-### **📑 Содержание документа:**
-
-```markdown
-# Liquidity Pool Mechanism
-
 ## 1. Purpose
 
 The Liquidity Pool Mechanism defines how internal liquidity is provisioned, managed, and stabilized within the AST system. Unlike DeFi-style open pools, Aros Liquidity Pools are **non-public, permissioned**, and built for **systemic price integrity**, not speculative trading.
@@ -27,7 +20,6 @@ The AST ecosystem uses multiple specialized liquidity pools:
 Each pool is isolated at the contract level and cannot interact with external protocols.
 
 ---
-```
 
 3. Internal Swap Engine
 

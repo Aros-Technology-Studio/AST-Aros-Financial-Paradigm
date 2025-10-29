@@ -1,8 +1,3 @@
-# contract_upgrade_proxy.md (1)
-
----
-
-```markdown
 # contract_upgrade_proxy.md
 
 ## Purpose

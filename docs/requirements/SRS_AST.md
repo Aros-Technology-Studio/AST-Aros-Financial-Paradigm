@@ -1,5 +1,6 @@
 # AST – System Requirements Specification (SRS)
 Version: 0.1-draft | Owner: qetevanarotato-star
+<<<<<<< HEAD
 
 ## 1. Scope & Purpose
 - Define mandatory behavior of AST (Aros Tokenomics) independent of implementation.
@@ -121,3 +122,6 @@ FR-BR-01 → 05_bridge_layer/tokenization_bridge_architecture.md, api/bridge.spe
 
 ## 14. Change Control
 - Every SRS change via PR + ADR reference; versioned in CHANGELOG.md.
+=======
+[...вставь сюда весь каркас из сообщения выше...]
+>>>>>>> replace-real-content

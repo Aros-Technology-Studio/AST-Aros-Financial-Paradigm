@@ -1,10 +1,5 @@
 # aroscoin_internal_flow.md
 
-### **📑 Содержание документа:**
-
-```markdown
-# ArosCoin Internal Flow Logic
-
 ## 1. Purpose
 
 This document defines the deterministic internal movement of ArosCoin between core services, contract layers, and system actors. Unlike public tokens that circulate freely across external wallets and exchanges, ArosCoin moves **only within system-defined channels**, governed by smart contract constraints, validator logic, and flow permissions.

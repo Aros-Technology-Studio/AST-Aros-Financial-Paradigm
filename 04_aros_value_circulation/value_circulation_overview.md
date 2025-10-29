@@ -1,12 +1,5 @@
 # value_circulation_overview.md
 
----
-
-### **📑 Содержание документа:**
-
-```markdown
-# Aros Value Circulation — Overview
-
 ## 1. Purpose
 
 This document outlines the core logic of value circulation within the Aros Studio Tokenomics (AST) system. It defines how ArosCoin is distributed, retained, locked, re-injected, or burned throughout various components of the ecosystem, including Vaults, Pools, Reserve Modules, and Buyback Engines.

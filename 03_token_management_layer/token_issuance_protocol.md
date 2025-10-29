@@ -1,10 +1,5 @@
 # token_issuance_protocol.md
 
-### **token_issuance_protocol.md**
-
-```markdown
-# Token Issuance Protocol
-
 ## Purpose
 
 This document defines the rules, conditions, and algorithmic principles under which new ArosCoins are issued into circulation. The goal is to guarantee fairness, transparency, and utility-driven emission, aligned with AST’s decentralized architecture and transactional economy.

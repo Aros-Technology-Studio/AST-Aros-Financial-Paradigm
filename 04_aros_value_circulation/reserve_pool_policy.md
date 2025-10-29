@@ -1,12 +1,5 @@
 # reserve_pool_policy.md
 
----
-
-### **📑 Содержание документа:**
-
-```markdown
-# Reserve Pool Policy
-
 ## 1. Purpose
 
 The Reserve Pool is the strategic financial buffer of the AST system. Its primary purpose is to **stabilize internal value**, enforce long-term systemic discipline, and provide emergency liquidity support under extreme conditions. It operates as a **non-circulating asset sink** governed by deterministic triggers and AI-audited policies.
@@ -49,7 +42,6 @@ The Reserve Pool may only release ArosCoin under one or more of the following sc
 | 📈 Economic Expansion            | Controlled re-mint after validator surge or proposal saturation             |
 | 🗳️ Governance Fund Activation    | ArosCoin used for funding approved initiatives                              |
 | ⏳ Vesting Fulfillment           | Legacy obligations tied to time-based schedules                             |
-```
 
 ```solidity
 All releases are mediated via the `ReserveReleaseController`.

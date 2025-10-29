@@ -1,12 +1,5 @@
 # aroscoin_supply_model.md
 
----
-
-### **aroscoin_supply_model.md**
-
-```markdown
-# ArosCoin Supply Model
-
 ## 🎯 Purpose
 
 This document defines the monetary policy and total supply logic of ArosCoin, establishing the fixed rules for issuance, circulation, and long-term scarcity dynamics. It ensures economic predictability and trust in the token's behavior across all participants.

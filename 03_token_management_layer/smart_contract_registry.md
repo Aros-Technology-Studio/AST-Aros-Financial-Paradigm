@@ -1,8 +1,3 @@
-# smart_contract_registry.md (1)
-
----
-
-```markdown
 # smart_contract_registry.md
 
 ## Purpose

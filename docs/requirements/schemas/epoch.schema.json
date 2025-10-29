@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aros.ast/schemas/epoch.schema.json",
+  "title": "Epoch",
+  "type": "object",
+  "required": ["epochId", "startedAt", "endsAt", "maxSupply", "shards"],
+  "properties": {
+    "epochId": { "type": "integer", "minimum": 0 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "endsAt": { "type": "string", "format": "date-time" },
+    "maxSupply": { "type": "string", "pattern": "^[0-9]+$" },
+    "shards": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9-]{1,32}$" },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}

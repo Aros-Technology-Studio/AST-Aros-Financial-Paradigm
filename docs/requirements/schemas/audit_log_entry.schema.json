@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aros.ast/schemas/audit_log_entry.schema.json",
+  "title": "AuditLogEntry",
+  "type": "object",
+  "required": ["eventId", "ts", "actor", "action", "ref", "hash"],
+  "properties": {
+    "eventId": { "type": "string", "pattern": "^[A-Fa-f0-9]{32}$" },
+    "ts": { "type": "string", "format": "date-time" },
+    "actor": { "type": "string" },
+    "action": { "type": "string", "enum": ["EMIT", "BURN", "LOCK", "UNLOCK", "FREEZE", "TX_ACCEPT", "TX_REJECT", "ROLLBACK"] },
+    "ref": { "type": "string" },
+    "hash": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+    "details": { "type": "object", "additionalProperties": true }
+  },
+  "additionalProperties": false
+}

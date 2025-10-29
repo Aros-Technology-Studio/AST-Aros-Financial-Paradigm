@@ -1,8 +1,3 @@
-# token_audit_trail.md (1)
-
----
-
-```markdown
 # token_audit_trail.md
 
 ## Purpose

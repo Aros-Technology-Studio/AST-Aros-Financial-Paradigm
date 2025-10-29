@@ -1,10 +1,5 @@
 # aroscoin_entry_exit_rules.md
 
-### **📑 Содержание документа:**
-
-```
-# ArosCoin Entry & Exit Rules
-
 ## 1. Purpose
 
 This document defines the conditions and constraints under which ArosCoin may **enter or exit** the internal ecosystem of AST. Unlike conventional tokens, ArosCoin is **not globally transferrable or permissionless**. Its movement across system boundaries is strictly governed by protocol rules.

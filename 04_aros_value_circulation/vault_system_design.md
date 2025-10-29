@@ -1,10 +1,5 @@
 # vault_system_design.md
 
-### **📑 Содержание документа:**
-
-```markdown
-# Vault System Design
-
 ## 1. Purpose
 
 The Vault System is the structural foundation for retaining, delaying, or restricting the circulation of ArosCoin across the AST ecosystem. It is designed to enforce temporal, behavioral, and conditional boundaries on token flows, ensuring controlled distribution and anti-speculative discipline.

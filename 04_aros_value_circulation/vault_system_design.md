@@ -22,8 +22,6 @@ The AST ecosystem supports multiple vault types, each with distinct logic and lo
 
 ## 3. Vault Lifecycle
 
-```
-
 ```mermaid
 flowchart TD
     Minting --> VaultEntry

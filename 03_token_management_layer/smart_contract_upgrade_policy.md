@@ -1,19 +1,9 @@
-# smart_contract_upgrade_policy.md (1)
-
-### **📌**
+# smart_contract_upgrade_policy.md
 
 ### **Document Purpose**
 
 Define the upgrade procedures, constraints, and validation flow for all smart contracts deployed in the AST system, ensuring backwards compatibility, traceability, and protocol stability.
 
----
-
-### **🗂️**
-
-### **Document Structure**
-
-```
-# smart_contract_upgrade_policy.md
 
 ## 1. Overview
 This document outlines the internal upgrade policy for smart contracts operating within the AST ecosystem. It ensures protocol stability while allowing for iterative evolution and patching of logic without compromising the decentralized trust layer.

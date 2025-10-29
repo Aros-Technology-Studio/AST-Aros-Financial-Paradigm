@@ -1,8 +1,3 @@
-# token_lock_unlock_rules.md (1)
-
----
-
-```markdown
 # token_lock_unlock_rules.md
 
 ## Purpose

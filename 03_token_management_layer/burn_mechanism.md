@@ -1,7 +1,4 @@
-# burn_mechanism.md (1)
-
-```markdown
-### burn_mechanism.md
+# burn_mechanism.md
 
 ## I. Purpose
 

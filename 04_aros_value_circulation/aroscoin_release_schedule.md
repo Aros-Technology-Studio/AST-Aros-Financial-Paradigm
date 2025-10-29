@@ -1,10 +1,5 @@
 # aroscoin_release_schedule.md
 
-### **📑 Содержание документа:**
-
-```markdown
-# ArosCoin Release Schedule
-
 ## 1. Purpose
 
 This document defines the **temporal structure** for releasing ArosCoin from system-controlled sources (Vaults, Pools, Governance allocations) into circulation. It ensures that all token emissions follow **predictable**, **auditable**, and **non-speculative** logic.
@@ -40,8 +35,6 @@ ArosCoin supports multiple scheduling models per source:
 
 Each model is chosen at contract deployment and logged on-chain.
 
----
-```
 
 ```solidity
 **## 4. Sample Unlock Logic**

@@ -18,6 +18,7 @@ vMAJOR.MINOR.PATCH
 
 ---
 
+
 ## Contract Registry Version Enforcement
 
 Every deployed smart contract entry in the Smart Contract Registry must include a `version` field matching this format.

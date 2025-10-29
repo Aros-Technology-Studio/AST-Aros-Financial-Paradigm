@@ -1,10 +1,5 @@
 # aroscoin_velocity_control.md
 
-### **📑 Содержание документа:**
-
-```
-# ArosCoin Velocity Control
-
 ## 1. Purpose
 
 This document defines the mechanisms used to **control the speed (velocity)** at which ArosCoin circulates through the AST ecosystem. By regulating velocity, the system maintains **economic stability**, **prevents inflationary drift**, and **aligns token movement with actual utility**, not speculation.
@@ -53,8 +48,6 @@ When predefined thresholds are exceeded, countermeasures are triggered.
 
 All countermeasures are **temporary, adaptive, and logged**.
 
----
-```
 
 ```solidity
 **## 5. Smart Contract Hooks**

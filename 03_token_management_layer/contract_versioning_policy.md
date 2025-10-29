@@ -1,8 +1,3 @@
-# contract_versioning_policy.md (1)
-
----
-
-```markdown
 # contract_versioning_policy.md
 
 ## Purpose

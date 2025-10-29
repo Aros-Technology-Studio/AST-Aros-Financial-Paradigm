@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aros.ast/schemas/bridge_request.schema.json",
+  "title": "BridgeRequest",
+  "type": "object",
+  "required": ["reqId", "kind", "amount", "kycDecision", "signedByALB", "ts"],
+  "properties": {
+    "reqId": { "type": "string", "pattern": "^[A-Fa-f0-9]{32}$" },
+    "kind": { "type": "string", "enum": ["TOKENIZE", "REVERSE_TOKENIZE"] },
+    "amount": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,9})?$" },
+    "kycDecision": { "type": "string", "enum": ["APPROVED", "REJECTED", "REVIEW"] },
+    "riskScore": { "type": "number", "minimum": 0, "maximum": 100 },
+    "signedByALB": { "type": "string", "minLength": 64 },
+    "ts": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

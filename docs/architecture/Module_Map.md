@@ -1,0 +1,15 @@
+# Module Map (01–14)
+- 01 Coin Engine
+- 02 NodeChain Engine
+- 03 Token Management
+- 04 Aros Value Circulation
+- 05 Bridge Layer
+- 06 Governance
+- 07 Processing
+- 08 Emission
+- 09 Crypto Ingestion
+- 10 Proof of Transaction
+- 11 Staking & Rewards
+- 12 NodeChain AI Agents
+- 13 Supervisory Layer (All-Seeing Eye)
+- 14 Decentralized TX Encoding

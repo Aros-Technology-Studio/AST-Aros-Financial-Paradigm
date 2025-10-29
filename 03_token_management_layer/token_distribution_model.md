@@ -25,10 +25,10 @@ Upon issuance, tokens are distributed into the following pools:
 
 ```mermaid
 graph TD
-    Mint[New Tokens Minted] --> Nodes[Processing Nodes (60%)]
-    Mint --> Ecosystem[Ecosystem Reserve (25%)]
-    Mint --> Governance[Governance Pool (10%)]
-    Mint --> Emergency[Emergency Buffer (5%)]
+    Mint[New Tokens Minted] --> Nodes[Processing Nodes 60%]
+    Mint --> Ecosystem[Ecosystem Reserve 25%]
+    Mint --> Governance[Governance Pool 10%]
+    Mint --> Emergency[Emergency Buffer 5%]
 ```
 
 ---

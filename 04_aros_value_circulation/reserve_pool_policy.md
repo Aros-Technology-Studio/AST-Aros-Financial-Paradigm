@@ -43,6 +43,7 @@ The Reserve Pool may only release ArosCoin under one or more of the following sc
 | 🗳️ Governance Fund Activation    | ArosCoin used for funding approved initiatives                              |
 | ⏳ Vesting Fulfillment           | Legacy obligations tied to time-based schedules                             |
 
+
 ```solidity
 All releases are mediated via the `ReserveReleaseController`.
 

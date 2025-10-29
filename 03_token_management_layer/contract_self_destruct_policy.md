@@ -1,15 +1,10 @@
-# contract_self_destruct_policy.md (1)
-
----
+# contract_self_destruct_policy.md
 
 ### **Document Purpose**
 
 Define the conditions, governance logic, and constraints under which any smart contract deployed within AST (Aros Studio Tokenomics) can be programmatically or administratively self-destructed.
 
 ### **Document Structure**
-
-```markdown
-# contract_self_destruct_policy.md
 
 ## 1. Overview
 This document defines the internal policy for self-destruction of smart contracts within the AST architecture. The policy establishes safeguards, procedural hierarchy, and accountability to prevent unauthorized or accidental deletion of core logic.
@@ -31,7 +26,6 @@ This policy applies to all smart contracts deployed and maintained by AST, inclu
 - Must emit `ContractDestructionIntent` event with full payload and timestamp.
 
 ## 5. Governance Flow
-```
 
 ```mermaid
 

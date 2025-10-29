@@ -1,14 +1,5 @@
 # token_distribution_model.md
 
----
-
-### **📄**
-
-### **token_distribution_model.md**
-
-```
-# Token Distribution Model
-
 ## Purpose
 
 This document outlines the distribution logic of newly minted ArosCoins and the token flow between various internal pools and participants of the AST ecosystem. It ensures balanced incentivization, sustainable reserves, and transparent governance over allocation policies.

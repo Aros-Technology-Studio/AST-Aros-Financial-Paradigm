@@ -1,8 +1,3 @@
-# token_supply_governance.md (1)
-
----
-
-```
 # token_supply_governance.md
 
 ## Purpose

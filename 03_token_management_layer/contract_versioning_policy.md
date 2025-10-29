@@ -10,10 +10,8 @@ This document defines the versioning strategy and upgrade policy for all smart c
 
 AST smart contracts use **semantic versioning** format:
 ```
-
 vMAJOR.MINOR.PATCH
 
-```markdown
 - `MAJOR`: Incompatible logic changes (e.g., shift in tokenomics or governance logic)
 - `MINOR`: Backward-compatible improvements (e.g., added view functions or optimizations)
 - `PATCH`: Bug fixes or metadata updates, fully backward-compatible

@@ -45,8 +45,6 @@ Exit cannot occur spontaneously — all flows must go through **ExitGuard** cont
 
 ---
 
-```
-
 ## 5. Contractual Enforcement
 
 ```solidity

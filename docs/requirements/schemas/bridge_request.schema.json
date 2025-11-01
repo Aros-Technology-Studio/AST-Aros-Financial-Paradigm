@@ -1,17 +1,62 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://aros.ast/schemas/bridge_request.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aros.studio/schemas/bridge_request.schema.json",
   "title": "BridgeRequest",
+  "description": "Описывает запрос на токенизацию или обратную токенизацию через Мост (Bridge Layer).",
   "type": "object",
-  "required": ["reqId", "kind", "amount", "kycDecision", "signedByALB", "ts"],
   "properties": {
-    "reqId": { "type": "string", "pattern": "^[A-Fa-f0-9]{32}$" },
-    "kind": { "type": "string", "enum": ["TOKENIZE", "REVERSE_TOKENIZE"] },
-    "amount": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,9})?$" },
-    "kycDecision": { "type": "string", "enum": ["APPROVED", "REJECTED", "REVIEW"] },
-    "riskScore": { "type": "number", "minimum": 0, "maximum": 100 },
-    "signedByALB": { "type": "string", "minLength": 64 },
-    "ts": { "type": "string", "format": "date-time" }
+    "requestId": {
+      "description": "Уникальный ID запроса (32-значный hex).",
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{32}$"
+    },
+    "kind": {
+      "description": "Тип операции моста.",
+      "type": "string",
+      "enum": [
+        "TOKENIZE",
+        "REVERSE_TOKENIZE"
+      ]
+    },
+    "amount": {
+      "description": "Сумма операции, выраженная как строка с 9 знаками после запятой.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]{9}$"
+    },
+    "fiatAccountId": {
+      "description": "Идентификатор связанного фиатного счета (например, IBAN или ID счета).",
+      "type": "string"
+    },
+    "astAccountId": {
+      "description": "Адрес счета в системе AST.",
+      "type": "string",
+      "pattern": "^ast[A-Za-z0-9-]{40,60}$"
+    },
+    "kycDecision": {
+      "description": "Решение KYC/AML, полученное от внешнего провайдера.",
+      "type": "boolean"
+    },
+    "riskScore": {
+      "description": "Оценка риска, присвоенная запросу (например, AI-агентом).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "signedByALB": {
+      "description": "Криптографическая подпись (64-байтная hex) от Aros Logic Bridge (ALB), подтверждающая запрос.",
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{128}$"
+    }
   },
+  "required": [
+    "requestId",
+    "kind",
+    "amount",
+    "fiatAccountId",
+    "astAccountId",
+    "kycDecision",
+    "riskScore",
+    "signedByALB"
+  ],
   "additionalProperties": false
 }

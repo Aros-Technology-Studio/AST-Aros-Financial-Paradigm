@@ -1,20 +1,65 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://aros.ast/schemas/transaction.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aros.studio/schemas/transaction.schema.json",
   "title": "Transaction",
+  "description": "Описывает каноническую структуру транзакции в системе AST.",
   "type": "object",
-  "required": ["txId", "createdAt", "shardId", "from", "to", "amount", "ttl", "signature"],
   "properties": {
-    "txId": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
-    "createdAt": { "type": "string", "format": "date-time" },
-    "ttl": { "type": "integer", "minimum": 1 },
-    "shardId": { "type": "string", "pattern": "^[a-z0-9-]{1,32}$" },
-    "from": { "type": "string", "minLength": 1 },
-    "to": { "type": "string", "minLength": 1 },
-    "amount": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,9})?$" },
-    "meta": { "type": "object", "additionalProperties": true },
-    "potWeight": { "type": "number", "minimum": 0 },
-    "signature": { "type": "string", "minLength": 64 }
+    "txId": {
+      "description": "Хеш транзакции (SHA-256).",
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "timestamp": {
+      "description": "Время создания транзакции в формате ISO 8601 UTC.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "from": {
+      "description": "Адрес отправителя в формате AST.",
+      "type": "string",
+      "pattern": "^ast[A-Za-z0-9-]{40,60}$"
+    },
+    "to": {
+      "description": "Адрес получателя в формате AST.",
+      "type": "string",
+      "pattern": "^ast[A-Za-z0-9-]{40,60}$"
+    },
+    "amount": {
+      "description": "Сумма транзакции (строка, 9 знаков после запятой).",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]{9}$"
+    },
+    "ttl": {
+      "description": "Время жизни транзакции (Time-To-Live) в секундах.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "signature": {
+      "description": "Криптографическая подпись (64-байтная hex) от отправителя.",
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{128}$"
+    },
+    "potWeight": {
+      "description": "Вес транзакции для механизма Proof-of-Transaction (PoT).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "metadata": {
+      "description": "Дополнительные данные, связанные с транзакцией.",
+      "type": "object",
+      "additionalProperties": true
+    }
   },
+  "required": [
+    "txId",
+    "timestamp",
+    "from",
+    "to",
+    "amount",
+    "ttl",
+    "signature",
+    "potWeight"
+  ],
   "additionalProperties": false
 }

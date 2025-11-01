@@ -1,15 +1,46 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://aros.ast/schemas/risk_score.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aros.studio/schemas/risk_score.schema.json",
   "title": "RiskScore",
+  "description": "Представляет объект оценки риска, сгенерированный одним из модулей системы.",
   "type": "object",
-  "required": ["subject", "score", "source", "ts"],
   "properties": {
-    "subject": { "type": "string" },
-    "score": { "type": "number", "minimum": 0, "maximum": 100 },
-    "source": { "type": "string", "enum": ["ALB", "AST", "AI_AGENT"] },
-    "ts": { "type": "string", "format": "date-time" }
+    "scoreId": {
+      "description": "Уникальный ID оценки риска (32-значный hex).",
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{32}$"
+    },
+    "timestamp": {
+      "description": "Время генерации оценки в формате ISO 8601 UTC.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "subject": {
+      "description": "Сущность, для которой рассчитывается риск (например, 'txId', 'accountId' или 'nodeId').",
+      "type": "string"
+    },
+    "score": {
+      "description": "Числовая оценка риска (0 = нет риска, 100 = высокий риск).",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "source": {
+      "description": "Модуль, сгенерировавший эту оценку.",
+      "type": "string",
+      "enum": [
+        "ALB",
+        "AST",
+        "AI_AGENT"
+      ]
+    }
   },
+  "required": [
+    "scoreId",
+    "timestamp",
+    "subject",
+    "score",
+    "source"
+  ],
   "additionalProperties": false
 }
-

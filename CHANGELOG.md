@@ -49,3 +49,18 @@ This CHANGELOG tracks significant changes, updates, and releases for the AST rep
 - pyproject.toml, Makefile, and .env templates for dev environment.
 
 For detailed commit history, see the Git log. Contributors: Lisa, Kotov, with AI assistance from Grok.
+
+## **\[1.0.0\] \- 2025-11-02**
+
+### **Added**
+
+* **Core Architecture:** Defined the complete modular structure (Modules 01-14).  
+* **Documentation:** Created the docs/ directory with ADRs, API specs, and Guides.  
+* **Legal:** Added docs/legal section with Provisional Patent summaries.  
+* **ADRs:** Formalized key architectural decisions (ADR-001 to ADR-006).  
+* **API:** Defined OpenApi specs for Nodechain, Bridge, and AI Agents.
+
+### **Changed**
+
+* Refactored repository structure to align with the "Swiss Watch" modular philosophy.  
+* Updated README.md to reflect the new strategic vision.

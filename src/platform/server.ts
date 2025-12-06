@@ -1,4 +1,4 @@
-import http from 'node:http';
+import * as http from 'http';
 export function createServer() {
   return http.createServer((_, res) => {
     res.setHeader('content-type', 'application/json; charset=utf-8');

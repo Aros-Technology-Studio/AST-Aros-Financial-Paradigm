@@ -37,9 +37,11 @@ The system is composed of 14 independent, patent-pending modules:
 
 ## **Key Links**
 
-* [**Architecture Overview**](https://www.google.com/search?q=./docs/architecture/Architecture_Overview.md)  
-* [**API Specifications**](https://www.google.com/search?q=./docs/api/README.md)  
-* [**Legal & Patent Info**](https://www.google.com/search?q=./docs/legal/README.md)
+* [**Architecture Overview**](docs/architecture/Architecture_Overview.md)  
+* [**API Specifications**](docs/api/README.md)  
+* [**Legal & Patent Info**](docs/legal/README.md)
+* [**Tokenomics & Emission**](docs/tokenomics/README.md)
+* [**Transaction Processing**](docs/processing/README.md)
 
 ## **License**
 

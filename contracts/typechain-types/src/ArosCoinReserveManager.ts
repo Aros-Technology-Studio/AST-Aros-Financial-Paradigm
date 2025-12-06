@@ -43,6 +43,7 @@ export interface ArosCoinReserveManagerInterface extends Interface {
       | "transfer"
       | "transferFrom"
       | "transferOwnership"
+      | "verifyProofOfClaim"
   ): FunctionFragment;
 
   getEvent(
@@ -107,6 +108,10 @@ export interface ArosCoinReserveManagerInterface extends Interface {
     functionFragment: "transferOwnership",
     values: [AddressLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "verifyProofOfClaim",
+    values: [string, string, BigNumberish, BytesLike]
+  ): string;
 
   decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
@@ -141,6 +146,10 @@ export interface ArosCoinReserveManagerInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "verifyProofOfClaim",
     data: BytesLike
   ): Result;
 }
@@ -343,6 +352,17 @@ export interface ArosCoinReserveManager extends BaseContract {
     "nonpayable"
   >;
 
+  verifyProofOfClaim: TypedContractMethod<
+    [
+      txOrigin: string,
+      kycId: string,
+      timestamp: BigNumberish,
+      signature: BytesLike
+    ],
+    [boolean],
+    "view"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
@@ -426,6 +446,18 @@ export interface ArosCoinReserveManager extends BaseContract {
   getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "verifyProofOfClaim"
+  ): TypedContractMethod<
+    [
+      txOrigin: string,
+      kycId: string,
+      timestamp: BigNumberish,
+      signature: BytesLike
+    ],
+    [boolean],
+    "view"
+  >;
 
   getEvent(
     key: "Approval"

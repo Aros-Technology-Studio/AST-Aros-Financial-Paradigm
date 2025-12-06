@@ -16,8 +16,9 @@
     "generate:client": "npx @openapitools/openapi-generator-cli generate -i docs/api/openapi.yaml -g typescript-fetch -o client",
     "prepare": "npx husky install",
     "test": "jest",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "pretest": "python3 -m venv .venv || true"
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "jest --config ./tests/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

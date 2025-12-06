@@ -11,7 +11,7 @@ export class SupplySnapshotEntity {
     @Column('decimal')
     circulatingSupply: number;
 
-    @Column()
+    @Column('int')
     epochId: number;
 
     @CreateDateColumn()

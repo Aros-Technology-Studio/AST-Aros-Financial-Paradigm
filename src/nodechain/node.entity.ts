@@ -14,6 +14,9 @@ export class NodeEntity {
     @Column('float', { default: 1.0 })
     reputationScore: number;
 
+    @Column('float', { default: 0.0 })
+    tvs: number;
+
     @CreateDateColumn()
     joinedAt: Date;
 }

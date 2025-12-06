@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TokenManagementModule } from './modules/token-management/token-management.module';
-import { BridgeModule } from './modules/bridge/bridge.module';
-import { NodechainModule } from './modules/nodechain-integration/nodechain.module';
-
-
-// Placeholder for feature modules
-// import { TokenManagementModule } from './modules/token-management/token-management.module';
+import { NodeChainModule } from './nodechain/nodechain.module';
+import { BridgeModule } from './bridge/bridge.module';
+import { TokenModule } from './token/token.module';
+import { GovernanceModule } from './governance/governance.module';
+import { EmissionModule } from './emission/emission.module';
+import { ProcessingModule } from './processing/processing.module';
+import { AiAgentsModule } from './ai_agents/ai_agents.module';
 
 import { AppController } from './app.controller';
 
@@ -31,9 +31,13 @@ import { AppController } from './app.controller';
             }),
             inject: [ConfigService],
         }),
-        TokenManagementModule,
+        NodeChainModule,
         BridgeModule,
-        NodechainModule,
+        TokenModule,
+        GovernanceModule,
+        EmissionModule,
+        ProcessingModule,
+        AiAgentsModule,
     ],
     controllers: [AppController],
     providers: [],

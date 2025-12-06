@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class TokenEconomicsService {
+export class TokenService {
     /**
      * Calculates dynamic token price based on utilization and volatility.
      * P = alpha * log(Utilization) + beta * FX_vol + gamma

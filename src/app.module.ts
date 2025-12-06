@@ -8,6 +8,7 @@ import { GovernanceModule } from './governance/governance.module';
 import { EmissionModule } from './emission/emission.module';
 import { ProcessingModule } from './processing/processing.module';
 import { AiAgentsModule } from './ai_agents/ai_agents.module';
+import { NodeChainEngineModule } from './nodechain_engine/nodechain_engine.module';
 
 import { AppController } from './app.controller';
 
@@ -31,6 +32,7 @@ import { AppController } from './app.controller';
             }),
             inject: [ConfigService],
         }),
+        NodeChainEngineModule,
         NodeChainModule,
         BridgeModule,
         TokenModule,

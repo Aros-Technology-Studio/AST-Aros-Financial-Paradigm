@@ -1,16 +1,15 @@
 import { Module } from '@nestjs/common';
+import { TokenService } from './token.service';
+import { TokenController } from './token.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TokenTransactionEntity } from './token_transaction.entity';
+import { TokenEntity } from './token.entity';
 import { SupplySnapshotEntity } from './supply_snapshot.entity';
-import { EmissionEventEntity } from './emission_event.entity';
-
-import { TokenEconomicsService } from './token_economics.service';
+import { TokenomicsService } from './tokenomics.service';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([TokenTransactionEntity, SupplySnapshotEntity, EmissionEventEntity]),
-    ],
-    providers: [TokenEconomicsService],
-    exports: [TokenEconomicsService],
+    imports: [TypeOrmModule.forFeature([TokenEntity, SupplySnapshotEntity])],
+    controllers: [TokenController],
+    providers: [TokenService, TokenomicsService],
+    exports: [TokenService, TokenomicsService]
 })
 export class TokenModule { }

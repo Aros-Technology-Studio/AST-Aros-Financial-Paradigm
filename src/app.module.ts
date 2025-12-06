@@ -9,6 +9,8 @@ import { NodechainModule } from './modules/nodechain-integration/nodechain.modul
 // Placeholder for feature modules
 // import { TokenManagementModule } from './modules/token-management/token-management.module';
 
+import { AppController } from './app.controller';
+
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -33,7 +35,7 @@ import { NodechainModule } from './modules/nodechain-integration/nodechain.modul
         BridgeModule,
         NodechainModule,
     ],
-    controllers: [],
+    controllers: [AppController],
     providers: [],
 })
 export class AppModule { }

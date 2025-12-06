@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createServer } from '../../src/platform/server.ts';
+import { createServer } from '../../src/platform/server';
 import { type AddressInfo } from 'node:net';
 
 test('responds with ok payload', async () => {

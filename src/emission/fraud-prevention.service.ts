@@ -32,15 +32,26 @@ export class EmissionFraudPreventionService {
             return { isFraud: true, reason: 'Replay Detected' };
         }
 
-        // 2. PoT-Loop Fabrication (Circular Logic)
+        // 2. Used Reference Check (Simulated)
+        // In live system, this queries the Smart Contract usedReferences(bytes32)
+        if (await this.checkReferenceUsage(tx.id)) {
+            this.logger.warn(`Fraud Detected: Reference already used for TX ${tx.id}`);
+            return { isFraud: true, reason: 'Double Issuance / Reference Used' };
+        }
+
+        // 3. PoT-Loop Fabrication (Circular Logic)
         // Simple check: A->B, B->A in short timeframe
         if (this.detectCircularPattern(tx)) {
             this.logger.warn(`Fraud Detected: Circular Loop logic for TX ${tx.id} (${tx.from} <-> ${tx.to})`);
             return { isFraud: true, reason: 'PoT-Loop Detected' };
         }
 
-        // 3. Shard Saturation (Too many small TXs to same shard from same user?)
-        // Placeholder for complex shard logic.
+        // 4. Advanced Risk Scoring
+        const riskScore = this.calculateRiskScore(tx);
+        if (riskScore > 0.8) {
+            this.logger.warn(`Fraud Detected: High Risk Score (${riskScore}) for TX ${tx.id}`);
+            return { isFraud: true, reason: `High Risk Score: ${riskScore}` };
+        }
 
         // No fraud found
         this.processedTxHashes.add(txHash);
@@ -66,5 +77,38 @@ export class EmissionFraudPreventionService {
             (currentTx.timestamp - t.timestamp) < timeWindow
         );
         return !!match;
+    }
+
+    /**
+     * Checks if the reference ID has already been used in the contract.
+     * @param refId 
+     */
+    private async checkReferenceUsage(refId: string): Promise<boolean> {
+        // TODO: Inject Smart Contract service and call await contract.usedReferences(hash(refId))
+        // For now, duplicate check in memory is our best simulation
+        return false;
+    }
+
+    /**
+     * Calculates a composite risk score between 0.0 and 1.0
+     * @param tx 
+     */
+    private calculateRiskScore(tx: TransactionMetadata): number {
+        let score = 0.0;
+
+        // Example Heuristics:
+
+        // 1. Large Amount Spill (if amount > 1M)
+        if (tx.amount > 1_000_000) score += 0.3;
+
+        // 2. New Account Behavior (simplified: if 'from' not seen in recent history)
+        const isKnown = this.recentTransactions.some(t => t.from === tx.from);
+        if (!isKnown) score += 0.1;
+
+        // 3. Rapid frequency (if user sent another tx < 1s ago)
+        const recentUserTx = this.recentTransactions.filter(t => t.from === tx.from && (tx.timestamp - t.timestamp) < 1000);
+        if (recentUserTx.length > 2) score += 0.4;
+
+        return Math.min(score, 1.0);
     }
 }

@@ -38,6 +38,9 @@ export class ValidatorBehaviorService {
         uptime: 0.15,
     };
 
+    // Simplified history storage for trend analysis
+    private readonly history = new Map<string, number[]>();
+
     /**
      * Evaluates a validator's performance for a given epoch.
      * @param vid Validator ID
@@ -47,6 +50,9 @@ export class ValidatorBehaviorService {
     evaluateValidator(vid: string, epoch: number, metrics: ValidatorMetrics): ValidatorScore {
         const compositeScore = this.calculateCompositeScore(metrics);
         const status = this.determineStatus(compositeScore);
+
+        // Trend Analysis
+        this.assessRiskTrend(vid, compositeScore);
 
         const scoreData: ValidatorScore = {
             vid,
@@ -61,6 +67,23 @@ export class ValidatorBehaviorService {
         }
 
         return scoreData;
+    }
+
+    private assessRiskTrend(vid: string, currentScore: number) {
+        if (!this.history.has(vid)) {
+            this.history.set(vid, []);
+        }
+        const scores = this.history.get(vid);
+        scores.push(currentScore);
+        if (scores.length > 5) scores.shift(); // Keep last 5 epochs
+
+        // Check for rapid drop (e.g., > 15% drop in last 3 epochs)
+        if (scores.length >= 2) {
+            const previous = scores[scores.length - 2];
+            if (previous - currentScore > 0.15) {
+                this.logger.warn(`Behavior Alert: Validator ${vid} score dropped rapidly (${previous.toFixed(2)} -> ${currentScore.toFixed(2)})`);
+            }
+        }
     }
 
     private calculateCompositeScore(metrics: ValidatorMetrics): number {

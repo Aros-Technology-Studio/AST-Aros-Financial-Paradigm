@@ -109,44 +109,49 @@ export function validateRequest(tx: Transaction): boolean {
     return true;
 }
 
-export interface RollbackResult {
-    success: boolean;
+export interface RollbackPlan {
     batchId: string;
-    timestamp: number;
+    reason: string;
     action: 'RETRY' | 'ABORT' | 'QUARANTINE';
+    impactedAccounts?: string[];
+    timestamp: number;
 }
 
 /**
- * Simulates the initiation of a rollback mechanism for a failed batch.
- * Logs the action as per Processing_Spec.md failure handling.
+ * Initiates a structured rollback mechanism for a failed batch.
+ * Returns a detailed plan for the NodeChain to execute.
  * 
  * @param batchId The ID of the batch to rollback
- * @param reason The reason for rollback
- * @returns RollbackResult indicating next steps
+ * @param reason The reason for failure
+ * @param impactedAccounts Optional list of accounts involved in the failure
+ * @returns RollbackPlan object
  */
-export function initiateRollback(batchId: string, reason: string = 'Consensus Failure'): RollbackResult {
+export function initiateRollback(batchId: string, reason: string = 'Consensus Failure', impactedAccounts: string[] = []): RollbackPlan {
+    // 1. Log the initiation
     console.warn(`[WARN] INITIATING ROLLBACK for BATCH: ${batchId}`);
     console.warn(`[WARN] Reason: ${reason}`);
 
-    // Logic to release locks, revert balance changes would go here.
-    // Ideally, this emits an event to the EventBus that the NodeChain listens to.
-
-    // Analyze reason to determine action
-    let action: RollbackResult['action'] = 'RETRY';
-    if (reason.includes('Fraud') || reason.includes('Signature')) {
+    // 2. Determine Action based on reason
+    let action: RollbackPlan['action'] = 'RETRY';
+    if (reason.toLowerCase().includes('fraud') || reason.toLowerCase().includes('signature')) {
         action = 'QUARANTINE';
-    } else if (reason.includes('Timeout')) {
+    } else if (reason.toLowerCase().includes('timeout')) {
         action = 'RETRY';
     } else {
         action = 'ABORT';
     }
 
-    console.log(`[INFO] Rollback signal sent for ${batchId}. Action: ${action}`);
-
-    return {
-        success: true,
+    // 3. Construct Plan
+    const plan: RollbackPlan = {
         batchId,
-        timestamp: Date.now(),
-        action
+        reason,
+        action,
+        impactedAccounts,
+        timestamp: Date.now()
     };
+
+    // 4. (Simulation) Emit event or notify Audit Service
+    console.log(`[INFO] Generated Rollback Plan: ${JSON.stringify(plan)}`);
+
+    return plan;
 }

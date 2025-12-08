@@ -1,6 +1,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { hashData } from '../processing/processing.utils';
+import { SmartContractIntegration } from '../integration/smart_contract.integration';
 
 export interface TransactionMetadata {
     id: string;
@@ -14,6 +15,8 @@ export interface TransactionMetadata {
 @Injectable()
 export class EmissionFraudPreventionService {
     private readonly logger = new Logger(EmissionFraudPreventionService.name);
+
+    constructor(private readonly smartContractIntegration: SmartContractIntegration) { }
 
     // In-memory store for demo purposes. In production, use Redis/DB.
     private processedTxHashes = new Set<string>();
@@ -84,9 +87,7 @@ export class EmissionFraudPreventionService {
      * @param refId 
      */
     private async checkReferenceUsage(refId: string): Promise<boolean> {
-        // TODO: Inject Smart Contract service and call await contract.usedReferences(hash(refId))
-        // For now, duplicate check in memory is our best simulation
-        return false;
+        return this.smartContractIntegration.isReferenceUsed(refId);
     }
 
     /**
@@ -108,6 +109,16 @@ export class EmissionFraudPreventionService {
         // 3. Rapid frequency (if user sent another tx < 1s ago)
         const recentUserTx = this.recentTransactions.filter(t => t.from === tx.from && (tx.timestamp - t.timestamp) < 1000);
         if (recentUserTx.length > 2) score += 0.4;
+
+        // 4. Velocity Check (Volume bursts)
+        const oneMinAgo = tx.timestamp - 60000;
+        const recentVolume = this.recentTransactions
+            .filter(t => t.from === tx.from && t.timestamp > oneMinAgo)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        if (recentVolume > 5_000_000) {
+            score += 0.5; // High velocity risk
+        }
 
         return Math.min(score, 1.0);
     }

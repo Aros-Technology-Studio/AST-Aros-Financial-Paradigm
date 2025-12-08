@@ -1,20 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NodeMetricsService } from '../../src/nodechain/node_metrics.service';
-import { TokenEconomicsService } from '../../src/token/token_economics.service';
+import { TokenomicsService } from '../../src/token/tokenomics.service';
 import { ProofService } from '../../src/processing/proof.service';
 
 describe('Financial Logic Services', () => {
     let nodeMetrics: NodeMetricsService;
-    let tokenEconomics: TokenEconomicsService;
+    let tokenEconomics: TokenomicsService;
     let proofService: ProofService;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
-            providers: [NodeMetricsService, TokenEconomicsService, ProofService],
+            providers: [NodeMetricsService, TokenomicsService, ProofService],
         }).compile();
 
         nodeMetrics = module.get<NodeMetricsService>(NodeMetricsService);
-        tokenEconomics = module.get<TokenEconomicsService>(TokenEconomicsService);
+        tokenEconomics = module.get<TokenomicsService>(TokenomicsService);
         proofService = module.get<ProofService>(ProofService);
     });
 
@@ -50,15 +50,24 @@ describe('Financial Logic Services', () => {
     describe('TokenEconomicsService (Pricing & Emission)', () => {
         it('should calculate token price', () => {
             // P = alpha * log(U) + beta * FX + gamma
-            // 1.0 * log(2.718) + 1.0 * 0.1 + 0 = 1.0 + 0.1 = 1.1
-            const price = tokenEconomics.calculateTokenPrice(Math.E, 0.1);
-            expect(price).toBeCloseTo(1.1, 1);
+            // Config: alpha=1.0, beta=0.5, gamma=0.1
+            // 1.0 * log(2.718) + 0.5 * 0.1 + 0.1 = 1.0 + 0.05 + 0.1 = 1.15
+            const price = tokenEconomics.calculateTokenPrice({
+                utilizationIndex: Math.E,
+                fiatVolatility: 0.1
+            });
+            expect(price).toBeCloseTo(1.15, 2);
         });
 
         it('should calculate emission volume', () => {
-            // TE = 0.01 * 1000 + 0.05 * 0.5 + 0 = 10 + 0.025 = 10.025
-            const emission = tokenEconomics.calculateEmissionVolume(1000, 0.5);
-            expect(emission).toBeCloseTo(10.025, 3);
+            // TE = alpha * TV + beta * U + gamma
+            // Config: alpha=0.05, beta=0.02, gamma=100
+            // 0.05 * 1000 + 0.02 * 0.5 + 100 = 50 + 0.01 + 100 = 150.01
+            const emission = tokenEconomics.calculateEmissionVolume({
+                transactionVolume: 1000,
+                networkUtilization: 0.5
+            });
+            expect(emission).toBeCloseTo(150.01, 2);
         });
     });
 

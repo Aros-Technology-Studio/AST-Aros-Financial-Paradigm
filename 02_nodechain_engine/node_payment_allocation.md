@@ -1,16 +1,16 @@
-# Node Reward Allocation
+# Node Payment Allocation
 
 ## 🎯 Purpose of This Document
 
-This document defines the algorithm and principles for distributing processing rewards to nodes participating in AST's decentralized encryption and transaction validation system. The reward model is not based on mining or staking, but on actual contribution to live transaction processing.
+This document defines the algorithm and principles for distributing processing payments to nodes participating in AST's decentralized encryption and transaction validation system. The payment model is not based on mining or staking, but on actual contribution to live transaction processing.
 
 ---
 
 ## 💡 Conceptual Overview
 
-AST rewards nodes proportionally to their workload and successful fragment encryption, not based on uptime or coin holdings.
+AST payments nodes proportionally to their workload and successful fragment encryption, not based on uptime or coin holdings.
 
-**Key Factors in Reward Calculation:**
+**Key Factors in Payment Calculation:**
 - Number of transaction fragments encrypted
 - Node reputation and encryption accuracy
 - Participation fairness (to avoid monopolization)
@@ -18,16 +18,16 @@ AST rewards nodes proportionally to their workload and successful fragment encry
 
 ---
 
-## 📐 Reward Formula
+## 📐 Payment Formula
 
 Let:
 
-- `R` = total reward pool for a transaction
+- `R` = total payment pool for a transaction
 - `F` = number of fragments (total nodes used)
 - `Wi` = workload coefficient of node *i*
 - `ΣW` = total workload across all nodes
 
-Then the reward `Ri` for node *i*:
+Then the payment `Ri` for node *i*:
 
 ```math
 Ri = (Wi / ΣW) * R
@@ -45,7 +45,7 @@ Where:
 
 ## **📊 Example Allocation**
 
-| **Node ID** | **Workload (Wi)** | **% of Total** | **Reward (Ri)** |
+| **Node ID** | **Workload (Wi)** | **% of Total** | **Payment (Ri)** |
 | --- | --- | --- | --- |
 | node_431 | 1.5 | 30% | $0.30 |
 | node_882 | 1.0 | 20% | $0.20 |
@@ -64,14 +64,14 @@ Where:
 
 ## **🔒 Payment Mechanism**
 
-- Rewards are paid in **ArosCoin** (ARO)
+- Payments are paid in **ArosCoin** (ARO)
 - Distributed to node’s wallet address via internal settlement contract
-- Smart contract handles bulk reward batching to minimize gas fees
+- Smart contract handles bulk payment batching to minimize gas fees
 
 ```
 // Pseudocode only
 if (verifyNodeWork(nodeID, txID)) {
-    distributeReward(nodeWallet, rewardAmount);
+    distributePayment(nodeWallet, paymentAmount);
 }
 ```
 
@@ -81,8 +81,8 @@ if (verifyNodeWork(nodeID, txID)) {
 
 | **Condition** | **Adjustment** |
 | --- | --- |
-| Node used eco-mode processing | +5% reward bonus |
-| Node latency above 300ms | -10% reward deduction |
+| Node used eco-mode processing | +5% payment bonus |
+| Node latency above 300ms | -10% payment deduction |
 | Node contributed to system bug fix | +1% long-term bonus rate |
 
 ---
@@ -92,5 +92,5 @@ if (verifyNodeWork(nodeID, txID)) {
 ```
 ast/
 └── 03_security_layer/
-    └── node_reward_allocation.md
+    └── node_payment_allocation.md
 ```

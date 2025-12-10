@@ -1,7 +1,7 @@
 # Validator_performance_score.md 
 
 ## Module: Validator Performance Score
-- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
 - **Last Updated**: 2025-07-05
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This document outlines the design and mechanics of the performance scoring system for validators in the AST network. Validator scores directly impact reward multipliers, penalty thresholds, and future epoch eligibility.
+This document outlines the design and mechanics of the performance scoring system for validators in the AST network. Validator scores directly impact payment multipliers, penalty thresholds, and future epoch eligibility.
 
 The scoring engine evaluates objective performance metrics during each epoch and produces a final performance score ranging from 0.00 to 1.00 for every validator.
 
@@ -49,13 +49,13 @@ All inputs are normalized on a 0.00–1.00 scale.
 
 ## Score Tiers and Outcomes
 
-| Score Range | Label | Reward Multiplier | Slashing Risk |
+| Score Range | Label | Payment Multiplier | Slashing Risk |
 | --- | --- | --- | --- |
 | 0.90–1.00 | ✅ Excellent | 1.10× | Very low |
 | 0.75–0.89 | 👍 Good | 1.00× | Low |
 | 0.50–0.74 | ⚠️ Fair | 0.80× | Medium |
 | 0.30–0.49 | 🚫 Weak | 0.50× | High |
-| < 0.30 | ❌ Critical | 0× (No reward) | Immediate Slash |
+| < 0.30 | ❌ Critical | 0× (No payment) | Immediate Slash |
 
 ---
 
@@ -75,7 +75,7 @@ All inputs are normalized on a 0.00–1.00 scale.
     "fraudSignal": 0.0
   },
   "slashing_risk": "Low",
-  "reward_multiplier": 1.00
+  "payment_multiplier": 1.00
 }
 
 ```
@@ -102,7 +102,7 @@ All inputs are normalized on a 0.00–1.00 scale.
 
 ## Dependencies
 
-- `reward_distribution_engine.md`
+- `payment_distribution_engine.md`
 - `validator_epoch_commitments.md`
 - `slashing_and_penalty_rules.md`
 

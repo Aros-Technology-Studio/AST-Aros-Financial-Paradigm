@@ -1,7 +1,7 @@
 # validator_epoch_commitments.md
 
 ## Module: Validator Epoch Commitments
-- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
 - **Last Updated**: 2025-07-05
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This document defines the rules and lifecycle for epoch-level validator commitments. Validators in the AST network must commit their stake and performance to fixed-duration validation epochs. Each epoch operates as a checkpoint for eligibility, performance assessment, and reward allocation.
+This document defines the rules and lifecycle for epoch-level validator commitments. Validators in the AST network must commit their stake and performance to fixed-duration validation epochs. Each epoch operates as a checkpoint for eligibility, performance assessment, and payment allocation.
 
 Epoch commitments are strictly binding once confirmed and are managed through the Epoch Scheduler component of AST.
 
@@ -38,7 +38,7 @@ flowchart TD
     D --> E[Validation Activity Window]
     E --> F[Epoch Nearing End]
     F --> G{Performance OK?}
-    G -- Yes --> H[Eligible for Reward]
+    G -- Yes --> H[Eligible for Payment]
     G -- No --> I[Trigger Slashing]
     H --> J[Epoch Ends]
     I --> J
@@ -56,7 +56,7 @@ flowchart TD
     D --> E[Validation Activity Window]
     E --> F[Epoch Nearing End]
     F --> G{Performance OK?}
-    G -- Yes --> H[Eligible for Reward]
+    G -- Yes --> H[Eligible for Payment]
     G -- No --> I[Trigger Slashing]
     H --> J[Epoch Ends]
     I --> J
@@ -95,7 +95,7 @@ During each epoch, validator behavior is evaluated continuously. Performance met
 
 Failure to meet these standards results in:
 
-- Reward reduction
+- Payment reduction
 - Potential freeze or slashing
 - Eligibility suspension for upcoming epochs
 
@@ -126,14 +126,14 @@ Failure to meet these standards results in:
 - `staking_overview.md`
 - `validator_registration.md`
 - `stake_freeze_unlock_rules.md`
-- `reward_distribution_engine.md`
+- `payment_distribution_engine.md`
 - `validator_performance_score.md`
 
 ---
 
 ## Next
 
-→ See [`reward_distribution_engine.md`](https://www.notion.so/validator_rewards/reward_distribution_engine.md) to understand how rewards are calculated and issued at the end of each epoch.
+→ See [`payment_distribution_engine.md`](https://www.notion.so/validator_payments/payment_distribution_engine.md) to understand how payments are calculated and issued at the end of each epoch.
 
 ```
 

@@ -1,7 +1,7 @@
-# reward_distribution_engine.md
+# payment_distribution_engine.md
 
-## Module: Reward Distribution Engine
-- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+## Module: Payment Distribution Engine
+- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
 - **Last Updated**: 2025-07-05
@@ -10,25 +10,25 @@
 
 ## Overview
 
-This module defines the mechanism for calculating and distributing rewards to validators participating in Proof of Transaction (PoT) within AST epochs. The reward engine ensures proportional, fair, and performance-sensitive allocation of emission units.
+This module defines the mechanism for calculating and distributing payments to validators participating in Proof of Transaction (PoT) within AST epochs. The payment engine ensures proportional, fair, and performance-sensitive allocation of emission units.
 
 ---
 
-## Reward Composition
+## Payment Composition
 
 | Component                | Description |
 |--------------------------|-------------|
-| `Base Epoch Reward`      | Fixed emission allocation for each epoch |
+| `Base Epoch Payment`      | Fixed emission allocation for each epoch |
 | `Stake Weight`           | Validator's stake relative to total active stake |
 | `Performance Modifier`   | Score from validator performance engine |
 | `Penalty Adjustments`    | Deducted for downtime, fraud, or missed attestations |
 
 ---
 
-## Reward Calculation Formula
+## Payment Calculation Formula
 
 ```text
-validator_reward = epoch_(payout|settlement)_pool
+validator_payment = epoch_(payout|settlement)_pool
                  × (validator_stake / total_stake)
                  × performance_score
                  - penalties
@@ -46,45 +46,45 @@ validator_reward = epoch_(payout|settlement)_pool
 sequenceDiagram
     participant E as EpochController
     participant V as Validator
-    participant R as RewardEngine
+    participant R as PaymentEngine
     participant W as WalletContract
 
-    E->>R: triggerRewardDistribution(epoch_id)
-    R->>R: calculateAllValidatorRewards()
-    R->>V: notifyRewardAmount
-    R->>W: commitRewardTransfer(address, amount)
-    W-->>V: transferReward()
+    E->>R: triggerPaymentDistribution(epoch_id)
+    R->>R: calculateAllValidatorPayments()
+    R->>V: notifyPaymentAmount
+    R->>W: commitPaymentTransfer(address, amount)
+    W-->>V: transferPayment()
 
 ```
 
 ---
 
-## Reward Frequency
+## Payment Frequency
 
 | Event | Trigger |
 | --- | --- |
 | `Epoch End` | Every 7 days (default) |
-| `Manual Override` | Governance may issue early or delayed rewards |
+| `Manual Override` | Governance may issue early or delayed payments |
 | `Emergency Payout` | In case of chain fork recovery |
 
 ---
 
 ## Penalty Impact
 
-| Violation Type | Impact on Reward |
+| Violation Type | Impact on Payment |
 | --- | --- |
 | Missed Attestations | −15% per event |
 | Fraudulent Signature | −100%, trigger slashing |
 | Downtime > 5% | −30% penalty |
-| Metadata Manipulation | Blocked reward |
+| Metadata Manipulation | Blocked payment |
 
 ---
 
-## Reward Types
+## Payment Types
 
 | Type | Description |
 | --- | --- |
-| `AROS-Emission` | Standard validator rewards in AROS |
+| `AROS-Emission` | Standard validator payments in AROS |
 | `Reputation Points` | Non-transferable points for governance rank |
 | `Epoch Bonus` | Randomized incentive pools for top performers |
 
@@ -94,8 +94,8 @@ sequenceDiagram
 
 | Function | Description |
 | --- | --- |
-| `distributeRewards(epochId)` | Launch reward distribution for the given epoch |
-| `getRewardDetails(address)` | View reward breakdown for validator |
+| `distributePayments(epochId)` | Launch payment distribution for the given epoch |
+| `getPaymentDetails(address)` | View payment breakdown for validator |
 | `applyPenalty(address)` | Apply deduction based on audit log |
 | `setPerformanceScore(address, score)` | Register validator performance rating |
 
@@ -103,7 +103,7 @@ sequenceDiagram
 
 ## Data Anchoring
 
-Each reward event is linked to:
+Each payment event is linked to:
 
 - Epoch ID
 - Block Height
@@ -117,7 +117,7 @@ Sample Report:
 {
   "epoch": 3912,
   "vid": "V-00928",
-  "reward": 823.71,
+  "payment": 823.71,
   "penalties": 1,
   "final_score": 0.89,
   "tx_hash": "0x09AF...",
@@ -139,7 +139,7 @@ Sample Report:
 
 ## Next
 
-→ See [`validator_performance_score.md`](https://www.notion.so/aros-studio/validator_performance_score.md) to understand how scores are calculated and impact reward allocation.
+→ See [`validator_performance_score.md`](https://www.notion.so/aros-studio/validator_performance_score.md) to understand how scores are calculated and impact payment allocation.
 
 ```
 

@@ -1,7 +1,7 @@
 # stake_freeze_unlock_rules.md 
 
 ## Module: Stake Freeze & Unlock Rules
-- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
 - **Last Updated**: 2025-07-05
@@ -51,7 +51,7 @@ This module defines the lifecycle of validator stake once locked in the network.
 
 | Type         | Effect |
 |--------------|--------|
-| Soft Freeze  | Rewards suspended, stake remains locked |
+| Soft Freeze  | Payments suspended, stake remains locked |
 | Hard Freeze  | Stake frozen + validator removed from active list |
 | Investigative Freeze | Pending decision by governance vote |
 

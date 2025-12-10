@@ -1,7 +1,7 @@
 # slashing_and_penalty_rules.md 
 
 ## Module: Slashing and Penalty Rules
-- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
 - **Last Updated**: 2025-07-05
@@ -17,7 +17,7 @@ This module defines the mechanisms for detecting, enforcing, and recording penal
 
 | Type                   | Description |
 |------------------------|-------------|
-| `Soft Penalty`         | Temporary reward reduction or epoch suspension |
+| `Soft Penalty`         | Temporary payment reduction or epoch suspension |
 | `Hard Penalty`         | Permanent stake loss (partial or full) |
 | `Governance Slash`     | Triggered via governance override vote |
 | `Fraud Detection Slash`| Automated slashing based on NodeChain evidence |
@@ -29,7 +29,7 @@ This module defines the mechanisms for detecting, enforcing, and recording penal
 | Violation                       | Severity | Default Penalty |
 |----------------------------------|----------|------------------|
 | Missed ≥3 attestations / epoch   | Medium   | −25% stake |
-| Downtime > 20% of epoch runtime  | Medium   | −30% reward |
+| Downtime > 20% of epoch runtime  | Medium   | −30% payment |
 | Fraudulent signature             | Critical | −100% stake |
 | Tampering with metadata          | High     | −50% stake |
 | Repeated underperformance        | Medium   | −10% per epoch |
@@ -86,7 +86,7 @@ Where `penalty_ratio` ∈ [0.0, 1.0], as defined per violation.
 | `Multi-signature Override` | Manual slash requires ≥ 66% validator vote |
 | `Audit Snapshot Lock` | Slashing must reference immutable audit hash |
 | `Cooldown Enforcement` | Slashed node cannot re-register for N epochs |
-| `Penalty Disclosure` | All events publicly logged in reward engine |
+| `Penalty Disclosure` | All events publicly logged in payment engine |
 
 ---
 
@@ -131,7 +131,7 @@ Example:
 ## Dependencies
 
 - `validator_performance_score.md`
-- `reward_distribution_engine.md`
+- `payment_distribution_engine.md`
 - `staking_governance_interface.md`
 
 ---

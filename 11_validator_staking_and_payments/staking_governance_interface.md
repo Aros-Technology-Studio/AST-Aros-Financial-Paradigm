@@ -1,7 +1,7 @@
 # staking_governance_interface.md 
 
 ## Module: Staking Governance Interface
-- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
 - **Last Updated**: 2025-07-05
@@ -132,7 +132,7 @@ All overrides are logged with audit hash and timestamp.
 
 - `slashing_and_penalty_rules.md`
 - `validator_epoch_commitments.md`
-- `reward_distribution_engine.md`
+- `payment_distribution_engine.md`
 
 ---
 

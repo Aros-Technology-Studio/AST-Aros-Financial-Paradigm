@@ -1,7 +1,7 @@
 # staking_overview.md
 
 ## Module: Staking Overview
-- **Layer**: Validator Staking & Reward System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
 - **Last Updated**: 2025-07-05
@@ -12,7 +12,7 @@
 
 This document provides a high-level overview of the staking mechanism in the AST network. It defines the goals, structure, actors, and lifecycle of validator staking within the Proof of Transaction (PoT)-driven architecture.
 
-Staking in AST is not only an economic commitment but a governance and security requirement. All validator rights and rewards are conditional on active stake lock-in and performance adherence.
+Staking in AST is not only an economic commitment but a governance and security requirement. All validator rights and payments are conditional on active stake lock-in and performance adherence.
 
 ---
 
@@ -21,7 +21,7 @@ Staking in AST is not only an economic commitment but a governance and security 
 - **Stake-to-Validate**: Only nodes with an active stake are eligible to validate transactions and participate in PoT attestation.
 - **Epoch-Based Lifecycle**: Stake commitment is tied to epoch duration; early withdrawal is not permitted.
 - **Slashing Enforcement**: Misbehavior or inactivity results in stake reduction or full penalty.
-- **Reward Binding**: Emission rewards are distributed proportionally to stake-weighted and performance-based validators.
+- **Payment Binding**: Emission payments are distributed proportionally to stake-weighted and performance-based validators.
 
 ---
 
@@ -31,7 +31,7 @@ Staking in AST is not only an economic commitment but a governance and security 
 |-------------------|-------------|
 | `Validator`        | Node that locks stake and validates transactions |
 | `Delegator`        | (Optional) Entity that delegates stake to validator node |
-| `Governance`       | Oversees staking contracts, slashing, and reward policies |
+| `Governance`       | Oversees staking contracts, slashing, and payment policies |
 | `Epoch Controller` | Coordinates epoch lifecycle and validator scheduling |
 
 ---
@@ -58,9 +58,9 @@ flowchart TD
     C --> D[Assigned to Next Epoch]
     D --> E[Active Validation & Monitoring]
     E --> F[Epoch Ends]
-    F --> G{Penalty or Reward?}
+    F --> G{Penalty or Payment?}
     G -- Penalty --> H[Slash Stake]
-    G -- Reward --> I[Distribute Reward]
+    G -- Payment --> I[Distribute Payment]
     H --> J[Stake Frozen or Reduced]
     I --> J
     J --> K[Recommit or Unstake]
@@ -78,7 +78,7 @@ Stake is not static: validator performance is continuously monitored via:
 - Fraud flag rate
 - Participation ratio
 
-Performance score directly impacts both reward multiplier and slashing sensitivity.
+Performance score directly impacts both payment multiplier and slashing sensitivity.
 
 ---
 
@@ -89,7 +89,7 @@ Performance score directly impacts both reward multiplier and slashing sensitivi
 | `stake(address, amount)` | Lock tokens for validator |
 | `unstake()` | Request withdrawal after epoch ends |
 | `penalize(address)` | Slash specific validator |
-| `reward(address)` | Issue reward after epoch |
+| `payment(address)` | Issue payment after epoch |
 | `getStake(address)` | Query current stake amount |
 
 ---
@@ -106,7 +106,7 @@ Performance score directly impacts both reward multiplier and slashing sensitivi
 
 - `validator_registration.md`
 - `stake_freeze_unlock_rules.md`
-- `reward_distribution_engine.md`
+- `payment_distribution_engine.md`
 - `validator_performance_score.md`
 - `staking_governance_interface.md`
 

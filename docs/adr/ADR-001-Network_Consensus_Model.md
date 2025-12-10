@@ -26,7 +26,7 @@ This model is defined by the following key characteristics (based on `network_co
 
 **Positive:**
 * **High Security:** The model is designed to tolerate up to **1/3 Byzantine faults** per shard. The identity-locked admission provides strong Sybil resistance.
-* **Efficiency:** Rewards are distributed based on *actual computational contribution* (processing) rather than just capital stake, aligning incentives with network work.
+* **Efficiency:** Payments are distributed based on *actual computational contribution* (processing) rather than just capital stake, aligning incentives with network work.
 * **Scalability:** The multi-shard architecture allows for parallel processing, and the asynchronous nature of the consensus supports this design.
 * **Auditability:** All votes are cryptographically signed and stored in the **Shard Signature Log**, providing a clear audit trail for regulators.
 

@@ -22,7 +22,7 @@ This document defines the consensus mechanism used within the Aros Blockchain (A
 
 ## 1. Consensus Overview
 
-The Aros consensus model is a **delegated, asynchronous proof-of-processing protocol** built to ensure transaction integrity across a **multi-shard node architecture**. Unlike PoW or PoS, it operates on **verified transaction processing units**, with rewards dynamically distributed based on actual computational contribution.
+The Aros consensus model is a **delegated, asynchronous proof-of-processing protocol** built to ensure transaction integrity across a **multi-shard node architecture**. Unlike PoW or PoS, it operates on **verified transaction processing units**, with payments dynamically distributed based on actual computational contribution.
 
 ---
 

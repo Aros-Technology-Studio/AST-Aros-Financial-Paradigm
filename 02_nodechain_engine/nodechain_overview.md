@@ -14,7 +14,7 @@ It introduces the logic behind how nodes participate, verify, and process encryp
 2. Define the **non-mining**, **fee-based incentive** mechanism for decentralized participation.
 3. Detail the **transaction sharding and partial encryption model** that guarantees privacy while enabling distributed processing.
 4. Set the stage for **auth-controlled node registration**, with flexible inclusion rules for future AI-based oracles.
-5. Prepare the reader for deeper layers: node registration, encryption logic, reward distribution, and consensus model.
+5. Prepare the reader for deeper layers: node registration, encryption logic, payment distribution, and consensus model.
 
 ---
 
@@ -23,7 +23,7 @@ It introduces the logic behind how nodes participate, verify, and process encryp
 - `node_registration_and_auth.md` — Rules for accepting and authenticating NodeChain participants.
 - `transaction_sharding_logic.md` — How transactional payloads are fragmented for distributed encryption.
 - `encryption_protocol.md` — The cryptographic protocol governing node-level operations.
-- `node_reward_allocation.md` — Economic layer: how processing fees are allocated among nodes.
+- `node_payment_allocation.md` — Economic layer: how processing fees are allocated among nodes.
 - `network_consensus_model.md` — How the NodeChain reaches distributed agreement.
 - `nodechain_fault_tolerance.md` — Handling failure, latency, and interruption in node participation.
 - `nodechain_security_model.md` — External and internal attack surfaces and their mitigation.
@@ -38,7 +38,7 @@ ast/
 ├── node_registration_and_auth.md
 ├── transaction_sharding_logic.md
 ├── encryption_protocol.md
-├── node_reward_allocation.md
+├── node_payment_allocation.md
 ├── network_consensus_model.md
 ├── nodechain_fault_tolerance.md
 └── nodechain_security_model.md

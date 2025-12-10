@@ -58,7 +58,7 @@ Based on one or more of the following:
 ### 🔹 5. Distribution Routing
 
 Token allocation performed using one of the following models:
-- Validator reward split (e.g., 60% to confirming node, 40% to treasury)
+- Validator payment split (e.g., 60% to confirming node, 40% to treasury)
 - NodeChain round-based rotation
 - Governance treasury replenishment
 - Shard-local redistribution

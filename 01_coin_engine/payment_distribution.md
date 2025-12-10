@@ -1,10 +1,10 @@
-# Reward Distribution Model for AST Node Infrastructure
+# Payment Distribution Model for AST Node Infrastructure
 
 ## Purpose
 
-This document outlines how rewards (generated from transaction fees and token-related operations) are distributed among actors participating in the decentralized infrastructure of AST.
+This document outlines how payments (generated from transaction fees and token-related operations) are distributed among actors participating in the decentralized infrastructure of AST.
 
-Rewards are distributed to:
+Payments are distributed to:
 - **Active processing nodes (Validators)**,
 - **Observation/standby nodes**,
 - **System reserves & sustainability pools**,
@@ -12,20 +12,20 @@ Rewards are distributed to:
 
 ---
 
-## 1. Reward Sources
+## 1. Payment Sources
 
 | Source                       | Description                                        |
 |------------------------------|----------------------------------------------------|
 | `txn_processing_fee`         | Fee attached to every transaction (in ARO)         |
 | `mint/burn fee`              | Operational fee from token creation/removal        |
 | `penalty reallocation`       | Tokens confiscated from misbehaving actors         |
-| `governance proposal bounty` | Rewards for accepted community proposals           |
+| `governance proposal bounty` | Payments for accepted community proposals           |
 
 ---
 
 ## 2. Distribution Breakdown (Default Policy)
 
-| Actor Type           | % of Total Reward Pool | Description                             |
+| Actor Type           | % of Total Payment Pool | Description                             |
 |----------------------|------------------------|-----------------------------------------|
 | Validators (Nodes)   | 60%                    | Equal or weighted by performance        |
 | Observation Nodes    | 15%                    | Standby nodes ready for rotation        |
@@ -39,14 +39,14 @@ All percentages are configurable via Governance Voting Module (GVM).
 
 ## 3. Validator-Level Distribution
 
-Each **active validator node** receives reward based on:
+Each **active validator node** receives payment based on:
 - Verified uptime,
 - Processing accuracy rate,
 - Stake weight (optional hybrid mode).
 
 ### Formula (example):
 
-reward_per_node = (txn_fees * 60%) * node_weight
+payment_per_node = (txn_fees * 60%) * node_weight
 
 Where `node_weight` is determined by:
 
@@ -68,7 +68,7 @@ node_weight = (uptime_score * trust_factor) / total_node_scores
 
 | Threat                     | Defense Mechanism                         |
 |----------------------------|-------------------------------------------|
-| Reward spamming            | Minimum work unit requirement             |
+| Payment spamming            | Minimum work unit requirement             |
 | Validator cartelization    | Max cap per validator (adjustable)        |
 | Fake observation nodes     | Continuous heartbeat + rotation mechanism |
 | Proposal self-funding loop | Hard quorum threshold + 3rd-party audit   |
@@ -79,7 +79,7 @@ node_weight = (uptime_score * trust_factor) / total_node_scores
 
 - **The All-Seeing Eye** tracks distribution anomalies.
 - Distribution ratios can be adjusted via periodic votes (GVM).
-- Emergency override allows reward freezing in attack cases.
+- Emergency override allows payment freezing in attack cases.
 
 ---
 

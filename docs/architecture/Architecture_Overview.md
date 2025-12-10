@@ -27,8 +27,8 @@ The AST Platform is a modular, layered system. Each numbered module represents a
 * **Module 09: Crypto Ingestion Pipeline**
     * A sub-component of the Bridge Layer (Module 05) designed to handle crypto-to-crypto (e.g., BTC/ETH to AST) conversions.
 * **Module 10: Proof-of-Transaction Engine**
-    * A novel mechanism for weighting transactions and rewarding network participation.
-* **Module 11: Validator Staking & Rewards**
+    * A novel mechanism for weighting transactions and paymenting network participation.
+* **Module 11: Validator Staking & Payments**
     * Manages the economic incentives for nodes, including performance scoring and slashing rules.
 * **Module 12: Nodechain AI Agents**
     * The *active* supervisory layer (ADR-002). A federation of AI agents that monitor, score risk, and dispatch fraud signals.
@@ -80,5 +80,5 @@ These are the three most important processes in the system.
     2.  This change triggers the **Emission Layer (Module 08)**.
     3.  The **Emission Layer** calculates the new token allocation for this epoch based on the `epoch_allocation_model.md`.
     4.  It calls the `mint()` function on the **Token Management (Module 03)** contract.
-    5.  The new tokens are minted to their target addresses (e.g., validator reward pools, governance treasury).
+    5.  The new tokens are minted to their target addresses (e.g., validator payment pools, governance treasury).
     6.  The **Token Management (Module 03)** writes this action to the `token_audit_trail.md` (ADR-006) for auditors.

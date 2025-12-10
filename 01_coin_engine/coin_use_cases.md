@@ -47,10 +47,10 @@ Certain high-tier services in the AROS Tokenomics platform will require users to
 ---
 
 ### 5. **Incentivization Engine**
-AROS Coin may be distributed as **rewards** in:
+AROS Coin may be distributed as **payments** in:
 - Bug bounty programs.
 - Stress-test campaigns for transaction infrastructure.
-- Educational training simulations (Testnet Rewards).
+- Educational training simulations (Testnet Payments).
 
 **Distribution Method**: Through controlled faucet contracts under supervision of The All-Seeing Eye.
 

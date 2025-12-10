@@ -29,7 +29,7 @@ A comprehensive dictionary of terms used in the Aros Studio (AST) ecosystem.
     * A trusted system component (part of the Bridge Layer) that interfaces with 3rd-party KYC providers to approve or deny transactions.
 
 * **Consensus (Proof-of-Processing)**
-    * The unique consensus mechanism of the AST Nodechain (ADR-001). Nodes are rewarded for verifiably *processing* transactions, not just staking capital.
+    * The unique consensus mechanism of the AST Nodechain (ADR-001). Nodes are paymented for verifiably *processing* transactions, not just staking capital.
 
 ### F
 

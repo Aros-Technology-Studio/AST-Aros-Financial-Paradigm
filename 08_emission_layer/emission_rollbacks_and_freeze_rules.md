@@ -56,7 +56,7 @@ Rollback and freeze logic is bound by strict governance protocol and cryptograph
    - All related audit logs are appended with rollback hash
 
 5. **Validator Penalty (if applicable)**
-   - Validator staking rewards revoked
+   - Validator staking payments revoked
    - Node flagged in trace system
 
 ---

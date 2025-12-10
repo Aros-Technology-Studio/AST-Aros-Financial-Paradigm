@@ -11,7 +11,7 @@ Core documentation for the AROS Coin Engine (ACE), the tokenomics module inside 
 The Coin Engine (ACE) is the deterministic subsystem that defines:
 	•	Emission logic for AROS (base unit: arx),
 	•	Mint/Burn rules bound to Proof-of-Transaction (PoT),
-	•	Reward distribution for validators and network actors,
+	•	Payment distribution for validators and network actors,
 	•	State transitions audited by NodeChain,
 	•	Architectural oversight via The All-Seeing Eye (meta-layer compliance control).
 
@@ -29,9 +29,9 @@ The Coin Engine (ACE) is the deterministic subsystem that defines:
 ├── README.md                    # This file
 ├── coin_engine_overview.md      # Narrative architecture & invariants
 ├── coin_emission_model.md       # Emission schedules & formulas (math spec)
-├── coin_use_cases.md            # Canonical flows: rewards, fees, subsidies
+├── coin_use_cases.md            # Canonical flows: payments, fees, subsidies
 ├── burn_and_mint_rules.md       # Allowed state transitions & guards
-├── reward_distribution.md       # Validator/actor reward logic
+├── payment_distribution.md       # Validator/actor payment logic
 ├── AROS_Coin_TokenSpec.json     # Machine-readable token spec
 ├── /specs                       # JSON schemas, OpenAPI fragments
 ├── /src                         # Reference implementation (TS/Rust)
@@ -66,7 +66,7 @@ pnpm lint && pnpm typecheck
 **4) Token Specification (Essentials)**
 	•	Symbol: AROS
 	•	Base unit: arx (1 AROS = 10^6 arx, fixed)
-	•	Supply type: Emission-bounded with PoT-weighted rewards
+	•	Supply type: Emission-bounded with PoT-weighted payments
 	•	Decimals: 6
 	•	Pause switches:
 	•	EMISSION_PAUSE (governance circuit-breaker)
@@ -89,7 +89,7 @@ Mathematical details are in coin_emission_model.md with reference vectors in /fi
 **6) Mint/Burn & Guards**
 
 Allowed transitions:
-	•	MINT[reward] — reward issuance per finalized PoT epoch.
+	•	MINT[payment] — payment issuance per finalized PoT epoch.
 	•	BURN[fees] — protocol fee sink.
 
 Each transition passes through guards:
@@ -101,12 +101,12 @@ See burn_and_mint_rules.md for exhaustive truth tables and failure codes.
 
 ⸻
 
-**7) Rewards & Distribution**
+**7) Payments & Distribution**
 	•	Epoch: fixed 600s (example; configurable via env POT_EPOCH_SECS).
 	•	Pool split: R_validator, R_operator, R_ecosystem with governance-locked ratios.
 	•	Weighting: validator shares proportional to PoT-contributed verified transactions, adjusted by reliability score and slashing events.
 
-Formulas and proofs in reward_distribution.md.
+Formulas and proofs in payment_distribution.md.
 
 ⸻
 
@@ -151,7 +151,7 @@ POST /v1/supply/transition
 
 {
   "transition_id": "tx_01HXR...",
-  "kind": "MINT_reward",
+  "kind": "MINT_payment",
   "amount_arx": "128900000",
   "evidence": {"nodechain_event": "evt_...", "proof": "0xabc..."}
 }

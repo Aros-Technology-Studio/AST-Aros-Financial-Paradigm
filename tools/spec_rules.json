@@ -1,5 +1,4 @@
 {
-  // Terminology controls: forbidden vs allowed terms
   "terminology": {
     "forbidden": [
       "reward",
@@ -18,7 +17,6 @@
       "расчёт"
     ]
   },
-  // Logical invariants for PoT / NodeChain
   "logic": {
     "must_have_markers": [
       "payment_rate",
@@ -96,7 +94,6 @@
       }
     ]
   },
-  // Documentation quality rules
   "docs_style": {
     "forbidden_markers": [
       "TODO",
@@ -109,7 +106,6 @@
     "require_h1": true,
     "check_mermaid": true
   },
-  // Scoring weights and hard-fail categories
   "scoring": {
     "overall_threshold": 75.0,
     "weights": {

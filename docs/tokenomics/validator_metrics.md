@@ -13,7 +13,7 @@ Where:
 *   **$S_j$**: Signature correctness (1 if valid, 0 if invalid).
 *   **$U$**: Uptime coefficient (0.0 to 1.0).
 
-**Purpose**: Used for calculating short-term performance rewards.
+**Purpose**: Used for calculating short-term performance payments.
 
 ## 2. Node Reputation Index (NRI)
 The `NRI` is an aggregated rating of a node, considering its historical performance.
@@ -27,10 +27,10 @@ Where:
 *   **$TVS_k$**: TVS score for period $k$.
 *   **$w_k$**: Decay weight for period $k$ (older periods have lower weight).
 
-**Purpose**: Used for selecting validators for consensus and distributing emission rewards.
+**Purpose**: Used for selecting validators for consensus and distributing emission payments.
 
-## 3. Token Distribution (Rewards)
-Rewards are distributed proportional to reputation.
+## 3. Token Distribution (Payments)
+Payments are distributed proportional to reputation.
 
 $$
 T_i = \sum_{j \in eligible} \frac{NRI_i}{NRI_j} E

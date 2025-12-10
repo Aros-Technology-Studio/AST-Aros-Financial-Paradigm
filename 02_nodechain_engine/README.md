@@ -8,7 +8,7 @@ The NodeChain Engine is the primary execution layer for decentralized transactio
 - **Transaction Sharding**: Fragments payloads for privacy-preserving distributed processing.
 - **Encryption Protocol**: Manages cryptographic security for node operations.
 - **Consensus Model**: Achieves distributed agreement without heavy mining.
-- **Reward Allocation**: Distributes processing fees to active nodes.
+- **Payment Allocation**: Distributes processing fees to active nodes.
 
 ## Key Specifications
 - [Node Registration Rules](node_registration_and_auth.md)

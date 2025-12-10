@@ -12,7 +12,7 @@ AST is an autonomous decentralized platform managing value exchange and tokeniza
 
 1. **NodeChain Execution Layer.** AST utilizes a distributed network of nodes (validators, attestators, observers) that process transactions and participate in consensus. Participating nodes register via a cryptographic onboarding API and authenticate via a challenge-signature. Upon successful registration, a node receives an auth-token and can request transaction batches for validation. All operations are performed deterministically, ensuring reproducibility and auditability.
 2. **PoT Engine.** Unlike Proof of Work/Stake, PoT evaluates a node's contribution based on activity, reputation, and transaction load. Validators are assigned roles according to weight calculated by TVS and NRI functions, and they confirm transactions; attestators verify signatures. The role assignment algorithm includes randomness to prevent cartels.
-3. **Dynamic Emission Model.** ArosCoin emission equals the sum of transaction processing fees; there is no pre-mining or gift tokens. The dynamic emission formula is described in the "Aros Coin Dynamic Emission Model" document — total issuance `T_E` is defined as `α·TV + β·U + γ` , where TV is transaction volume, U is network utilization, and α, β, γ are tuning parameters. A separate distribution function `R_i = (S_i / ΣS)·T_adj` divides emission among nodes proportional to their weight (S_i). This guarantees nodes are paid for work, not rewarded; burning a portion of emission prevents inflation.
+3. **Dynamic Emission Model.** ArosCoin emission equals the sum of transaction processing fees; there is no pre-mining or gift tokens. The dynamic emission formula is described in the "Aros Coin Dynamic Emission Model" document — total issuance `T_E` is defined as `α·TV + β·U + γ` , where TV is transaction volume, U is network utilization, and α, β, γ are tuning parameters. A separate distribution function `R_i = (S_i / ΣS)·T_adj` divides emission among nodes proportional to their weight (S_i). This guarantees nodes are paid for work, not paymented; burning a portion of emission prevents inflation.
 4. **Bridge Layer and Tokenization.** AST includes an official tokenization protocol allowing conversion of external assets (fiat or other cryptocurrencies) into ArosCoin. Upon deposit, the asset is placed in reserve, and the `ArosCoinReserveManager.sol` contract mints an equivalent amount of ArosCoin using a unique identifier to prevent double issuance. Reverse conversion burns tokens and returns the asset to the owner. An internal "usedReferences" ledger ensures legal transparency and prevents re-issuance.
 5. **AI Oversight and Governance.** Network integrity is monitored by a federation of AI agents (the so-called All-Seeing Eye). Agents detect anomalies (wash-trading, front-running, Sybil attacks) and maintain meta-audit logs. Critical events are escalated to a multi-sig committee where governance decisions on validator rotation, emission parameter adjustment, or rollback mechanism activation are made.
 6. **Legal Compatibility.** AST features a patented "Cross-Jurisdiction Legal Bridge" concept, allowing synchronization of operations between different legal regimes. Jurisdictional Trust Tokens (JTT) and a Dual Attestation Engine are used during conversion to ensure legal validation of transactions.
@@ -25,7 +25,7 @@ These components form a self-sustaining ecosystem without external dependencies 
 
 AST aims to provide a provably fair, energy-efficient, and compliance-oriented tokenization protocol for public and private ecosystems. The system is designed for:
 
-* **Minimizing Speculation.** ArosCoin is always backed by a real asset or performed work; emission is proportional to transaction fees. There is no pre-mining or reward programs — nodes are paid for processing transactions.
+* **Minimizing Speculation.** ArosCoin is always backed by a real asset or performed work; emission is proportional to transaction fees. There is no pre-mining or payment programs — nodes are paid for processing transactions.
 * **Flexibility and Modularity.** API-first architecture and modular isolation allow connecting various bridges, oracles, and compliance modules without changing the core. Contracts execute immutably and are versioned via API.
 * **Legal Compatibility.** The "Cross-Jurisdiction Legal Bridge" patent describes the Legal Event Encoder and AML/KYC requirement translation matrix, enabling AST to operate in various jurisdictions without violating local laws.
 * **Transparency and Governability.** All activity is recorded in audit logs; AI agents and governance control anomalies and escalate disputed cases.
@@ -34,7 +34,7 @@ AST aims to provide a provably fair, energy-efficient, and compliance-oriented t
 
 | Concept | Description |
 | :--- | :--- |
-| **Payment for Work, Not Reward** | Transaction fees go to pay nodes; no gift tokens or pre-mining. |
+| **Payment for Work, Not Payment** | Transaction fees go to pay nodes; no gift tokens or pre-mining. |
 | **Deterministic Consensus** | PoT calculates node weight and assigns roles; ledger recording ensures reproducibility and rollback capability. |
 | **Service Isolation** | Each module (NodeChain, PoT Engine, Bridge Layer, AI Layer) is isolated and interacts via defined APIs; this prevents cascading failures and simplifies updates. |
 | **Access Rights & Role Model** | The system uses RBAC: developers, operators, validators, auditors. Hardware wallets are mandatory for critical governance operations. |
@@ -114,7 +114,7 @@ AST ensures a deterministic and auditable ledger of all transactions. The audit 
 1. **Immutability.** Each entry contains DPH, aggregated validator signature, links to previous entries, and shard hashes. Any change leads to hash mismatch, making transaction rollback permissible only via governance protocol.
 2. **Rollback Mechanism.** In case of error detection (e.g., smart contract bug or fraud), the governance committee can initiate a rollback to the last agreed entry. The rollback algorithm replays the state, ignoring violating transactions, and re-issues tokens if needed. This process is controlled by AI agents and recorded in a separate ledger.
 3. **Multi-Validator Signature.** An aggregated signature (BLS/EdDSA) is used for recording, simplifying verification and reducing entry size.
-4. **PoT Integration.** The ledger stores node weights, penalties, and rewards used for the next epoch; this allows implementing end-to-end reputation.
+4. **PoT Integration.** The ledger stores node weights, penalties, and payments used for the next epoch; this allows implementing end-to-end reputation.
 
 ## VI. NodeChain Architecture
 

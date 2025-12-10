@@ -51,7 +51,7 @@ sequenceDiagram
 - Emitted tokens are **not immediately released** to the public. Instead, they are:
     1. Stored in a **smart reserve contract**.
     2. Distributed through controlled channels:
-        - **Node rewards**
+        - **Node payments**
         - **Ecosystem bounties**
         - **Infrastructure development fund**
 
@@ -60,14 +60,14 @@ sequenceDiagram
 ### **VI. Emission Formula (Simplified)**
 
 ```
-EMISSION_AMOUNT = Σ(transaction_load × scaling_index × node_reward_ratio)
+EMISSION_AMOUNT = Σ(transaction_load × scaling_index × node_payment_ratio)
 ```
 
 Where:
 
 - transaction_load: measured in encrypted data segments
 - scaling_index: dynamic coefficient based on demand curve
-- node_reward_ratio: predetermined % of tokens allocated for node payment
+- node_payment_ratio: predetermined % of tokens allocated for node payment
 
 ---
 

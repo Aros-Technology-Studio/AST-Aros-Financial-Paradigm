@@ -23,7 +23,7 @@ The AST Platform is the "Swiss Watch" engine designed to bridge this divide. Its
 
 ### Pillar 1: The High-Performance Engine (Addressing Technical Risk)
 The core of AST is the `Nodechain` (Module 02), a sharded, high-performance consensus network.
-* **Model:** It uses a novel **delegated, asynchronous proof-of-processing** consensus (see [ADR-001](./../adr/ADR-001-Network_Consensus_Model.md)). Nodes are rewarded for *verifiable processing*, not capital.
+* **Model:** It uses a novel **delegated, asynchronous proof-of-processing** consensus (see [ADR-001](./../adr/ADR-001-Network_Consensus_Model.md)). Nodes are paymented for *verifiable processing*, not capital.
 * **Scalability:** The network is horizontally scalable via **State and Transaction Sharding** (see [ADR-004](./../adr/ADR-004-Network-Sharding-Strategy.md)), allowing it to handle institutional-level volume.
 
 ### Pillar 2: The Regulatory-Native Gateway (Addressing Compliance Risk)

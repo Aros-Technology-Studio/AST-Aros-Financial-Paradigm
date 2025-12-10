@@ -25,7 +25,7 @@ These data models are the core "nouns" of the system.
     * `signedByALB` (string): The cryptographic signature from the Aros Logic Bridge (ALB), proving the off-chain partner has validated this request.
 
 ## 3. `epoch.schema.json`
-* **Purpose:** Defines the state of a single network epoch. Epochs are time-based cycles that control network-wide events, such as emission and validator rewards.
+* **Purpose:** Defines the state of a single network epoch. Epochs are time-based cycles that control network-wide events, such as emission and validator payments.
 * **Key Fields:**
     * `epochId` (integer): The sequential ID number of the epoch.
     * `startTime` / `duration` (string/integer): Defines the time-bound of the epoch.

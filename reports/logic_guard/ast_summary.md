@@ -5,11 +5,10 @@
 | AUD-ROLLBACK | 3 | 0 |
 | CRYPTO-LINK | 66 | 0 |
 | DOC-STYLE | 20 | 1 |
-| JSON-VALID | 1 | 0 |
 | KYC-LINK | 58 | 0 |
-| NON-SPEC | 4 | 0 |
+| NON-SPEC | 3 | 0 |
 | POT-LOGIC | 0 | 0 |
-| TERM-FORBID | 133 | 0 |
+| TERM-FORBID | 82 | 0 |
 | TIME-SYNC | 6 | 8 |
 | XREF | 0 | 0 |
 
@@ -39,7 +38,6 @@
 - TERM-FORBID: Forbidden term "Reward" found (tools/spec_rules.json)
 - TERM-FORBID: Forbidden term "woзнагражд" found (tools/spec_rules.json)
 - TERM-FORBID: Forbidden term "stake-to-validate" found (tools/spec_rules.json)
-- JSON-VALID: Invalid JSON: Expecting property name enclosed in double quotes: line 2 column 3 (char 4) (tools/spec_rules.json)
 - TERM-FORBID: Forbidden term "reward" found (10_proof_of_transaction_engine/pot_tx_incentive_distribution.md)
 - TERM-FORBID: Forbidden term "Reward" found (10_proof_of_transaction_engine/pot_tx_incentive_distribution.md)
 - TERM-FORBID: Forbidden term "reward" found (10_proof_of_transaction_engine/pot_engine_overview.md)
@@ -88,33 +86,6 @@
 - TERM-FORBID: Forbidden term "reward" found (03_token_management_layer/token_lock_unlock_rules.md)
 - TERM-FORBID: Forbidden term "rewards" found (03_token_management_layer/token_lock_unlock_rules.md)
 - TERM-FORBID: Forbidden term "Reward" found (03_token_management_layer/token_lock_unlock_rules.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/glossary.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/glossary.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/AST_Developer_Deep_Dive.md)
-- TERM-FORBID: Forbidden term "rewards" found (docs/AST_Developer_Deep_Dive.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/AST_Developer_Deep_Dive.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/architecture_team_roles.md)
-- TERM-FORBID: Forbidden term "rewards" found (docs/architecture_team_roles.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/architecture_team_roles.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/adr/ADR-001-Network_Consensus_Model.md)
-- TERM-FORBID: Forbidden term "rewards" found (docs/adr/ADR-001-Network_Consensus_Model.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/adr/ADR-001-Network_Consensus_Model.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/conceptual/AST_Whitepaper.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/conceptual/AST_Whitepaper.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/architecture/Module_Map.md)
-- TERM-FORBID: Forbidden term "rewards" found (docs/architecture/Module_Map.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/architecture/Module_Map.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/architecture/Architecture_Overview.md)
-- TERM-FORBID: Forbidden term "rewards" found (docs/architecture/Architecture_Overview.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/architecture/Architecture_Overview.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/data/Data_Model.md)
-- TERM-FORBID: Forbidden term "rewards" found (docs/data/Data_Model.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/data/Data_Model.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/tokenomics/validator_metrics.md)
-- TERM-FORBID: Forbidden term "rewards" found (docs/tokenomics/validator_metrics.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/tokenomics/validator_metrics.md)
-- TERM-FORBID: Forbidden term "reward" found (docs/tokenomics/README.md)
-- TERM-FORBID: Forbidden term "Reward" found (docs/tokenomics/README.md)
 - AUD-ROLLBACK: Contradiction: rollback and no rollback present (07_processing_layer/tx_ttl_expiration.md)
 - AUD-ROLLBACK: Contradiction: rollback and no rollback present (07_processing_layer/tx_execution_guardrails.md)
 - AUD-ROLLBACK: Contradiction: rollback and no rollback present (07_processing_layer/tx_ttl_expiration md  250f1989022c80c0bc35da35a8324342/tx_lifecycle_management.md)
@@ -127,27 +98,3 @@
 - TERM-FORBID: Forbidden term "Reward" found (12_nodechain_ai_agents/agent_architecture.md)
 - TERM-FORBID: Forbidden term "reward" found (12_nodechain_ai_agents/validator_behavior_monitor.md)
 - TERM-FORBID: Forbidden term "Reward" found (12_nodechain_ai_agents/validator_behavior_monitor.md)
-- TERM-FORBID: Forbidden term "reward" found (01_coin_engine/coin_use_cases.md)
-- TERM-FORBID: Forbidden term "rewards" found (01_coin_engine/coin_use_cases.md)
-- TERM-FORBID: Forbidden term "Reward" found (01_coin_engine/coin_use_cases.md)
-- TERM-FORBID: Forbidden term "reward" found (01_coin_engine/aro_emission_protocol.md)
-- TERM-FORBID: Forbidden term "rewards" found (01_coin_engine/aro_emission_protocol.md)
-- TERM-FORBID: Forbidden term "Reward" found (01_coin_engine/aro_emission_protocol.md)
-- TERM-FORBID: Forbidden term "reward" found (01_coin_engine/README.md)
-- TERM-FORBID: Forbidden term "rewards" found (01_coin_engine/README.md)
-- TERM-FORBID: Forbidden term "Reward" found (01_coin_engine/README.md)
-- TERM-FORBID: Forbidden term "reward" found (01_coin_engine/payment_distribution.md)
-- TERM-FORBID: Forbidden term "rewards" found (01_coin_engine/payment_distribution.md)
-- TERM-FORBID: Forbidden term "Reward" found (01_coin_engine/payment_distribution.md)
-- TERM-FORBID: Forbidden term "reward" found (08_emission_layer/emission_flow_pipeline.md)
-- TERM-FORBID: Forbidden term "Reward" found (08_emission_layer/emission_flow_pipeline.md)
-- TERM-FORBID: Forbidden term "reward" found (08_emission_layer/emission_rollbacks_and_freeze_rules.md)
-- TERM-FORBID: Forbidden term "rewards" found (08_emission_layer/emission_rollbacks_and_freeze_rules.md)
-- TERM-FORBID: Forbidden term "Reward" found (08_emission_layer/emission_rollbacks_and_freeze_rules.md)
-- TERM-FORBID: Forbidden term "reward" found (02_nodechain_engine/nodechain_overview.md)
-- TERM-FORBID: Forbidden term "Reward" found (02_nodechain_engine/nodechain_overview.md)
-- TERM-FORBID: Forbidden term "reward" found (02_nodechain_engine/README.md)
-- TERM-FORBID: Forbidden term "Reward" found (02_nodechain_engine/README.md)
-- TERM-FORBID: Forbidden term "reward" found (02_nodechain_engine/network_consensus_model.md)
-- TERM-FORBID: Forbidden term "rewards" found (02_nodechain_engine/network_consensus_model.md)
-- TERM-FORBID: Forbidden term "Reward" found (02_nodechain_engine/network_consensus_model.md)

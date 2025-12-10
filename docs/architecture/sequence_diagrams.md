@@ -9,6 +9,7 @@ This document provides visual sequence diagrams for the most critical processes 
 This diagram shows the complete lifecycle of a standard user transaction, from submission to finalization and audit.
 
 **Source Files:**
+
 * `07_processing_layer/tx_queue_handler.md`
 * `07_processing_layer/tx_validation_pipeline.md`
 * `12_nodechain_ai_agents/anomaly_detection_engine.md`
@@ -75,11 +76,13 @@ sequenceDiagram
     Mod_07_Queue-->>Node_API: Status: Success
     Node_API-->>User: Transaction Confirmed
 ```
+
 ## 2. Fiat-to-AST Tokenization Lifecycle (Module 05)
 
 This diagram shows the critical path for a user to convert fiat currency into a digital asset (e.g., AFC) on the platform. This flow highlights the **mandatory KYC/AML checkpoint**.
 
 **Source Files:**
+
 * `05_bridge_layer/kyc_aml_interface_bridge.md`
 * `05_bridge_layer/tokenization_bridge_architecture.md`
 * `docs/requirements/schemas/bridge_request.schema.json`

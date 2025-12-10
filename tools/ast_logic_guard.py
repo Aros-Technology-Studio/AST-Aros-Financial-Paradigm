@@ -54,7 +54,7 @@ def detect_language_mix(text: str) -> float:
 # Guard class
 # --------------------------------------------------------------------------- #
 
-class AFCGuard:
+class ASTGuard:
     def __init__(self, repo: Path, spec: dict):
         self.repo = repo
         self.spec = spec
@@ -260,11 +260,11 @@ class AFCGuard:
 
     def save_reports(self, out_dir: Path, report: dict):
         out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / 'afc_report.json').write_text(
+        (out_dir / 'ast_report.json').write_text(
             json.dumps(report, indent=2, ensure_ascii=False),
             encoding='utf-8'
         )
-        lines = ['# AFC Logic Guard Summary', '', '| Rule | Errors | Warnings |', '|---|---|---|']
+        lines = ['# AST Logic Guard Summary', '', '| Rule | Errors | Warnings |', '|---|---|---|']
         for rule, counts in sorted(self.summary.items()):
             lines.append(f'| {rule} | {counts["errors"]} | {counts["warnings"]} |')
         lines.append('')
@@ -274,10 +274,10 @@ class AFCGuard:
             lines.append('## Critical findings')
             for f in crit:
                 lines.append(f'- {f["rule"]}: {f["message"]} ({f["file"]})')
-        (out_dir / 'afc_summary.md').write_text('\n'.join(lines), encoding='utf-8')
+        (out_dir / 'ast_summary.md').write_text('\n'.join(lines), encoding='utf-8')
 
     def print_summary(self, report: dict):
-        print(f'AFC Logic Guard score: {report["score"]:.2f} (threshold {report["threshold"]})')
+        print(f'AST Logic Guard score: {report["score"]:.2f} (threshold {report["threshold"]})')
         for rule, counts in sorted(self.summary.items()):
             print(f'{rule}: {counts["errors"]} errors, {counts["warnings"]} warnings')
         if self.hard_fail:
@@ -305,14 +305,14 @@ class AFCGuard:
 # --------------------------------------------------------------------------- #
 
 def main():
-    p = argparse.ArgumentParser(description='AFC Logic Guard')
+    p = argparse.ArgumentParser(description='AST Logic Guard')
     p.add_argument('--repo', required=True, type=Path)
     p.add_argument('--spec', required=True, type=Path)
     p.add_argument('--out', required=True, type=Path)
     args = p.parse_args()
 
     spec = load_spec(args.spec)
-    guard = AFCGuard(args.repo, spec)
+    guard = ASTGuard(args.repo, spec)
     report = guard.run()
     guard.save_reports(args.out, report)
     guard.print_summary(report)

@@ -27,7 +27,7 @@ The following metrics are constantly monitored by the Processing Layer and the A
 
 - `Token Flow Rate per Block`
 - `Vault Unlock Rate`
-- `Reward Claim Frequency`
+- `Payment Claim Frequency`
 - `User Circulation Density`
 - `Exit Request Spike Index`
 - `Proposal Submission Volume`
@@ -41,7 +41,7 @@ When predefined thresholds are exceeded, countermeasures are triggered.
 | Condition                           | Triggered Countermeasure                                  |
 |-------------------------------------|------------------------------------------------------------|
 | 🔄 Excess Vault Unlocking           | Temporary delay in unlock queue                           |
-| 🧾 High Reward Claim Frequency      | Reduced per-block distribution limit                      |
+| 🧾 High Payment Claim Frequency      | Reduced per-block distribution limit                      |
 | 📤 Excess Exit Requests             | Throttle applied to exit approval contract                |
 | 🧠 Governance Proposal Overload     | Vote queue lengthening + proposal entry cooldown          |
 | 💸 High User Transfer Density       | FlowEngine rate limits per wallet                         |
@@ -52,7 +52,7 @@ All countermeasures are **temporary, adaptive, and logged**.
 ```solidity
 **## 5. Smart Contract Hooks**
 
-Contracts like `VaultController`, `RewardEngine`, and `ExitGuard` include velocity hooks:
+Contracts like `VaultController`, `PaymentEngine`, and `ExitGuard` include velocity hooks:
 
 ```solidity
 modifier checkVelocityCap() {
@@ -79,7 +79,7 @@ If triggered:
 ```solidity
 function emergencyLockdown() external onlyAI {
     freezeVaults();
-    pauseRewardDistribution();
+    pausePaymentDistribution();
     throttleExitRequests();
 }
 ```
@@ -102,7 +102,7 @@ This ensures **AI-first safety**, with **human consensus only for recovery paths
 
 Velocity control enforces:
 
-- Fairness in reward distribution
+- Fairness in payment distribution
 - Predictability of token availability
 - Controlled economic pacing
 - Synchronization with actual usage levels

@@ -104,7 +104,7 @@ Encourage participation and handle high loads.
 
 ### Recommendations
 
-- **Incentives**: Tie to AST tokens — stake for access, earn rewards for uptime (>95%) or anomaly validations.
+- **Incentives**: Tie to AST tokens — stake for access, earn payments for uptime (>95%) or anomaly validations.
     - Smart Contract: Deploy a simple contract for staking (e.g., in Solidity: function stake(uint amount) { ... }).
 - **Scalability**: Implement sharding — divide nodes by event types (e.g., governance vs. token).
     - Auto-Revocation: Use on-chain checks for malicious behavior (e.g., spoofing).

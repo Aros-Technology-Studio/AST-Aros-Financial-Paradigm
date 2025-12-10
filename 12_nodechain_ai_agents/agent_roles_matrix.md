@@ -73,7 +73,7 @@ flowchart TD
 
 - Interpret validator reliability, consistency, and responsiveness
 - Adjust internal trust scores
-- Feed impact into reward engine
+- Feed impact into payment engine
 
 ### ⚠️ `FRAUD-AI-*`: Fraud Classifiers
 

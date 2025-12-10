@@ -27,7 +27,7 @@ This document outlines the rules, timeframes, and conditions under which ArosCoi
   - Lock Duration: 3 months
   - Vesting: Full unlock at month 4
 
-- **Ecosystem Grants & Rewards**
+- **Ecosystem Grants & Payments**
   - Lock Duration: Variable (6–36 months)
   - Controlled by smart contract schedules
 
@@ -46,7 +46,7 @@ This document outlines the rules, timeframes, and conditions under which ArosCoi
 ### 3. Relocking Conditions
 
 - Voluntary relocking is available for:
-  - DAO staking rewards
+  - DAO staking payments
   - Governance privileges
 - Relocking duration: min 6 months, max 36 months
 - Relocked tokens generate increased voting weight (1.5x per 12-month cycle)

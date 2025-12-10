@@ -31,4 +31,4 @@ def handle_challenge(tx_id: str, proof: dict) -> bool:
 - 13_extra_supervisory_layer/integrity_signal_emission.md (signals).
 
 ## 6. Notes
-- Rewards: Challenger rewarded if successful in NodeChain.
+- Payments: Challenger paymented if successful in NodeChain.

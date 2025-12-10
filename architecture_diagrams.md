@@ -12,7 +12,7 @@ graph TD
   D --> F[Processing Layer]
   F --> G[Emission Layer]
   G --> H[Proof of Transaction]
-  H --> I[Validator Staking & Rewards]
+  H --> I[Validator Staking & Payments]
   I --> J[NodeChain AI Agents]
   J --> K[Extra Supervisory Layer]
   F --> L[Crypto Ingestion]
@@ -28,7 +28,7 @@ graph TD
   A --> D[Use Cases]
   A --> E[Burn & Mint Rules]
   A --> F[Volatility Controls]
-  A --> G[Node Rewards]
+  A --> G[Node Payments]
   A --> H[Payment Distribution]
 ```
 
@@ -39,7 +39,7 @@ graph TD
   A --> B[Node Registration]
   A --> C[Transaction Sharding]
   A --> D[Encryption Protocol]
-  A --> E[Reward Allocation]
+  A --> E[Payment Allocation]
   A --> F[Consensus Model]
   A --> G[Fault Tolerance]
   A --> H[Security Model]
@@ -151,14 +151,14 @@ graph TD
   A --> H[Incentive Distribution]
 ```
 
-## Validator Staking & Rewards
+## Validator Staking & Payments
 ```mermaid
 graph TD
   A[Validator Staking]
   A --> B[Registration]
   A --> C[Stake Freeze/Unlock]
   A --> D[Epoch Commitments]
-  A --> E[Reward Distribution]
+  A --> E[Payment Distribution]
   A --> F[Performance Score]
   A --> G[Slashing Rules]
   A --> H[Governance Interface]

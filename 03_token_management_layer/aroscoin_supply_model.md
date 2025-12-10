@@ -46,7 +46,7 @@ This document defines the monetary policy and total supply logic of ArosCoin, es
   - Current total supply
   - Circulating supply
   - Burned tokens
-  - Validator rewards remaining
+  - Validator payments remaining
 
 - Audited monthly and published to all stakeholders.
 

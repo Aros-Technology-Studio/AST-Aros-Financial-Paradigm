@@ -62,7 +62,7 @@ The total circulating supply is divided into **epochal time windows**, each with
 - Max release ceiling
 - Tier-based allocation bands
 - Reserve refill checkpoints
-- Reward + proposal liquidity slots
+- Payment + proposal liquidity slots
 
 Each epoch (e.g. 30 days) is closed by the Processing Layer and recalibrated via:
 

@@ -12,7 +12,7 @@ The global threat model aims to:
 
 ## 2. Scope
 Covers all AST components:
-- **Coin Engine**: Emission, burn, rewards.
+- **Coin Engine**: Emission, burn, payments.
 - **NodeChain Engine**: Node registration, sharding, encryption.
 - **Token Management**: Lifecycle, audits, emergency protocols.
 - **Value Circulation**: Vaults, liquidity, buybacks.
@@ -22,7 +22,7 @@ Covers all AST components:
 - **Emission Layer**: Triggers, fraud prevention.
 - **Crypto Ingestion**: Multi-chain normalization.
 - **PoT Engine**: Validation, weighting, slashing.
-- **Validator Staking**: Rewards, penalties.
+- **Validator Staking**: Payments, penalties.
 - **AI Agents**: Anomaly detection, escalation.
 - **The All-Seeing Eye**: Passive oversight, signals.
 
@@ -49,7 +49,7 @@ Below is a detailed table of identified threats, their implications, and mitigat
 | **Emission Fraud** | Emission Layer | Tampering | Medium | High | Fake TX to trigger minting. | PoT-verified triggers, fraud detection (08_emission_layer/emission_fraud_prevention.md). |
 | **Node Collusion** | NodeChain | Elevation | Low | High | Validators collude to approve invalid TX. | Random rotation, slashing for >3% deviation (02_nodechain_engine/network_consensus_model.md). |
 | **Data Leakage** | All Layers | Information Disclosure | Low | Medium | Sensitive metadata (e.g., user_id) exposed. | Zero-knowledge proofs for logs, encrypted payloads (02_nodechain_engine/encryption_protocol.md). |
-| **Validator Misbehavior** | Validator Staking | Tampering | Medium | High | Invalid attestations to gain rewards. | Performance scoring, slashing (25-100% stake burn) (11_validator_staking_rewards/slashing_and_penalty_rules.md). |
+| **Validator Misbehavior** | Validator Staking | Tampering | Medium | High | Invalid attestations to gain payments. | Performance scoring, slashing (25-100% stake burn) (11_validator_staking_payments/slashing_and_penalty_rules.md). |
 | **Log Tampering** | The All-Seeing Eye | Repudiation | Low | Critical | Altering audit logs. | Merkle-linked logs, IPFS/Arweave mirroring (13_extra_supervisory_layer/meta_event_logging_protocol.md). |
 
 ## 5. Cross-Layer Mitigations
@@ -81,7 +81,7 @@ Below is a detailed table of identified threats, their implications, and mitigat
 - **Detection**: All-Seeing Eye flags anomaly (GOV-001: governance irregularity) via behavioral scoring (13_extra_supervisory_layer/anomaly_detection_patterns.md).
 - **Response**:
   1. Quarantine nodes with >3% deviation (10_proof_of_transaction_engine/pot_slashing_conditions.md).
-  2. Slash stakes (50% burn) (11_validator_staking_rewards/slashing_and_penalty_rules.md).
+  2. Slash stakes (50% burn) (11_validator_staking_payments/slashing_and_penalty_rules.md).
   3. Governance review for parameter tweak (06_governance_layer/proposal_submission_protocol.md).
   4. Log event immutably (07_processing_layer/tx_journal_writer.md).
 

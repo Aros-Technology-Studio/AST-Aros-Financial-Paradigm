@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The Buyback Mechanism is designed to regulate ArosCoin’s active circulation by **programmatically repurchasing tokens** from users or reward channels. Its main purpose is to:
+The Buyback Mechanism is designed to regulate ArosCoin’s active circulation by **programmatically repurchasing tokens** from users or payment channels. Its main purpose is to:
 
 - Absorb excess liquidity
 - Stabilize systemic velocity
@@ -22,7 +22,7 @@ Buybacks are automatically initiated under one or more of the following conditio
 |-----------------------------|---------------------------------------------------------------------------|
 | 🧮 Circulation Overload      | Token velocity or transaction volume exceeds predefined ceiling           |
 | 📉 Price Pressure            | External price signals or internal economic simulations detect instability |
-| 🧾 Reward Overflow           | Validators or users accumulate beyond fair distribution range             |
+| 🧾 Payment Overflow           | Validators or users accumulate beyond fair distribution range             |
 | 🕳️ Liquidity Gap             | Exit requests cannot be fulfilled due to temporary liquidity shortage      |
 | 🛡️ Reserve Depletion Buffer | Reserve Pool signals need for proactive refill                            |
 
@@ -114,7 +114,7 @@ To avoid abuse:
 
 ## **8. Anti-Speculation Stance**
 
-The buyback mechanism is designed to **remove value silently**, not reward speculative behavior. It does not promise:
+The buyback mechanism is designed to **remove value silently**, not payment speculative behavior. It does not promise:
 
 - Premiums above protocol floor
 - Unbounded liquidity

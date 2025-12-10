@@ -30,7 +30,7 @@ function slash(address node, uint256 severity) public {
 ```
 
 ## 6. Dependencies
-- 11_validator_staking_rewards/slashing_and_penalty_rules.md (burn logic).
+- 11_validator_staking_payments/slashing_and_penalty_rules.md (burn logic).
 - 13_extra_supervisory_layer/anomaly_detection_patterns.md (triggers).
 
 ## 7. Notes

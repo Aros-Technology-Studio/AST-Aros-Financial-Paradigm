@@ -59,12 +59,12 @@ Liquidity is treated as a **strategic asset**, not a trading opportunity.
 ```mermaid
 sequenceDiagram
     participant Validator
-    participant RewardPool
+    participant PaymentPool
     participant SwapEngine
     participant OperationalPool
 
-    Validator->>RewardPool: Claim reward
-    RewardPool->>SwapEngine: Convert to liquidity value
+    Validator->>PaymentPool: Claim payment
+    PaymentPool->>SwapEngine: Convert to liquidity value
     SwapEngine->>OperationalPool: Request liquidity
     OperationalPool-->>Validator: Deliver external payout
 ```

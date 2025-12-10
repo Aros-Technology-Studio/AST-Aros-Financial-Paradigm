@@ -16,7 +16,7 @@ The AST ecosystem supports multiple vault types, each with distinct logic and lo
 | 📈 Activity Vaults      | Tokens unlock gradually as system usage thresholds are met                 |
 | 🧠 Governance Vaults    | Used to store tokens allocated for voting and proposals                    |
 | 🛡️ Security Vaults      | Emergency vaults locked unless protocol breach or attack is detected       |
-| 🔁 Reward Cycle Vaults  | Collect and recirculate unused or reclaimed tokens back into ecosystem     |
+| 🔁 Payment Cycle Vaults  | Collect and recirculate unused or reclaimed tokens back into ecosystem     |
 
 ---
 
@@ -73,7 +73,7 @@ To ensure reliability and resistance to abuse:
 Vaults interact with the following components:
 
 - Token Management Layer — for tracking locked supply
-- NodeChain Engine — for validator-triggered releases (e.g. uptime reward claims)
+- NodeChain Engine — for validator-triggered releases (e.g. uptime payment claims)
 - Governance Layer — for releasing proposal tokens
 - Buyback Engine — for reabsorbing excess from expired vaults
 
@@ -90,13 +90,13 @@ Vaults interact with the following components:
 
 ---
 
-## **8. Example: Reward Cycle Vault**
+## **8. Example: Payment Cycle Vault**
 
 ```json
 {
-  "vaultType": "RewardCycle",
+  "vaultType": "PaymentCycle",
   "lockedUntil": "2026-01-01T00:00:00Z",
-  "releaseCondition": "Reward not claimed for 90 days",
+  "releaseCondition": "Payment not claimed for 90 days",
   "status": "Locked",
   "linkedModule": "InternalFlowEngine"
 }

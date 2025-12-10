@@ -22,7 +22,7 @@ Both directions are enforced via bridges or exchange modules that are smart-cont
 | Method                  | Description                                                   |
 |-------------------------|---------------------------------------------------------------|
 | 🔁 Tokenization Bridge   | Converts fiat or external crypto into ArosCoin                |
-| 📥 Validator Incentives | Auto-minted rewards upon validator performance validation     |
+| 📥 Validator Incentives | Auto-minted payments upon validator performance validation     |
 | 🧾 Proposal Deposits     | Entry via governance-based value locking                      |
 | 🔒 Migration Contracts   | Controlled swaps from legacy systems or upgrade mechanisms    |
 

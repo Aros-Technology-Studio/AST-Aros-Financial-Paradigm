@@ -35,7 +35,7 @@ The roadmap is divided into four phases, each with specific goals, deliverables,
 **Team**: 4 Solidity devs, 4 Python devs, 2 DevOps.  
 **Deliverables**:
 - **Coin Engine** (01_coin_engine/):
-  - Full implementation of `coin_emission_model.md`, `burn_and_mint_rules.md`, `reward_distribution.md`.
+  - Full implementation of `coin_emission_model.md`, `burn_and_mint_rules.md`, `payment_distribution.md`.
   - Deploy `token_generation_contract.sol` to Sepolia (Week 4).
   - JSON spec: `AROS_Coin_TokenSpec.json` finalized (Week 6).
   - Estimated effort: 3 devs x 8 weeks = 24 person-weeks.

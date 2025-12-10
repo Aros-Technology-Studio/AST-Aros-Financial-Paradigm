@@ -12,8 +12,8 @@ ArosCoin moves across the following internal domains:
 
 | Origin              | Destination              | Conditions                                                      |
 |---------------------|---------------------------|------------------------------------------------------------------|
-| Vaults              | Reward Pools              | After unlocking trigger or governance vote                      |
-| Reward Pools        | Validators / Users        | Based on node uptime, action triggers, or tier release schedule |
+| Vaults              | Payment Pools              | After unlocking trigger or governance vote                      |
+| Payment Pools        | Validators / Users        | Based on node uptime, action triggers, or tier release schedule |
 | Internal Engine     | Governance Pool           | On proposal participation or quorum logic                       |
 | Users               | Buyback Engine            | Voluntary return or price-level triggers                        |
 | Buyback Engine      | Reserve Pool / Burn       | Automated based on circulation threshold                        |
@@ -34,7 +34,7 @@ interface IInternalFlowRouter {
 }
 ```
 
-These contracts **do not allow arbitrary transfers** and cannot be called directly by users. They are called by whitelisted modules (Vaults, Reward Engine, Governance Pool, Buyback).
+These contracts **do not allow arbitrary transfers** and cannot be called directly by users. They are called by whitelisted modules (Vaults, Payment Engine, Governance Pool, Buyback).
 
 ---
 
@@ -46,12 +46,12 @@ ArosCoin movement is not continuous or passive. It is event-triggered:
 sequenceDiagram
     participant Vault
     participant FlowEngine
-    participant RewardPool
+    participant PaymentPool
     participant User
 
     Vault->>FlowEngine: Unlock Trigger (e.g. 180 days passed)
-    FlowEngine->>RewardPool: Release Tokens
-    RewardPool-->>User: Distribute on Activity
+    FlowEngine->>PaymentPool: Release Tokens
+    PaymentPool-->>User: Distribute on Activity
 ```
 
 Every movement must have:
@@ -67,7 +67,7 @@ Every movement must have:
 To prevent abuse or over-distribution, each module has a maxPerBlock limit. Additionally, the Processing Layer monitors **saturation metrics**:
 
 - flowRatePerBlock
-- rewardBacklog
+- paymentBacklog
 - vaultReleaseQueue
 - circulationDensity
 
@@ -90,7 +90,7 @@ To prevent leakage or speculative misuses:
 | **Subsystem** | **Role in Flow** |
 | --- | --- |
 | Vault System | Source of staged tokens |
-| Reward Engine | Distribution mechanism based on activity |
+| Payment Engine | Distribution mechanism based on activity |
 | Governance Layer | Logic for locking/unlocking governance coins |
 | Buyback Engine | Final absorption of excess circulation |
 | Reserve Pool | Long-term value retention |

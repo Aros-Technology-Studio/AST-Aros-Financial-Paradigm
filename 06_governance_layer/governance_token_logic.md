@@ -21,7 +21,7 @@ This token is **strictly internal** to the governance layer and is **not tradabl
 | 🪙 Staking-Based Voting  | Governance power is activated only when tokens are staked           |
 | 🧾 No Monetary Function  | Token has no exchange value and cannot be sold or swapped           |
 | 🧠 Delegation with Limits| Delegation allowed, but capped and revocable                       |
-| 🧮 Epoch-Based Rewards   | Tokens may be earned via participation in governance epochs         |
+| 🧮 Epoch-Based Payments   | Tokens may be earned via participation in governance epochs         |
 
 ---
 
@@ -31,7 +31,7 @@ Governance tokens can be:
 
 - **Earned** through validated system contributions (e.g. development, validator uptime, proposal authorship)
 - **Delegated** temporarily from other verified users
-- **Allocated** by governance vote from reward pools
+- **Allocated** by governance vote from payment pools
 
 They **cannot be purchased**, claimed via liquidity, or bridged from other systems.
 

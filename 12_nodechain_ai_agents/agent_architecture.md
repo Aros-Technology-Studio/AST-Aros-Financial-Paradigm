@@ -40,7 +40,7 @@ graph TD
 | --- | --- |
 | `Observer Layer` | Continuously monitors transaction streams and validator activity |
 | `Analyzer Layer` | Performs behavioral analysis, fraud probability scoring, and consensus anomaly detection |
-| `Trigger Layer` | Initiates slashing, reward suspension, escalation, or rollback based on AI decisions |
+| `Trigger Layer` | Initiates slashing, payment suspension, escalation, or rollback based on AI decisions |
 | `Feedback Loop` | Feeds analysis results back into NodeChain’s training set for meta-learning and performance tuning |
 
 ---

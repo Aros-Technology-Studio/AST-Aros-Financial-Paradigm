@@ -43,7 +43,7 @@ Each contract in the registry includes the following metadata:
 | NodeRegistry | Handles validator/staker roles and identities |
 | GovernanceEngine | Logic for proposals, votes, consensus upgrades |
 | BurnMechanism | Decentralized burn logic |
-| Vaults | Secure holding contracts for treasury & rewards |
+| Vaults | Secure holding contracts for treasury & payments |
 | SwapGate | Optional layer for token swaps |
 | UpgradeProxy | Enables safe upgrade paths via proxy patterns |
 

@@ -22,7 +22,7 @@ Tokens are minted **only** when the following criteria are simultaneously met:
 1. A transaction has been submitted to the AST processing queue.
 2. The transaction has passed validation, fragmentation, and encryption phases.
 3. The set of participating nodes successfully completed signature consensus.
-4. The node reward calculation engine has produced an eligible emission request.
+4. The node payment calculation engine has produced an eligible emission request.
 
 ---
 
@@ -33,7 +33,7 @@ flowchart TD
     A[New Transaction Received] --> B[Validated and Fragmented]
     B --> C[Encrypted by Nodes]
     C --> D[Signature Consensus Achieved]
-    D --> E[Reward Engine Calculates Emission]
+    D --> E[Payment Engine Calculates Emission]
     E --> F[Tokens Minted Proportionally to Workload]
 ```
 
@@ -78,7 +78,7 @@ Newly minted tokens are distributed as follows (default values):
 ## **Linked Documents**
 
 - token_distribution_model.md
-- node_reward_allocation.md
+- node_payment_allocation.md
 - aroscoin_supply_model.md
 
 ---

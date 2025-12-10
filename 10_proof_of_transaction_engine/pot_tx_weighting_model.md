@@ -5,7 +5,7 @@
 **Date:** 2025-08-24  
 
 ## 1. Purpose
-Calculates the "weight" of a transaction in PoT, determining its validation priority and node rewards within NodeChain.
+Calculates the "weight" of a transaction in PoT, determining its validation priority and node payments within NodeChain.
 
 ## 2. Principles
 - Weight reflects real contribution (activity + integrity).
@@ -34,7 +34,7 @@ function calculateWeight(uint256 amount, uint256 fee, uint256 failures, uint256 
 
 ## 6. Dependencies
 - 08_emission_layer/epoch_allocation_model.md (epoch data).
-- 11_validator_staking_rewards/validator_performance_score.md (reputation).
+- 11_validator_staking_payments/validator_performance_score.md (reputation).
 
 ## 7. Notes
 - Tuning: Governance can adjust coefficients (06_governance_layer/).

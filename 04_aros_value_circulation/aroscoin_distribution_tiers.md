@@ -14,7 +14,7 @@ ArosCoin distribution is categorized across five primary tiers:
 |--------------------|-----------------------------------------------------------------------------|
 | 🧱 Tier 0: Base Layer     | Essential protocol operations (validators, core infrastructure)          |
 | 🎓 Tier 1: Growth Layer   | Ecosystem expansion: contributors, developers, integrators              |
-| 🗳️ Tier 2: Governance     | Proposal rewards, vote incentives, staking-based power realignment      |
+| 🗳️ Tier 2: Governance     | Proposal payments, vote incentives, staking-based power realignment      |
 | 🌍 Tier 3: External Use   | Bridged liquidity, partner programs, value corridor strategies           |
 | 🔒 Tier 4: Strategic Vault| Long-term reserve releases, treasury-controlled, manual governance lock |
 

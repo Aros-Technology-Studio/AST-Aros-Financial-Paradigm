@@ -31,7 +31,7 @@ def distribute(total_incentives: float, nodes: list[dict]) -> dict:
 ```
 
 ## 6. Dependencies
-- 01_coin_engine/reward_distribution.md (fee splits).
+- 01_coin_engine/payment_distribution.md (fee splits).
 - 08_emission_layer/epoch_allocation_model.md (emission tie-in).
 
 ## 7. Notes

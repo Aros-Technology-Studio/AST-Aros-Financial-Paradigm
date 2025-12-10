@@ -18,7 +18,7 @@ The objective of this layer is to ensure:
 Aros Value Circulation is a modular mechanism composed of the following core structures:
 
 - **Vault System:** Secure storage with time-locked or event-triggered release mechanisms
-- **Internal Flow Engine:** Regulates how ArosCoin moves across contracts, services, and reward channels
+- **Internal Flow Engine:** Regulates how ArosCoin moves across contracts, services, and payment channels
 - **Liquidity Pools:** Dedicated pools for maintaining price stability and immediate liquidity
 - **Reserve Module:** Long-term strategic pool governed by protocol-based decisions and emergency logic
 - **Buyback Mechanism:** Algorithmic or AI-driven rebuy strategy to extract excess circulation and reinforce price floors
@@ -34,7 +34,7 @@ The circulation design is not speculative. It serves the following explicit func
 | Function                   | Description                                                                 |
 |----------------------------|-----------------------------------------------------------------------------|
 | 🔒 Locking Value           | Certain tokens are time-/condition-locked to prevent liquidity overflow     |
-| 🔁 Recycling Mechanism     | Internal cycles of reward → vault → release → utility → burn/return         |
+| 🔁 Recycling Mechanism     | Internal cycles of payment → vault → release → utility → burn/return         |
 | 🧮 Supply Alignment        | Keeps token supply aligned with actual ecosystem activity                   |
 | 💧 Liquidity Integrity     | Ensures stable operational liquidity at multiple layers                     |
 | 🧠 Governance Rebalance    | Circulates control tokens to reinforce decentralized governance flow         |
@@ -47,8 +47,8 @@ The circulation design is not speculative. It serves the following explicit func
 flowchart LR
     Minting --> Vaults
     Vaults --> InternalFlow
-    InternalFlow --> RewardPools
-    RewardPools --> Users
+    InternalFlow --> PaymentPools
+    PaymentPools --> Users
     Users --> Buyback
     Buyback --> Reserve
     Reserve --> BurnOrRecycle

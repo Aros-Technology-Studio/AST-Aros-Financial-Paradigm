@@ -14,7 +14,7 @@ The token audit trail covers:
 - Distribution records
 - Lock/unlock event logs
 - Burn transactions
-- Node rewards and validator payouts
+- Node payments and validator payouts
 - Emergency events and system overrides
 
 All audit data must be cryptographically verifiable and publicly observable (with privacy-preserving mechanisms where applicable).

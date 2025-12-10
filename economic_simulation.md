@@ -117,7 +117,7 @@ plot_simulation(supply_high, inflation_high, "ast_economy_high_tx.png")
   - Supply grows faster (~15,000 ARO after 100 epochs).
   - Inflation peaks higher (~12%) but converges to <1% faster.
 - **Risks**:
-  - Low TX volume (<500/epoch): Stagnation, low emission. Mitigate with incentives (see 11_validator_staking_rewards/reward_distribution_engine.md).
+  - Low TX volume (<500/epoch): Stagnation, low emission. Mitigate with incentives (see 11_validator_staking_payments/payment_distribution_engine.md).
   - High TX volume: Potential inflation spike. Mitigate with dynamic burn ratio adjustments via governance (see 06_governance_layer/governance_token_logic.md).
 - **Node Impact**: More nodes (e.g., 20) dilute emission per node, encouraging validator competition.
 
@@ -132,7 +132,7 @@ plot_simulation(supply_high, inflation_high, "ast_economy_high_tx.png")
 ## 7. Dependencies
 - `01_coin_engine/coin_emission_model.md`: Emission formulas and phases.
 - `08_emission_layer/emission_trigger_conditions.md`: TX-based triggers.
-- `11_validator_staking_rewards/reward_distribution_engine.md`: Node rewards.
+- `11_validator_staking_payments/payment_distribution_engine.md`: Node payments.
 - `06_governance_layer/proposal_submission_protocol.md`: Parameter adjustments.
 
 ## 8. Running the Simulation

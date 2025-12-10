@@ -30,7 +30,7 @@ The system is composed of 14 independent, patent-pending modules:
 | **08** | **Emission Layer** | Protocol-level issuance based on Epochs. |
 | **09** | **Crypto Ingestion** | Crypto-to-Crypto bridge infrastructure. |
 | **10** | **Proof-of-Transaction** | Consensus weighting mechanism. |
-| **11** | **Staking & Rewards** | Validator incentives and performance scoring. |
+| **11** | **Staking & Payments** | Validator incentives and performance scoring. |
 | **12** | **Nodechain AI Agents** | **Active** supervision: Risk Scoring, Fraud Signals. |
 | **13** | **Supervisory Layer** | **Passive** meta-auditing ("The All-Seeing Eye"). |
 | **14** | **TX Encoding** | Binary data serialization standards. |

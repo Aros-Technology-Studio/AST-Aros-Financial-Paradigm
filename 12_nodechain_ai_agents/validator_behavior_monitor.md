@@ -106,7 +106,7 @@ If a validator's score drops below reliability threshold:
 
 - `tx_execution_contexts.md`
 - `slashing_and_penalty_rules.md`
-- `reward_distribution_engine.md`
+- `payment_distribution_engine.md`
 - `agent_roles_matrix.md`
 
 ---

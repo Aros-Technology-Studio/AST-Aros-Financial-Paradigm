@@ -1,222 +1,268 @@
-# AST Developer Deep Dive – Полный углублённый анализ архитектуры AST
+# AST Developer Deep Dive – Full In-Depth Analysis of AST Architecture
 
-## Назначение
+## Purpose
 
-Этот документ представляет собой исчерпывающее техническое описание Aros Studio Tokenomics (AST) — независимой токенизационной и транзакционной системы, лежащей в основе более поздних проектов. В отличие от AFC, AST обрабатывает все операции самостоятельно: узловая сеть NodeChain выполняет транзакции, динамическая модель эмиссии начисляет оплату узлам за работу, а мостовой слой обеспечивает токенизацию/обратную токенизацию. AFC появляется только в виде подписанного API‑контракта и не участвует в обработке данных; поэтому в этом документе AFC не рассматривается.
+This document serves as the comprehensive technical description of Aros Studio Tokenomics (AST) — the independent tokenization and transactional system underpinning later projects. Unlike AFC, AST handles all operations autonomously: the NodeChain node network executes transactions, the dynamic emission model accrues payment to nodes for work, and the bridge layer ensures tokenization/reverse tokenization. AFC appears only as a signed API contract and does not participate in data processing; therefore, AFC is not covered in this document.
 
-Документ следует структуре оригинального AFC Deep Dive, но все главы переписаны под AST, используя внутренние документы Notion (формулы, юридические комментарии, модели угроз, динамическую эмиссию и т.п.).
+The document follows the structure of the original AFC Deep Dive, but all chapters have been rewritten for AST, utilizing internal Notion documents (formulas, legal commentaries, threat models, dynamic emission, etc.).
 
-## I. Что такое AST
+## I. What is AST
 
-AST — это автономная децентрализованная платформа, управляющая обменом стоимости и токенизацией с помощью NodeChain, движка Proof of Transaction (PoT) и динамической модели эмиссии. Основные особенности:
+AST is an autonomous decentralized platform managing value exchange and tokenization via NodeChain, the Proof of Transaction (PoT) engine, and a dynamic emission model. Key features:
 
-1. **Исполнительный слой NodeChain.** AST использует распределённую сеть узлов (валидаторы, аттестаторы, наблюдатели), которые обрабатывают транзакции и участвуют в консенсусе. Участвующие узлы регистрируются через криптографический onboarding API и аутентифицируются через challenge‑подпись. После успешной регистрации узел получает auth‑токен и может запрашивать пакеты транзакций для валидации. Все операции выполняются детерминированно, что обеспечивает воспроизводимость и аудитируемость.
-2. **Движок PoT.** В отличие от Proof of Work/Stake, PoT оценивает вклад узла на основе активности, репутации и транзакционной нагрузки. Валидаторы получают роль согласно весу, вычисляемому функциями TVS и NRI, и подтверждают транзакции; аттестаторы проверяют подписи. Алгоритм назначения ролей включает случайность, чтобы предотвратить картели.
-3. **Динамическая модель эмиссии.** Эмиссия ArosCoin равна сумме комиссий за обработку транзакций; нет предмайнинга и подарочных токенов. Формула динамической эмиссии описана в документе «Aros Coin Dynamic Emission Model» — общий объём выпуска T_E определяется как `α·TV + β·U + γ` , где TV — транзакционный объём, U — загрузка сети, α, β, γ — параметры настройки. Отдельная функция распределения `R_i = (S_i / ΣS)·T_adj` разделяет эмиссию между узлами пропорционально их весу (S_i). Это гарантирует, что узлы получают оплату за работу, а не вознаграждение; сжигание части эмиссии предотвращает инфляцию.
-4. **Мостовой слой и токенизация.** AST включает официальный протокол токенизации, который позволяет конвертировать внешние активы (фиат или другие криптовалюты) в ArosCoin. При поступлении депозита актив помещается в резерв, а контракт `ArosCoinReserveManager.sol` чеканит эквивалентное количество ArosCoin, используя уникальный идентификатор для предотвращения двойной эмиссии. Обратная конвертация сжигает токены и возвращает актив владельцу. Внутренний реестр «usedReferences» обеспечивает юридическую прозрачность и предотвращает повторную эмиссию.
-5. **AI‑надзор и управление.** За целостностью сети следит федерация AI‑агентов (т. н. Всевидящее Око). Агенты обнаруживают аномалии (wash‑трейдинг, фронт‑раннинг, Sybil‑атаки) и ведут мета‑аудит журналов. Критические события эскалируются в комитет с мультиподписью, где принимаются управленческие решения по ротации валидаторов, корректировке параметров эмиссии или активации механизма отката.
-6. **Правовая совместимость.** AST имеет запатентованную концепцию межюрисдикционного правового моста (Cross‑Jurisdiction Legal Bridge), который позволяет синхронизировать операции между различными правовыми режимами. В ходе конвертации используются Jurisdictional Trust Tokens (JTT) и Dual Attestation Engine, обеспечивающие юридическую валидацию транзакций.
+1. **NodeChain Execution Layer.** AST utilizes a distributed network of nodes (validators, attestators, observers) that process transactions and participate in consensus. Participating nodes register via a cryptographic onboarding API and authenticate via a challenge-signature. Upon successful registration, a node receives an auth-token and can request transaction batches for validation. All operations are performed deterministically, ensuring reproducibility and auditability.
+2. **PoT Engine.** Unlike Proof of Work/Stake, PoT evaluates a node's contribution based on activity, reputation, and transaction load. Validators are assigned roles according to weight calculated by TVS and NRI functions, and they confirm transactions; attestators verify signatures. The role assignment algorithm includes randomness to prevent cartels.
+3. **Dynamic Emission Model.** ArosCoin emission equals the sum of transaction processing fees; there is no pre-mining or gift tokens. The dynamic emission formula is described in the "Aros Coin Dynamic Emission Model" document — total issuance `T_E` is defined as `α·TV + β·U + γ` , where TV is transaction volume, U is network utilization, and α, β, γ are tuning parameters. A separate distribution function `R_i = (S_i / ΣS)·T_adj` divides emission among nodes proportional to their weight (S_i). This guarantees nodes are paid for work, not rewarded; burning a portion of emission prevents inflation.
+4. **Bridge Layer and Tokenization.** AST includes an official tokenization protocol allowing conversion of external assets (fiat or other cryptocurrencies) into ArosCoin. Upon deposit, the asset is placed in reserve, and the `ArosCoinReserveManager.sol` contract mints an equivalent amount of ArosCoin using a unique identifier to prevent double issuance. Reverse conversion burns tokens and returns the asset to the owner. An internal "usedReferences" ledger ensures legal transparency and prevents re-issuance.
+5. **AI Oversight and Governance.** Network integrity is monitored by a federation of AI agents (the so-called All-Seeing Eye). Agents detect anomalies (wash-trading, front-running, Sybil attacks) and maintain meta-audit logs. Critical events are escalated to a multi-sig committee where governance decisions on validator rotation, emission parameter adjustment, or rollback mechanism activation are made.
+6. **Legal Compatibility.** AST features a patented "Cross-Jurisdiction Legal Bridge" concept, allowing synchronization of operations between different legal regimes. Jurisdictional Trust Tokens (JTT) and a Dual Attestation Engine are used during conversion to ensure legal validation of transactions.
 
-Эти компоненты образуют самообеспечивающуюся экосистему без внешних зависимостей и спекулятивных элементов.
+These components form a self-sustaining ecosystem without external dependencies or speculative elements.
 
-## II. Основные концепции и миссия
+## II. Core Concepts and Mission
 
-### 1. Миссия
+### 1. Mission
 
-AST стремится предоставить доказуемо справедливый, энергоэффективный и комплаенс‑ориентированный протокол токенизации для публичных и частных экосистем. Система предназначена для:
+AST aims to provide a provably fair, energy-efficient, and compliance-oriented tokenization protocol for public and private ecosystems. The system is designed for:
 
-* **Минимизации спекуляций.** Токен ArosCoin всегда подкреплён реальным активом или выполненной работой; эмиссия пропорциональна транзакционным комиссиям. Нет предмайнинга и программ вознаграждения — узлы получают оплату за обработку транзакций.
-* **Гибкости и модульности.** Архитектура API‑first и модульная изоляция позволяют подключать различные мосты, оракулы и комплаенс‑модули без изменения ядра. Контракты исполняются неизменяемо и версионируются через API.
-* **Юридической совместимости.** Патент «Cross‑Jurisdiction Legal Bridge» описывает Legal Event Encoder и матрицу трансляции AML/KYC требований, что позволяет AST работать в различных юрисдикциях, не нарушая локальные законы.
-* **Прозрачности и управляемости.** Вся активность фиксируется в аудиторских логах; AI‑агенты и управление контролируют аномалии и эскалируют спорные случаи.
+* **Minimizing Speculation.** ArosCoin is always backed by a real asset or performed work; emission is proportional to transaction fees. There is no pre-mining or reward programs — nodes are paid for processing transactions.
+* **Flexibility and Modularity.** API-first architecture and modular isolation allow connecting various bridges, oracles, and compliance modules without changing the core. Contracts execute immutably and are versioned via API.
+* **Legal Compatibility.** The "Cross-Jurisdiction Legal Bridge" patent describes the Legal Event Encoder and AML/KYC requirement translation matrix, enabling AST to operate in various jurisdictions without violating local laws.
+* **Transparency and Governability.** All activity is recorded in audit logs; AI agents and governance control anomalies and escalate disputed cases.
 
-### 2. Основные концепции
+### 2. Core Concepts
 
-| Концепция | Описание |
+| Concept | Description |
 | :--- | :--- |
-| **Оплата за работу, а не вознаграждение** | Комиссии за транзакции идут на оплату узлам; нет подарочных токенов или предмайнинга. |
-| **Детерминированный консенсус** | PoT вычисляет вес узлов и распределяет роли; запись в журнал обеспечивает воспроизводимость и возможность отката. |
-| **Изоляция сервисов** | Каждый модуль (NodeChain, PoT Engine, Bridge Layer, AI Layer) изолирован и взаимодействует через определённые API; это предотвращает каскадные отказы и упрощает обновления. |
-| **Права доступа и ролевая модель** | Система использует RBAC: разработчики, операторы, валидаторы, аудиторы. Аппаратные кошельки обязательны для критических операций управления. |
-| **Юридическая интеграция** | Используются JTT‑токены и Dual Attestation Engine для соблюдения AML/KYC и предотвращения правовых конфликтов. |
-| **AI‑надзор** | Федерация AI‑агентов обнаруживает аномалии и координирует эскалации; мета‑журналы фиксируют все наблюдения. |
+| **Payment for Work, Not Reward** | Transaction fees go to pay nodes; no gift tokens or pre-mining. |
+| **Deterministic Consensus** | PoT calculates node weight and assigns roles; ledger recording ensures reproducibility and rollback capability. |
+| **Service Isolation** | Each module (NodeChain, PoT Engine, Bridge Layer, AI Layer) is isolated and interacts via defined APIs; this prevents cascading failures and simplifies updates. |
+| **Access Rights & Role Model** | The system uses RBAC: developers, operators, validators, auditors. Hardware wallets are mandatory for critical governance operations. |
+| **Legal Integration** | JTT tokens and Dual Attestation Engine are used to comply with AML/KYC and prevent legal conflicts. |
+| **AI Oversight** | A federation of AI agents detects anomalies and coordinates escalations; meta-logs record all observations. |
 
-## III. Узловой слой NodeChain и API исполнения
+## III. NodeChain Node Layer and Execution API
 
-### 1. Регистрация и аутентификация узлов
+### 1. Node Registration and Authentication
 
-Чтобы стать участником AST, узел проходит onboarding:
+To become an AST participant, a node undergoes onboarding:
 
-1. **Регистрация (`/node/register`).** Оператор отправляет публичный ключ и метаданные; NodeChain создает запись и возвращает `node_id` и `challenge`.
-2. **Аутентификация (`/node/auth`).** Узел подписывает challenge своим приватным ключом и отправляет подпись. Успешная подпись активирует узел и выдает `auth-токен`.
-3. **Получение состояния.** Активный узел запрашивает текущее состояние эпохи (`/epoch/current`) и получает список пакетов транзакций для валидации.
+1. **Registration (`/node/register`).** The operator sends a public key and metadata; NodeChain creates a record and returns a `node_id` and `challenge`.
+2. **Authentication (`/node/auth`).** The node signs the challenge with its private key and sends the signature. Successful signature activates the node and issues an `auth-token`.
+3. **State Retrieval.** An active node requests the current epoch state (`/epoch/current`) and receives a list of transaction batches for validation.
 
-### 2. Консенсус и валидация
+### 2. Consensus and Validation
 
-* **PoT вычисление веса.** Для каждой транзакции вычисляется набор метрик (TVS, NRI, Fee Ratio). Формулы определяют TVS на основе количества обработанных транзакций и их сложности. Валидаторы ранжируются по весу, и топ‑N получают роль первичных валидаторов; остальные становятся аттестаторами.
-* **Голосование и подписи.** Валидаторы проверяют транзакции в пакете, формируют подпись и отправляют её в Vote. Аттестаторы проверяют подписи и фиксируют голоса. После достижения кворума создается агрегированная подпись, которая записывается в журнал NodeChain.
-* **Комиссии и оплата.** Каждая обработанная транзакция вносит комиссию; функция распределения R_i делит её между валидаторами пропорционально их весу.
+* **PoT Weight Calculation.** For each transaction, a set of metrics (TVS, NRI, Fee Ratio) is calculated. Formulas define TVS based on the number of processed transactions and their complexity. Validators are ranked by weight, and the top-N receive the role of primary validators; the rest become attestators.
+* **Voting and Signatures.** Validators check transactions in a batch, form a signature, and send it to Vote. Attestators verify signatures and record votes. Upon reaching a quorum, an aggregated signature is created and recorded in the NodeChain ledger.
+* **Fees and Payment.** Each processed transaction contributes a fee; the distribution function R_i divides it among validators proportional to their weight.
 
-### 3. Точки API и структуры данных
+### 3. API Endpoints and Data Structures
 
-| Endpoint | Метод | Описание |
+| Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `/node/register` | POST | Регистрирует узел, возвращает challenge и node_id. |
-| `/node/auth` | POST | Принимает подпись challenge, выдает auth‑токен. |
-| `/epoch/current` | GET | Получает текущее состояние эпохи и список пакетов транзакций для обработки. |
-| `/vote` | POST | Отправляет подпись валидатора по пакету; проверяется аттестаторами и фиксируется в журнале. |
-| `/status` | GET | Возвращает состояние узла (активные роли, вес, репутацию, последние блоки). |
+| `/node/register` | POST | Registers a node, returns challenge and node_id. |
+| `/node/auth` | POST | Accepts challenge signature, issues auth-token. |
+| `/epoch/current` | GET | Gets current epoch state and list of transaction batches for processing. |
+| `/vote` | POST | Sends validator signature for a batch; verified by attestators and recorded in ledger. |
+| `/status` | GET | Returns node state (active roles, weight, reputation, last blocks). |
 
-Структуры данных — сообщения Protocol Buffers (gRPC) или JSON (REST); все поля версионируются, чтобы обеспечить обратную совместимость.
+Data structures are Protocol Buffers (gRPC) or JSON (REST) messages; all fields are versioned to ensure backward compatibility.
 
-### 4. Мониторинг и отказоустойчивость
+### 4. Monitoring and Fault Tolerance
 
-NodeChain предоставляет точки `/network/health`, `/node/list`, `/block/last` для мониторинга. Протоколы обнаружения сбоев и тайм‑аутов (например, задержка голосов) описаны в `nodechain_fault_tolerance.md`. При подозрении на сбой AI‑агенты инициируют ротацию узла или эскалацию.
+NodeChain provides points `/network/health`, `/node/list`, `/block/last` for monitoring. Failure detection and timeout protocols (e.g., vote latency) are described in `nodechain_fault_tolerance.md`. Upon suspected failure, AI agents initiate node rotation or escalation.
 
 ## IV. Proof of Transaction Engine (PoT Engine)
 
-### 1. Принципы работы
+### 1. Principles of Operation
 
-1. **Вес, основанный на активности.** Вес `S_i` узла рассчитывается на основе транзакционного объёма, сложности операций и поведения узла (TVS, NRI). Учитываются параметры: количество проверенных транзакций, их стоимость, честность голосования, время отклика и штрафы за нарушения.
-2. **Распределение ролей.** Узлы сортируются по весу. Верхние 30 % становятся валидаторами, следующие 50 % — аттестаторами, оставшиеся — наблюдателями. В распределении используется случайный фактор для предотвращения централизации. Пороговую долю и случайность можно регулировать через параметры консенсуса.
-3. **Deterministic Proof Hash (DPH).** Для каждой записи в журнале вычисляется хеш, включающий идентификаторы транзакций, подписи валидаторов и таймштампы. Формула DPH обеспечивает доказательство неизменности записи.
-4. **Интеграция с AI‑надзором.** PoT Engine публикует метрики для AI‑агентов; аномальные веса (например, резкий рост активности одного узла) вызывают проверку или временное исключение.
+1. **Activity-Based Weight.** Node weight `S_i` is calculated based on transaction volume, operation complexity, and node behavior (TVS, NRI). Parameters considered: count of verified transactions, their cost, voting honesty, response time, and penalties for violations.
+2. **Role Assignment.** Nodes are sorted by weight. The top 30% become validators, the next 50% attestators, and the remainder observers. A random factor is used in distribution to prevent centralization. The threshold share and randomness can be adjusted via consensus parameters.
+3. **Deterministic Proof Hash (DPH).** For each ledger entry, a hash is calculated including transaction IDs, validator signatures, and timestamps. The DPH formula ensures proof of entry immutability.
+4. **Integration with AI Oversight.** PoT Engine publishes metrics for AI agents; anomalous weights (e.g., sharp spike in single node activity) trigger verification or temporary exclusion.
 
-### 2. Алгоритм вычисления веса (пример)
+### 2. Weight Calculation Algorithm (Example)
 
 **Inputs:**
 
-* `TX_i` = список транзакций, обработанных узлом i за эпоху
-* `F_i` = суммарные комиссии по TX_i
-* `V_i` = количество успешных валидаций
-* `P_i` = penalty score (штрафы)
+* `TX_i` = list of transactions processed by node i per epoch
+* `F_i` = total fees for TX_i
+* `V_i` = count of successful validations
+* `P_i` = penalty score
 
 **Constants:**
 
-* α, β, δ = коэффициенты веса
+* α, β, δ = weight coefficients
 
 **Output:**
 `S_i = α·|TX_i| + β·F_i - δ·P_i`
 
-S_i нормализуется по всем узлам:
+S_i is normalized across all nodes:
 `weight_i = S_i / Σ S_j`
 
-Роли назначаются в зависимости от `weight_i`.
+Roles are assigned depending on `weight_i`.
 
-### 3. Настройка параметров
+### 3. Parameter Tuning
 
-Коэффициенты α, β и δ определяются протоколом управления. Они могут динамически корректироваться на основе модели нагрузки и экономических симуляций. AI‑агенты мониторят эффективность параметров и при необходимости предлагают изменения.
+Coefficients α, β, and δ are determined by the governance protocol. They can be dynamically adjusted based on load models and economic simulations. AI agents monitor parameter efficiency and propose changes if necessary.
 
-## V. Журнал и механизм отката
+## V. Ledger and Rollback Mechanism
 
-AST обеспечивает детерминированный и аудитируемый журнал всех транзакций. Модуль журнала (audit ledger) обеспечивает:
+AST ensures a deterministic and auditable ledger of all transactions. The audit ledger module provides:
 
-1. **Неизменяемость.** Каждая запись содержит DPH, агрегированную подпись валидаторов, ссылки на предыдущие записи и хеши шардов. Любое изменение приводит к несоответствию хешей, что делает откат транзакции допустимым только через протокол управления.
-2. **Механизм отката.** В случае обнаружения ошибки (например, баг в смарт‑контракте или мошенничество) комитет управления может инициировать откат до последней согласованной записи. Алгоритм отката воспроизводит состояние, игнорируя нарушающие транзакции, и реэмитирует токены, если нужно. Этот процесс контролируется AI‑агентами и фиксируется в отдельном журнале.
-3. **Мультивалидаторская подпись.** Для записи используется агрегированная подпись (BLS/EdDSA), что упрощает проверку и уменьшает размер записи.
-4. **Интеграция с PoT.** Журнал хранит вес узлов, штрафы и награды, используемые для следующей эпохи; это позволяет реализовать сквозную репутацию.
+1. **Immutability.** Each entry contains DPH, aggregated validator signature, links to previous entries, and shard hashes. Any change leads to hash mismatch, making transaction rollback permissible only via governance protocol.
+2. **Rollback Mechanism.** In case of error detection (e.g., smart contract bug or fraud), the governance committee can initiate a rollback to the last agreed entry. The rollback algorithm replays the state, ignoring violating transactions, and re-issues tokens if needed. This process is controlled by AI agents and recorded in a separate ledger.
+3. **Multi-Validator Signature.** An aggregated signature (BLS/EdDSA) is used for recording, simplifying verification and reducing entry size.
+4. **PoT Integration.** The ledger stores node weights, penalties, and rewards used for the next epoch; this allows implementing end-to-end reputation.
 
-## VI. Архитектура NodeChain
+## VI. NodeChain Architecture
 
-### 1. Компоненты
+### 1. Components
 
-* **Sharding Layer.** Транзакции разбиваются на фрагменты для параллельной обработки. Каждый шард назначается набору валидаторов и аттестаторов, что повышает масштабируемость. Шардирование основано на адресной хеш‑функции и может динамически изменять количество шардов в зависимости от нагрузки.
-* **Execution Manager.** Управляет распределением транзакций по узлам, контролирует тайм‑ауты и проверяет подписи. Если узел не выполняет свои обязанности, он получает штраф P_i в формуле веса.
-* **Gossip Network.** Узлы обмениваются заголовками блоков, метаданными и подписями через p2p‑слой. Используются механизмы ограничения скорости и доказательства работы, чтобы предотвратить DoS‐атаки.
-* **API Gateway.** Публичные и приватные API для регистрации узлов, мониторинга, отправки транзакций. Разделение портов и ролевая модель (RBAC) обеспечивают безопасность.
+* **Sharding Layer.** Transactions are broken into fragments for parallel processing. Each shard is assigned to a set of validators and attestators, increasing scalability. Sharding is based on an address hash function and can dynamically change the number of shards depending on load.
+* **Execution Manager.** Manages transaction distribution to nodes, controls timeouts, and verifies signatures. If a node fails its duties, it receives a penalty P_i in the weight formula.
+* **Gossip Network.** Nodes exchange block headers, metadata, and signatures via a p2p layer. Rate limiting and proof-of-work mechanisms are used to prevent DoS attacks.
+* **API Gateway.** Public and private APIs for node registration, monitoring, sending transactions. Port separation and role model (RBAC) ensure security.
 
-### 2. Поток обработки транзакции
+### 2. Transaction Processing Flow
 
-1. Пользователь отправляет запрос (например, токенизация актива) через API.
-2. Запрос попадает в Bridge Layer, который выполняет KYC/AML, проверяет резервы и записывает операцию в реестр `usedReferences`.
-3. Запрос конвертируется в транзакцию NodeChain и шардируется.
-4. Валидаторы в PoT Engine получают пакет транзакций, проверяют подписи и правила (нет ли двойной эмиссии) и отправляют голос.
-5. Аттестаторы проверяют подписи валидаторов и агрегируют голоса. При достижении кворума транзакция считается окончательной.
-6. Комиссия за транзакцию распределяется между узлами (оплата за работу), а в случае токенизации ArosCoin чеканится или сжигается (Reverse Bridge).
-7. Журнал записывает DPH, подписи и детали транзакции. Если процесс завершается с ошибкой, может быть инициирован откат.
+1. User sends a request (e.g., asset tokenization) via API.
+2. Request hits Bridge Layer, which performs KYC/AML, checks reserves, and records operation in `usedReferences` ledger.
+3. Request is converted to NodeChain transaction and sharded.
+4. Validators in PoT Engine receive transaction batch, check signatures and rules (no double issuance), and send vote.
+5. Attestators verify validator signatures and aggregate votes. Upon reaching quorum, transaction is considered final.
+6. Transaction fee is distributed among nodes (payment for work), and in case of tokenization, ArosCoin is minted or burned (Reverse Bridge).
+7. Ledger records DPH, signatures, and transaction details. If process fails, rollback may be initiated.
 
-### 3. Безопасность и fault tolerance
+### 3. Security and Fault Tolerance
 
-* **Ограничение пропускной способности.** Ограничение количества транзакций от одного адреса/узла предотвращает DoS.
-* **Многоуровневая аутентификация.** Аппаратные кошельки обязательны для управляющих операций; узлы проходят сертификацию и KYC.
-* **Слэшинг и штрафы.** Узлы, замеченные в нарушениях (фронт‑раннинг, двойное голосование), получают штрафы в PoT; может быть применено сжигание стейка.
-* **AI‑мониторинг.** Агенты анализируют потоки и обнаруживают аномалии (Sybil‑атаки, манипуляции оракулом).
-* **Мульти‑провайдерные оракулы.** Для внешних данных используются несколько оракулов; результаты агрегируются, чтобы предотвратить манипуляции.
+* **Throughput Limiting.** Limiting transaction count from one address/node prevents DoS.
+* **Multi-Level Authentication.** Hardware wallets mandatory for governance operations; nodes undergo certification and KYC.
+* **Slashing and Penalties.** Nodes caught in violations (front-running, double voting) receive penalties in PoT; stake burning may apply.
+* **AI Monitoring.** Agents analyze streams and detect anomalies (Sybil attacks, oracle manipulation).
+* **Multi-Provider Oracles.** Multiple oracles are used for external data; results are aggregated to prevent manipulation.
 
-## VII. Токенизация и конверсионная логика (Bridge Layer)
+## VII. Tokenization and Conversion Logic (Bridge Layer)
 
-### 1. Официальный протокол токенизации
+### 1. Official Tokenization Protocol
 
-Процесс токенизации включает следующие шаги:
+The tokenization process involves the following steps:
 
-1. **Инициация.** Пользователь отправляет запрос на токенизацию через API моста, указывая сумму и тип актива (фиат или криптовалюта).
-2. **KYC/AML.** Bridge Layer вызывает комплаенс‑оракулы для проверки личности и происхождения средств. Только белые списки пользователей допускаются.
-3. **Депозит и резерв.** Актив размещается на кастодиальном счёте или в холодном хранилище; смарт‑контракт `ArosCoinReserveManager.sol` фиксирует уникальный идентификатор транзакции, добавляет его в `usedReferences` и чеканит ArosCoin 1:1.
-4. **Запись в журнал и выпуск.** Транзакция токенизации проходит через NodeChain; комиссия распределяется, ArosCoin поступает пользователю.
+1. **Initiation.** User sends tokenization request via Bridge API, specifying amount and asset type (fiat or crypto).
+2. **KYC/AML.** Bridge Layer calls compliance oracles to verify identity and source of funds. Only whitelisted users are admitted.
+3. **Deposit and Reserve.** Asset is placed in custodial account or cold storage; `ArosCoinReserveManager.sol` smart contract records unique transaction identifier, adds it to `usedReferences`, and mints ArosCoin 1:1.
+4. **Ledger Recording and Issuance.** Tokenization transaction passes through NodeChain; fee is distributed, ArosCoin goes to user.
 
-### 2. Обратная токенизация
+### 2. Reverse Tokenization
 
-1. **Запрос на выкуп.** Пользователь отправляет ArosCoin на адрес моста с просьбой конвертации в исходный актив.
-2. **Проверка usedReferences.** Контракт проверяет, что токен ещё не был выкуплен; иначе транзакция отклоняется.
-3. **Сжигание токена.** ArosCoin уничтожается или блокируется; актив возвращается пользователю через кастодиальный счёт.
-4. **Логирование.** Все операции записываются в конверсионный реестр; аудитор может проверить, что количество чеканенных токенов всегда равно количеству депонированных активов (чистое резервирование).
+1. **Redemption Request.** User sends ArosCoin to bridge address requesting conversion to original asset.
+2. **UsedReferences Check.** Contract checks that token hasn't been redeemed yet; otherwise transaction is rejected.
+3. **Token Burning.** ArosCoin is destroyed or locked; asset is returned to user via custodial account.
+4. **Logging.** All operations are recorded in conversion ledger; auditor can verify that count of minted tokens always equals count of deposited assets (clean reservation).
 
-### 3. Доверительные границы
+### 3. Trust Boundaries
 
-Все ценности переходят границу только через мост; прямой P2P‑мост запрещён. Входящие активы помещаются в карантин до завершения KYC/AML и проверки резерва; исходящие активы выплачиваются только после подтверждения сжигания. Модель исключает спекулятивную эмиссию и обеспечивает 1:1 покрытие ArosCoin.
+All values cross the boundary only via the bridge; direct P2P bridge is prohibited. Incoming assets are quarantined until KYC/AML and reserve check completion; outgoing assets are paid only after burn confirmation. The model excludes speculative emission and ensures 1:1 ArosCoin backing.
 
-## VIII. Обратная конвертация и кросс‑юрисдикционный мост
+## VIII. Reverse Conversion and Cross-Jurisdiction Bridge
 
-AST поддерживает Cross‑Jurisdiction Legal Bridge, чтобы проводить транзакции между странами с различными правовыми режимами. Ключевые компоненты:
+AST supports Cross-Jurisdiction Legal Bridge to conduct transactions between countries with different legal regimes. Key components:
 
-1. **Legal Event Encoder.** Переводит события AST (транзакции, эмиссии) в юридически значимые сообщения, привязанные к локальной юрисдикции.
-2. **Jurisdictional Trust Tokens (JTT).** Токены, представляющие доверие конкретной юрисдикции. Они позволяют проводить сделки между странами, не унифицируя законодательства: каждая сторона принимает JTT своей юрисдикции.
-3. **Dual Attestation Engine.** Требует подтверждения обеих сторон — узлов AST и внешнего регулятора — прежде чем провести операцию. Это обеспечивает двойной контроль и предотвращает правовые нарушения.
-4. **Матрица трансляции AML/KYC.** Отображает требования разных стран и автоматизирует проверку соответствия.
+1. **Legal Event Encoder.** Translates AST events (transactions, emissions) into legally significant messages tied to local jurisdiction.
+2. **Jurisdictional Trust Tokens (JTT).** Tokens representing trust of a specific jurisdiction. They allow conducting deals between countries without unifying legislation: each party accepts JTT of its jurisdiction.
+3. **Dual Attestation Engine.** Requires confirmation from both sides — AST nodes and external regulator — before conducting operation. This ensures dual control and prevents legal violations.
+4. **AML/KYC Translation Matrix.** Maps requirements of different countries and automates compliance check.
 
-## IX. Жизненный цикл транзакции (пример)
+## IX. Transaction Lifecycle (Example)
 
-1. Инициатор посылает запрос на токенизацию 1000 USD. Он проходит KYC/AML и размещает деньги на кастодиальном счёте.
-2. Bridge Layer фиксирует уникальный ID и вызывает mint в `ArosCoinReserveManager.sol`. Контракт проверяет, что ID не использован, и чеканит 1000 ArosCoin.
-3. NodeChain получает транзакцию, шардирует её и распределяет между валидаторами.
-4. Валидаторы подтверждают правильность mint, аттестаторы собирают подписи, и транзакция фиксируется. Комиссия (например, 0,5 ArosCoin) распределяется между узлами.
-5. Пользователь получает 999,5 ArosCoin (1000 минус комиссия).
-6. Позже пользователь подаёт запрос на выкуп 500 ArosCoin. Bridge Layer проверяет ID, сжигает 500 ArosCoin и инициирует выплату 500 USD. NodeChain фиксирует транзакцию, распределяет комиссию, а резерв сокращается. Реестр `usedReferences` обновляется.
+1. Initiator sends request to tokenize 1000 USD. Passes KYC/AML and places money in custodial account.
+2. Bridge Layer records unique ID and calls mint in `ArosCoinReserveManager.sol`. Contract checks ID is unused and mints 1000 ArosCoin.
+3. NodeChain receives transaction, shards it, and distributes among validators.
+4. Validators confirm mint correctness, attestators collect signatures, and transaction is finalized. Fee (e.g., 0.5 ArosCoin) is distributed among nodes.
+5. User receives 999.5 ArosCoin (1000 minus fee).
+6. Later, user submits request to redeem 500 ArosCoin. Bridge Layer checks ID, burns 500 ArosCoin, and initiates payout of 500 USD. NodeChain records transaction, distributes fee, and reserve is reduced. `usedReferences` registry is updated.
 
-В случае ошибки (например, обнаружен дубликат ID) AI‑агенты сигнализируют, комитет управления приостанавливает операции и инициирует откат до предыдущей записи, чтобы исправить несоответствие.
+In case of error (e.g., duplicate ID detected), AI agents signal, governance committee pauses operations and initiates rollback to previous entry to fix discrepancy.
 
-## X. Возможности форка и эволюция
+## X. Forking Capabilities and Evolution
 
-AST может адаптироваться под различные юрисдикции и бизнес‑требования через форки:
+AST can adapt to various jurisdictions and business requirements via forks:
 
-1. **Параметры комплаенса.** В каждой форк‑сети можно установить собственные правила KYC/AML, разрешённые активы, лимиты транзакций.
-2. **Эмиссионные параметры.** Форк может изменить коэффициенты α, β, γ в формуле динамической эмиссии и долю сжигания, чтобы регулировать инфляцию и стимулировать участие.
-3. **AI‑слой.** Организация может обучать свои AI‑модели для обнаружения аномалий, учитывая локальные особенности.
-4. **Неизменяемое ядро.** Базовые принципы — оплата за работу, отсутствие предмайнинга, наличие реальных резервов, журнал и PoT — остаются неизменными.
+1. **Compliance Parameters.** Each fork network can set its own KYC/AML rules, allowed assets, transaction limits.
+2. **Emission Parameters.** Fork can change coefficients α, β, γ in dynamic emission formula and burn rate to regulate inflation and stimulate participation.
+3. **AI Layer.** Organization can train its own AI models for anomaly detection considering local specifics.
+4. **Immutable Core.** Basic principles — payment for work, absence of pre-mining, real reserve backing, ledger, and PoT — remain immutable.
 
-## XI. Интеграция и руководство для разработчиков
+## XI. Integration and Developer Guide
 
-1. **Пройти регистрацию и аутентификацию.** Использовать gRPC или REST API `/node/register` и `/node/auth` для узлов.
-2. **Использовать SDK.** Предоставляется SDK, который абстрагирует работу с NodeChain, PoT и мостом.
-3. **Следовать контрактам моста.** Для токенизации/обратной токенизации вызывать методы `/bridge/mint` и `/bridge/burn`, указывая `referenceID`, тип актива, сумму и `kyc_id`.
-4. **Регистрировать оракулы.** Для интеграции внешних данных необходимо зарегистрировать оракула.
-5. **Реализовать журналы и мониторинг.** Хранить локальные копии аудиторских журналов.
+1. **Register and Authenticate.** Use gRPC or REST API `/node/register` and `/node/auth` for nodes.
+2. **Use SDK.** SDK provided (Rust/Go/Python) abstracting work with NodeChain, PoT, and Bridge.
+3. **Follow Bridge Contracts.** For tokenization/reverse tokenization, call `/bridge/mint` and `/bridge/burn` methods, specifying `referenceID`, asset type, amount, and `kyc_id`.
+4. **Register Oracles.** To integrate external data, register an oracle and ensure minimum three independent sources to avoid manipulation.
+5. **Implement Logs and Monitoring.** Store local copies of audit logs.
 
-## XII. Масштабирование и динамическая эмиссия
+## XII. Scaling and Dynamic Emission
 
-1. **Масштабирование через шардирование.** Увеличение количества шардов распределяет нагрузку; шард‑менеджер изменяет количество фрагментов в зависимости от параметра U (загрузка сети).
-2. **Динамическая эмиссия.** Формула `T_E = α·TV + β·U + γ` адаптирует общий выпуск токенов.
-3. **Экономические симуляции.** Регуляторные комитеты используют симуляции для настройки параметров.
-4. **Автономная корректировка.** AI‑агенты анализируют загрузку сети и предлагают корректировки параметров.
+1. **Scaling via Sharding.** Increasing shard count distributes load; shard manager changes fragment count depending on parameter U (network utilization).
+2. **Dynamic Emission.** Formula `T_E = α·TV + β·U + γ` adapts total token issuance.
+3. **Economic Simulations.** Regulatory committees use simulations to tune parameters.
+4. **Autonomous Adjustment.** AI agents analyze network load and propose parameter adjustments.
 
-## XIII. Безопасность и Zero Trust
+## XIII. Security and Zero Trust
 
-1. **Модель угроз.** DoS, Sybil, манипуляции оракулом рассматриваются как основные угрозы.
-2. **Zero Trust.** Любые запросы проверяются, даже если они исходят от «доверенных» узлов.
-3. **Мультиподпись и hardware wallets.** Критические операции требуют мультиподписи.
-4. **Логирование и аудит.** Все действия фиксируются в неизменяемом журнале.
-5. **AI‑обнаружение аномалий.** Агенты мониторят поведение узлов и выявляют спам/аномалии.
+1. **Threat Model.** DoS, Sybil, oracle manipulations are considered main threats.
+2. **Zero Trust.** Any requests are verified, even if from "trusted" nodes.
+3. **Multi-Sig and Hardware Wallets.** Critical operations require multi-sig.
+4. **Logging and Audit.** All actions recorded in immutable ledger.
+5. **AI Anomaly Detection.** Agents monitor node behavior and identify spam/anomalies.
 
-## XVII. Заключение
+## XIV. Deployment and Operation
 
-AST представляет собой полностью автономную, комплаенс‑ориентированную токенизационную систему, где обработка транзакций выполняется узловой сетью NodeChain, оплата узлам рассчитывается на основе реальных комиссий, а каждый токен обеспечен резервом. Динамическая модель эмиссии обеспечивает адаптивное масштабирование и устранение инфляции, AI‑агенты и юридические механизмы гарантируют безопасность и соответствие требованиям различных юрисдикций.
+1. **Infrastructure.** Nodes recommended to be deployed across three availability zones for fault tolerance. Nodes must have dedicated CPU/GPU for PoT processing, isolated networks, and encrypted disk support.
+2. **Updates.** All protocol updates pass through governance committee. New version deployed first to testnet, then mainnet. Old versions supported until backward compatibility period ends.
+3. **Monitoring.** Use node state monitoring (CPU, memory, latency) and integration with logging system (Prometheus/Grafana). AI agents publish signals on potential problems.
+4. **Legal Compliance.** Bridge operators must hold licenses in their jurisdictions. All operations must comply with AML/KYC.
+
+## XV. Legal Boundaries and Compliance
+
+1. **Tokenized Deposits.** ArosCoin is treated as a tokenized deposit. Legal documents clarify the token is always backed by an asset, and double issuance is excluded.
+2. **Cross-Jurisdiction Bridge.** Use of JTT and Dual Attestation Engine ensures compliance with legal norms of different countries. Operators must consider local requirements for sanctions, reporting, and taxes.
+3. **Speculation Ban.** ArosCoin emission permitted only to cover fees and asset tokenization; secondary market trading regulated by external laws. System does not support ICO/IEO.
+4. **Guaranteed Reserve.** All tokens created via bridge are 100% backed by reserve. Accounting and audit reports available for regulators.
+
+## XVI. Additional Applications
+
+### A. Example Requests
+
+1. **Node Registration:**
+
+    ```json
+    POST /node/register
+    {
+      "pub_key": "0xABCD...",
+      "metadata": {"operator": "ExampleOps", "jurisdiction": "DE"}
+    }
+    → Response: {"node_id": "0x1234", "challenge": "0x5678"}
+    ```
+
+2. **Authentication:**
+
+    ```json
+    POST /node/auth
+    {
+      "node_id": "0x1234",
+      "signature": "0xSIGNATURE_OF_CHALLENGE"
+    }
+    → Response: {"auth_token": "token123", "status": "active"}
+    ```
+
+### B. Formulas
+
+* Block Emission: E = F / N (F - fee, N - validator count)
+* Total Issuance: T_E = α·TV + β·U + γ
+* Distribution: R_i = (S_i / ΣS)·T_adj
+
+## XVII. Conclusion
+
+AST represents a fully autonomous, compliance-oriented tokenization system where transaction processing is performed by the NodeChain node network, node payment is calculated based on real fees, and each token is backed by a reserve. The dynamic emission model ensures adaptive scaling and inflation elimination, while AI agents and legal mechanisms guarantee security and compliance with requirements of various jurisdictions.

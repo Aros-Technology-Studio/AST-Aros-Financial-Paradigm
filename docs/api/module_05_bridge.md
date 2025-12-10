@@ -3,9 +3,11 @@
 Endpoints used to manage user identity and compliance status.
 
 ### `POST /kyc/submit`
+
 Called by a 3rd-party KYC Provider (or partner bank) to submit the results of an off-chain identity check.
 
 **Request Body:**
+
 ```json
 {
   "userId": "user-uuid-...",       // Partner's internal user ID
@@ -52,10 +54,10 @@ Initiates a request to tokenize fiat currency. This is called *after* a user has
 {
   "reqId": "partner-tx-uuid-...",
   "kind": "TOKENIZE",
-  "amount": "10000.000000000", // 9 decimal precision string
+  "amount": "10000.000000000", // 9 decimal precision string (ArosCoin)
   "astAccountId": "ast-...",    // Target AST account
   "fiatTxId": "bank-ref-12345", // Reference to the off-chain fiat deposit
-  "signedByALB": "0x..."        // Signature from the ALB (partner's server)
+  "signedByPartner": "0x..."        // Signature from the Partner (bank's server)
 }
 ```
 
@@ -64,7 +66,7 @@ Initiates a request to tokenize fiat currency. This is called *after* a user has
 
 ### `POST /bridge/reverse-tokenize`
 
-Initiates a request to "burn" on-chain assets (e.g., AFC) in exchange for fiat. This is the "crypto-to-fiat" exit.
+Initiates a request to "burn" on-chain assets (e.g., ArosCoin) in exchange for fiat. This is the "crypto-to-fiat" exit.
 
 **Request Body:**
 *(See `bridge_request.schema.json`)*
@@ -73,10 +75,10 @@ Initiates a request to "burn" on-chain assets (e.g., AFC) in exchange for fiat. 
 {
   "reqId": "partner-tx-uuid-...",
   "kind": "REVERSE_TOKENIZE",
-  "amount": "500.000000000",   // Amount of AFC to burn
+  "amount": "500.000000000",   // Amount of ArosCoin to burn
   "astAccountId": "ast-...",    // Source AST account
   "fiatAccountId": "CH...bank-iban...", // Target fiat bank account
-  "signedByALB": "0x..."        // Signature from the ALB (partner's server)
+  "signedByPartner": "0x..."        // Signature from the Partner (bank's server)
 }
 ```
 

@@ -1,6 +1,6 @@
 # Tokenomics Documentation
 
-This directory contains key documentation regarding the economic model of the AST/AFC ecosystem.
+This directory contains key documentation regarding the economic model of the AST ecosystem.
 
 ## Contents
 

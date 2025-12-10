@@ -1,6 +1,7 @@
 # epoch_allocation_model.md
 
 ## Module: Epoch Allocation Model
+
 - **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
@@ -10,7 +11,7 @@
 
 ## Overview
 
-This module defines the rules, boundaries, and mechanics by which ArosCoin (AROS) emission is distributed across time-based or event-based epochs. The goal is to enforce a predictable, governance-controlled, and shard-aware token allocation model that balances reward, deflation, and operational sustainability.
+This module defines the rules, boundaries, and mechanics by which ArosCoin (AROS) emission is distributed across time-based or event-based epochs. The goal is to enforce a predictable, governance-controlled, and shard-aware token allocation model that balances payment for work, deflation, and operational sustainability.
 
 Epochs serve as **bounded time or event windows**, each with a defined **maximum emission capacity**, **distribution logic**, and **auditable state hash**.
 
@@ -58,7 +59,7 @@ The emitted volume is subdivided by role:
 
 | **Role** | **Allocation %** |
 | --- | --- |
-| Validator reward | 60% |
+| Validator Payment | 60% |
 | Governance pool | 25% |
 | Ecosystem reserve | 10% |
 | Risk buffer | 5% |
@@ -96,6 +97,7 @@ This data is stored via emission_reporting_and_traceability.md.
 ---
 
 ## **Mermaid Diagram**
+
 ```
 flowchart TD
     A[New Epoch Starts] --> B[Track Emission Triggers]

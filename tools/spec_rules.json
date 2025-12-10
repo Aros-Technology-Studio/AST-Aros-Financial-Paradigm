@@ -1,53 +1,114 @@
 {
   // Terminology controls: forbidden vs allowed terms
   "terminology": {
-    "forbidden": ["reward", "rewards", "Reward", "вознагражд"],
-    "allowed": ["payment", "payments", "payout", "settlement", "оплата", "выплата", "расчёт"]
+    "forbidden": [
+      "reward",
+      "rewards",
+      "Reward",
+      "woзнагражд",
+      "stake-to-validate"
+    ],
+    "allowed": [
+      "payment",
+      "payments",
+      "payout",
+      "settlement",
+      "оплата",
+      "выплата",
+      "расчёт"
+    ]
   },
-
   // Logical invariants for PoT / NodeChain
   "logic": {
     "must_have_markers": [
-      "payment_rate", "qos_multiplier", "tx_weight", "risk_adjustment", "settle_payments"
+      "payment_rate",
+      "qos_multiplier",
+      "tx_weight",
+      "risk_adjustment",
+      "settle_payments",
+      "PoT",
+      "Dynamic Emission"
     ],
-    "audit_markers": ["rollback", "checkpoint", "audit", "journal", "state hash", "append-only"],
-    "kyc_markers": ["KYC", "AML", "compliance"],
-    "kyc_require": ["region", "jurisdiction", "retention"],
-    "time_markers": ["syncClock", "TTL", "time drift", "heartbeat", "nonce"],
+    "audit_markers": [
+      "rollback",
+      "checkpoint",
+      "audit",
+      "journal",
+      "state hash",
+      "append-only"
+    ],
+    "kyc_markers": [
+      "KYC",
+      "AML",
+      "compliance"
+    ],
+    "kyc_require": [
+      "region",
+      "jurisdiction",
+      "retention"
+    ],
+    "time_markers": [
+      "syncClock",
+      "TTL",
+      "time drift",
+      "heartbeat",
+      "nonce"
+    ],
     "ttl_max_seconds": 120,
-    "crypto_markers": ["signature", "ECDSA", "challenge-response", "nonce", "hash", "quorum"],
-    "non_speculative_forbidden": ["staking rewards"],
+    "crypto_markers": [
+      "signature",
+      "ECDSA",
+      "challenge-response",
+      "nonce",
+      "hash",
+      "quorum"
+    ],
+    "non_speculative_forbidden": [
+      "staking rewards"
+    ],
     "layer_cross_refs": [
       {
-        "if_any": ["PoT", "payment_rate"],
+        "if_any": [
+          "PoT",
+          "payment_rate"
+        ],
         "then_any_in_files": [
           "07_processing_layer/tx_journal_writer.md",
           "07_processing_layer/tx_audit_log_format.md"
         ]
       },
       {
-        "if_any": ["rollback"],
+        "if_any": [
+          "rollback"
+        ],
         "then_any_in_files": [
           "07_processing_layer/tx_rollback_strategy.md"
         ]
       },
       {
-        "if_any": ["KYC","AML"],
+        "if_any": [
+          "KYC",
+          "AML"
+        ],
         "then_any_in_files": [
           "05_bridge_layer/kyc_aml_interface_bridge.md"
         ]
       }
     ]
   },
-
   // Documentation quality rules
   "docs_style": {
-    "forbidden_markers": ["TODO", "FIXME", "TBD", "???", "ВРЕМЕННО"],
+    "forbidden_markers": [
+      "TODO",
+      "FIXME",
+      "TBD",
+      "???",
+      "ВРЕМЕННО"
+    ],
     "language_mixed_threshold": 0.20,
     "require_h1": true,
     "check_mermaid": true
   },
-
   // Scoring weights and hard-fail categories
   "scoring": {
     "overall_threshold": 75.0,
@@ -62,6 +123,10 @@
       "cross_layer_refs": 2,
       "doc_style": 1
     },
-    "hard_fail": ["terminology_forbidden", "contradiction_rollback", "json_invalid"]
+    "hard_fail": [
+      "terminology_forbidden",
+      "contradiction_rollback",
+      "json_invalid"
+    ]
   }
 }

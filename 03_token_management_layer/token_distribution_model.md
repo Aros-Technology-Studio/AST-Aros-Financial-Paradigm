@@ -8,7 +8,7 @@ This document outlines the distribution logic of newly minted ArosCoins and the 
 
 ## Distribution Pools
 
-Upon issuance, tokens are distributed into the following pools:
+Upon issuance (triggered by the Dynamic Emission Formula `T_E = α·TV + β·U + γ`), tokens are distributed into the following allocations:
 
 | Pool Name           | Purpose                                             | Default Share |
 |---------------------|------------------------------------------------------|---------------|
@@ -36,8 +36,8 @@ graph TD
 ## **Processing Nodes**
 
 - **Direct payouts** occur to addresses that participated in the processing of the originating transaction.
-- **Reward split** is proportional to the processing weight (node_weight) of each contributing node.
-- Rewards are claimable after passing audit verification to prevent double-claiming.
+- **Payment split** is calculated using the Proof-of-Transaction (PoT) formula, weighting the node's contribution to the specific transaction batch.
+- Payments are claimable after passing audit verification to prevent double-claiming.
 
 ---
 
@@ -45,10 +45,10 @@ graph TD
 
 - Managed by AST core contributors or All-Seeing Eye governance module.
 - Use cases include:
-    - Developer grants and bounties
-    - Strategic partnerships
-    - Marketing and ecosystem expansion
-    - Onboarding of validator infrastructure
+  - Developer grants and bounties
+  - Strategic partnerships
+  - Marketing and ecosystem expansion
+  - Onboarding of validator infrastructure
 
 ---
 
@@ -56,9 +56,9 @@ graph TD
 
 - Controlled by the All-Seeing Eye governance framework.
 - May be used for:
-    - Upgrading protocol-level logic
-    - Funding audits, legal infrastructure
-    - Staking-based community voting incentives
+  - Upgrading protocol-level logic
+  - Funding audits, legal infrastructure
+  - Staking-based community voting incentives
 
 ---
 
@@ -66,9 +66,9 @@ graph TD
 
 - Locked in a multisig vault.
 - Released only during:
-    - Major system bugs
-    - On-chain liquidity crises
-    - Severe market attacks or manipulations
+  - Major system bugs
+  - On-chain liquidity crises
+  - Severe market attacks or manipulations
 - Requires multi-party approval from governance AI and selected human validators.
 
 ---
@@ -86,7 +86,8 @@ All distributions are:
 ## **Linked Documents**
 
 - token_issuance_protocol.md
-- node_reward_allocation.md
+- token_issuance_protocol.md
+- node_payment_allocation.md
 - aroscoin_supply_model.md
 
 ```

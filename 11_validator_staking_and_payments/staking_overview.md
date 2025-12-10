@@ -18,7 +18,7 @@ Staking in AST is not only an economic commitment but a governance and security 
 
 ## Key Principles
 
-- **Stake-to-Validate**: Only nodes with an active stake are eligible to validate transactions and participate in PoT attestation.
+- **PoT Activity + Security Deposit**: Only nodes with an active stake are eligible to validate transactions and participate in PoT attestation.
 - **Epoch-Based Lifecycle**: Stake commitment is tied to epoch duration; early withdrawal is not permitted.
 - **Slashing Enforcement**: Misbehavior or inactivity results in stake reduction or full penalty.
 - **Payment Binding**: Emission payments are distributed proportionally to stake-weighted and performance-based validators.

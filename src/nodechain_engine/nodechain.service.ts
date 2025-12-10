@@ -1,7 +1,9 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { NodeType, ConnectedNode, Block, Vote } from './consensus.types';
-import { hashData } from '../processing/processing.utils'; // Reusing shared utils
+import { hashData } from '../processing/processing.utils';
+import { ShardingManager } from './sharding.manager';
+import { GossipSimulationService } from './gossip.simulation';
 
 @Injectable()
 export class NodeChainService {
@@ -12,7 +14,10 @@ export class NodeChainService {
     private chain: Block[] = [];
     private pendingVotes: Map<string, Vote[]> = new Map(); // blockHash -> Votes[]
 
-    constructor() {
+    constructor(
+        private readonly shardingManager: ShardingManager,
+        private readonly gossipService: GossipSimulationService
+    ) {
         // Initialize Genesis Block
         this.createGenesisBlock();
     }
@@ -83,11 +88,15 @@ export class NodeChainService {
         // Auto-vote pass for simulation if we have validators, else just generic pass
         if (validators.length > 0) {
             // Collect simulated votes
+            // In a real flow, this would be asynchronous via gossip
         }
 
-        // Mark finalized
+        // 3. Mark finalized & Gossip
         block.status = 'FINALIZED';
         this.chain.push(block);
+
+        this.gossipService.broadcastBlockProposal(block);
+
         this.logger.log(`Block #${block.index} FINALIZED. Chain height: ${this.chain.length}`);
 
         return block;

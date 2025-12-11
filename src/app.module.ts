@@ -13,6 +13,7 @@ import { PoTEngineModule } from './proof_of_transaction_engine/pot_engine.module
 import { LedgerModule } from './ledger/ledger.module';
 import { DteModule } from './dte/dte.module';
 import { ValidatorModule } from './validator/validator.module';
+import { AstNodeModule } from './ast_node/ast_node.module';
 
 import { AppController } from './app.controller';
 
@@ -48,6 +49,7 @@ import { AppController } from './app.controller';
         LedgerModule,
         DteModule,
         ValidatorModule,
+        AstNodeModule,
     ],
     controllers: [AppController],
     providers: [],

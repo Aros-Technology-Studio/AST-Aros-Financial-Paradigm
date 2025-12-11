@@ -14,6 +14,7 @@ import { LedgerModule } from './ledger/ledger.module';
 import { DteModule } from './dte/dte.module';
 import { ValidatorModule } from './validator/validator.module';
 import { AstNodeModule } from './ast_node/ast_node.module';
+import { OversightModule } from './oversight/oversight.module';
 
 import { AppController } from './app.controller';
 
@@ -50,6 +51,7 @@ import { AppController } from './app.controller';
         DteModule,
         ValidatorModule,
         AstNodeModule,
+        OversightModule,
     ],
     controllers: [AppController],
     providers: [],

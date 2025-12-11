@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-12-10T23:42:39.778335Z",
+  "timestamp": "2025-12-11T09:18:27.589700Z",
   "score": 0.0,
   "threshold": 75.0,
   "hard_fail": true,
@@ -16,16 +16,16 @@
       "errors": 6,
       "warnings": 8
     },
+    "CRYPTO-LINK": {
+      "errors": 66,
+      "warnings": 0
+    },
     "TERM-FORBID": {
-      "errors": 82,
+      "errors": 9,
       "warnings": 0
     },
     "NON-SPEC": {
-      "errors": 3,
-      "warnings": 0
-    },
-    "CRYPTO-LINK": {
-      "errors": 66,
+      "errors": 1,
       "warnings": 0
     },
     "AUD-ROLLBACK": {
@@ -84,38 +84,6 @@
     },
     {
       "file": "glossary.md",
-      "line": 11,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "glossary.md",
-      "line": 11,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "glossary.md",
-      "line": 11,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "glossary.md",
-      "line": 11,
-      "rule": "NON-SPEC",
-      "severity": "error",
-      "message": "Non‑speculative design violated (\"staking rewards\")",
-      "excerpt": "staking rewards"
-    },
-    {
-      "file": "glossary.md",
       "line": 1,
       "rule": "KYC-LINK",
       "severity": "error",
@@ -124,59 +92,11 @@
     },
     {
       "file": "threat_model_global.md",
-      "line": 15,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "threat_model_global.md",
-      "line": 15,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "threat_model_global.md",
-      "line": 15,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "threat_model_global.md",
       "line": 1,
       "rule": "KYC-LINK",
       "severity": "error",
       "message": "KYC/AML mentioned without region/jurisdiction/retention",
       "excerpt": "kyc aml compliance"
-    },
-    {
-      "file": "architecture_diagrams.md",
-      "line": 15,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "architecture_diagrams.md",
-      "line": 15,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "architecture_diagrams.md",
-      "line": 15,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
     },
     {
       "file": "architecture_diagrams.md",
@@ -196,30 +116,6 @@
     },
     {
       "file": "README.md",
-      "line": 33,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "README.md",
-      "line": 33,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "README.md",
-      "line": 33,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "README.md",
       "line": 1,
       "rule": "KYC-LINK",
       "severity": "error",
@@ -233,22 +129,6 @@
       "severity": "error",
       "message": "KYC/AML mentioned without region/jurisdiction/retention",
       "excerpt": "kyc aml compliance"
-    },
-    {
-      "file": "roadmap.md",
-      "line": 38,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "roadmap.md",
-      "line": 38,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
     },
     {
       "file": "roadmap.md",
@@ -316,59 +196,11 @@
     },
     {
       "file": "economic_simulation.md",
-      "line": 120,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "economic_simulation.md",
-      "line": 120,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "economic_simulation.md",
-      "line": 120,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "economic_simulation.md",
       "line": 1,
       "rule": "KYC-LINK",
       "severity": "error",
       "message": "KYC/AML mentioned without region/jurisdiction/retention",
       "excerpt": "kyc aml compliance"
-    },
-    {
-      "file": "13_extra_supervisory_layer/observer_node_interface.md",
-      "line": 107,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "13_extra_supervisory_layer/observer_node_interface.md",
-      "line": 107,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "13_extra_supervisory_layer/observer_node_interface.md",
-      "line": 107,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
     },
     {
       "file": "13_extra_supervisory_layer/observer_node_interface.md",
@@ -467,46 +299,6 @@
       "excerpt": "signature"
     },
     {
-      "file": "10_proof_of_transaction_engine/pot_tx_incentive_distribution.md",
-      "line": 34,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_tx_incentive_distribution.md",
-      "line": 34,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_engine_overview.md",
-      "line": 31,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_engine_overview.md",
-      "line": 31,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_engine_overview.md",
-      "line": 31,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
       "file": "10_proof_of_transaction_engine/pot_engine_overview.md",
       "line": 1,
       "rule": "KYC-LINK",
@@ -523,84 +315,12 @@
       "excerpt": "signature"
     },
     {
-      "file": "10_proof_of_transaction_engine/pot_slashing_conditions.md",
-      "line": 33,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_slashing_conditions.md",
-      "line": 33,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_slashing_conditions.md",
-      "line": 33,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
       "file": "10_proof_of_transaction_engine/pot_tx_signature_model.md",
       "line": 1,
       "rule": "CRYPTO-LINK",
       "severity": "error",
       "message": "Crypto marker without nonce/hash/quorum",
       "excerpt": "signature"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_tx_weighting_model.md",
-      "line": 8,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_tx_weighting_model.md",
-      "line": 8,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_tx_weighting_model.md",
-      "line": 8,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_challenge_response.md",
-      "line": 34,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_challenge_response.md",
-      "line": 34,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "10_proof_of_transaction_engine/pot_challenge_response.md",
-      "line": 34,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
     },
     {
       "file": "10_proof_of_transaction_engine/pot_challenge_response.md",
@@ -683,62 +403,6 @@
       "excerpt": "signature"
     },
     {
-      "file": "04_aros_value_circulation/aroscoin_velocity_control.md",
-      "line": 30,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_velocity_control.md",
-      "line": 30,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "04_aros_value_circulation/vault_system_design.md",
-      "line": 19,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/vault_system_design.md",
-      "line": 19,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_distribution_tiers.md",
-      "line": 17,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_distribution_tiers.md",
-      "line": 17,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_distribution_tiers.md",
-      "line": 17,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
       "file": "04_aros_value_circulation/aroscoin_distribution_tiers.md",
       "line": 1,
       "rule": "KYC-LINK",
@@ -747,116 +411,12 @@
       "excerpt": "kyc aml compliance"
     },
     {
-      "file": "04_aros_value_circulation/liquidity_pool_mechanism.md",
-      "line": 62,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/liquidity_pool_mechanism.md",
-      "line": 62,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_buyback_mechanism.md",
-      "line": 5,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_buyback_mechanism.md",
-      "line": 5,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
       "file": "04_aros_value_circulation/aroscoin_buyback_mechanism.md",
       "line": 1,
       "rule": "KYC-LINK",
       "severity": "error",
       "message": "KYC/AML mentioned without region/jurisdiction/retention",
       "excerpt": "kyc aml compliance"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_release_schedule.md",
-      "line": 65,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_release_schedule.md",
-      "line": 65,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "04_aros_value_circulation/value_circulation_overview.md",
-      "line": 21,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/value_circulation_overview.md",
-      "line": 21,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_entry_exit_rules.md",
-      "line": 25,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_entry_exit_rules.md",
-      "line": 25,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_entry_exit_rules.md",
-      "line": 25,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_internal_flow.md",
-      "line": 15,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "04_aros_value_circulation/aroscoin_internal_flow.md",
-      "line": 15,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
     },
     {
       "file": "03_token_management_layer/contract_self_destruct_policy.md",
@@ -865,30 +425,6 @@
       "severity": "error",
       "message": "Crypto marker without nonce/hash/quorum",
       "excerpt": "signature"
-    },
-    {
-      "file": "03_token_management_layer/smart_contract_registry.md",
-      "line": 46,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "03_token_management_layer/smart_contract_registry.md",
-      "line": 46,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "03_token_management_layer/smart_contract_registry.md",
-      "line": 46,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
     },
     {
       "file": "03_token_management_layer/smart_contract_registry.md",
@@ -908,75 +444,11 @@
     },
     {
       "file": "03_token_management_layer/token_issuance_protocol.md",
-      "line": 25,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "03_token_management_layer/token_issuance_protocol.md",
-      "line": 25,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "03_token_management_layer/token_issuance_protocol.md",
       "line": 24,
       "rule": "CRYPTO-LINK",
       "severity": "error",
       "message": "Crypto marker without nonce/hash/quorum",
       "excerpt": "signature"
-    },
-    {
-      "file": "03_token_management_layer/aroscoin_supply_model.md",
-      "line": 49,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "03_token_management_layer/aroscoin_supply_model.md",
-      "line": 49,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "03_token_management_layer/aroscoin_supply_model.md",
-      "line": 49,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "03_token_management_layer/token_audit_trail.md",
-      "line": 17,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "03_token_management_layer/token_audit_trail.md",
-      "line": 17,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "03_token_management_layer/token_audit_trail.md",
-      "line": 17,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
     },
     {
       "file": "03_token_management_layer/token_audit_trail.md",
@@ -993,38 +465,6 @@
       "severity": "error",
       "message": "Crypto marker without nonce/hash/quorum",
       "excerpt": "signature"
-    },
-    {
-      "file": "03_token_management_layer/token_lock_unlock_rules.md",
-      "line": 30,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "03_token_management_layer/token_lock_unlock_rules.md",
-      "line": 30,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "03_token_management_layer/token_lock_unlock_rules.md",
-      "line": 30,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "03_token_management_layer/token_lock_unlock_rules.md",
-      "line": 49,
-      "rule": "NON-SPEC",
-      "severity": "error",
-      "message": "Non‑speculative design violated (\"staking rewards\")",
-      "excerpt": "staking rewards"
     },
     {
       "file": "03_token_management_layer/token_lock_unlock_rules.md",
@@ -1652,30 +1092,6 @@
     },
     {
       "file": "06_governance_layer/governance_token_logic.md",
-      "line": 24,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "06_governance_layer/governance_token_logic.md",
-      "line": 24,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"rewards\" found",
-      "excerpt": "rewards"
-    },
-    {
-      "file": "06_governance_layer/governance_token_logic.md",
-      "line": 24,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
-    },
-    {
-      "file": "06_governance_layer/governance_token_logic.md",
       "line": 1,
       "rule": "KYC-LINK",
       "severity": "error",
@@ -1753,22 +1169,6 @@
       "severity": "error",
       "message": "Crypto marker without nonce/hash/quorum",
       "excerpt": "signature"
-    },
-    {
-      "file": "12_nodechain_ai_agents/agent_architecture.md",
-      "line": 43,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"reward\" found",
-      "excerpt": "reward"
-    },
-    {
-      "file": "12_nodechain_ai_agents/agent_architecture.md",
-      "line": 43,
-      "rule": "TERM-FORBID",
-      "severity": "error",
-      "message": "Forbidden term \"Reward\" found",
-      "excerpt": "Reward"
     },
     {
       "file": "12_nodechain_ai_agents/agent_architecture.md",

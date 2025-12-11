@@ -90,5 +90,4 @@ Holders may contribute ARO into liquidity pools or stability reserves:
 
 AROS Coin is **not just a currency** — it is the **fuel, control key, and access point** for a new kind of regulated crypto economy. Every aspect of its usage is tied to *real functional demand*, not speculation.
 
-
 ⸻

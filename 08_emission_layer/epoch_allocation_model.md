@@ -98,7 +98,6 @@ This data is stored via emission_reporting_and_traceability.md.
 
 ## **Mermaid Diagram**
 
-```
 flowchart TD
     A[New Epoch Starts] --> B[Track Emission Triggers]
     B --> C [Check Quotas per Shard]
@@ -107,8 +106,6 @@ flowchart TD
     E --> F {Cap Reached or Time Expired?}
     F -- Yes --> G [End Epoch & Freeze Snapshot]
     F -- No --> B
-
-```
 
 ---
 
@@ -124,7 +121,3 @@ flowchart TD
 ## **Next**
 
 → See [emission_fraud_prevention.md](https://www.notion.so/aros-studio/emission_fraud_prevention.md) for rules that prevent manipulation of emission triggers.
-
-```
-
-```

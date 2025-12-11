@@ -1,3 +1,5 @@
+# Module 05: Bridge API
+
 ## 1. Compliance & Identity
 
 Endpoints used to manage user identity and compliance status.
@@ -97,7 +99,4 @@ Checks the status of a pending `TOKENIZE` or `REVERSE_TOKENIZE` request.
   "status": "PendingOnChainConfirmation", // "Pending", "PendingOnChainConfirmation", "Complete", "Failed"
   "onChainTxId": "0x...tx_hash..." // The final AST transaction hash
 }
-```
-
-```
 ```

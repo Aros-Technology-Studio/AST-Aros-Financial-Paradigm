@@ -90,6 +90,4 @@ All distributions are:
 - node_payment_allocation.md
 - aroscoin_supply_model.md
 
-```
 🔔 Подтверди, чтобы я создал следующий документ: `aroscoin_supply_model.md`.
-```

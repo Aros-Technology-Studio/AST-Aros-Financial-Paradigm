@@ -11,6 +11,7 @@ import { AiAgentsModule } from './ai_agents/ai_agents.module';
 import { NodeChainEngineModule } from './nodechain_engine/nodechain_engine.module';
 import { PoTEngineModule } from './proof_of_transaction_engine/pot_engine.module';
 import { LedgerModule } from './ledger/ledger.module';
+import { DteModule } from './dte/dte.module';
 
 import { AppController } from './app.controller';
 
@@ -44,6 +45,7 @@ import { AppController } from './app.controller';
         ProcessingModule,
         AiAgentsModule,
         LedgerModule,
+        DteModule,
     ],
     controllers: [AppController],
     providers: [],

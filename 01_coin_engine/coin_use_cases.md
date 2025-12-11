@@ -9,7 +9,9 @@ This document outlines the **primary functions** and **real-world applications**
 ## Core Use Cases
 
 ### 1. **Transaction Processing Fuel**
+
 AROS Coin is the sole payment medium for processing decentralized transactions on the AROS blockchain. Each transaction triggers:
+
 - A micro-fee charged in ARO.
 - Fee distribution to the verifying nodes.
 - Optional burn mechanism (for anti-inflation).
@@ -19,7 +21,9 @@ AROS Coin is the sole payment medium for processing decentralized transactions o
 ---
 
 ### 2. **Cross-Ecosystem Gateway**
+
 Used as an **intermediary token** to bridge fiat and crypto domains within AFC (Aros Financial Core):
+
 - Fiat → ARO via Tokenization Pipeline
 - ARO → Fiat via Reverse Tokenization
 - Smart conversion logic ensures minimal slippage and regulation compliance.
@@ -29,7 +33,9 @@ Used as an **intermediary token** to bridge fiat and crypto domains within AFC (
 ---
 
 ### 3. **Governance Token (Internal AST Layer)**
+
 AROS Coin holders may gain limited access to:
+
 - Voting rights for protocol updates (within AST, not AFC).
 - Proposal submissions to The All-Seeing Eye.
 - Risk-score-based staking privileges.
@@ -39,7 +45,9 @@ AROS Coin holders may gain limited access to:
 ---
 
 ### 4. **Access Token for AST Services**
+
 Certain high-tier services in the AROS Tokenomics platform will require users to stake or spend ARO to:
+
 - Access encrypted data services.
 - Register validator/observer nodes.
 - Unlock development sandbox layers.
@@ -47,7 +55,9 @@ Certain high-tier services in the AROS Tokenomics platform will require users to
 ---
 
 ### 5. **Incentivization Engine**
+
 AROS Coin may be distributed as **payments** in:
+
 - Bug bounty programs.
 - Stress-test campaigns for transaction infrastructure.
 - Educational training simulations (Testnet Payments).
@@ -57,7 +67,9 @@ AROS Coin may be distributed as **payments** in:
 ---
 
 ### 6. **Liquidity Contribution + Stability Reserve**
+
 Holders may contribute ARO into liquidity pools or stability reserves:
+
 - Used to ensure conversion smoothness in tokenization layers.
 - May generate staking-like passive earnings (non-yield farming).
 - Governed by transparent reserve contract.

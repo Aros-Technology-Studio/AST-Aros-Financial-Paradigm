@@ -11,7 +11,7 @@ export class ProcessingService {
         return validateRequest(data);
     }
 
-    async triggerRollback(txHash: string, reason: string): Promise<void> {
+    async triggerRollback(txHash: string, reason: string): Promise<any> {
         // Wrapper for cleanup/rollback logic
         return initiateRollback(txHash, reason);
     }

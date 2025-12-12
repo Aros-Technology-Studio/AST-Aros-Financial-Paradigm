@@ -15,6 +15,7 @@ import { DteModule } from './dte/dte.module';
 import { ValidatorModule } from './validator/validator.module';
 import { AstNodeModule } from './ast_node/ast_node.module';
 import { OversightModule } from './oversight/oversight.module';
+import { FiatModule } from './fiat/fiat.module';
 
 import { AppController } from './app.controller';
 
@@ -52,6 +53,7 @@ import { AppController } from './app.controller';
         ValidatorModule,
         AstNodeModule,
         OversightModule,
+        FiatModule,
     ],
     controllers: [AppController],
     providers: [],

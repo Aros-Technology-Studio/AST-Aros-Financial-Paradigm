@@ -4,12 +4,19 @@ import { NodeChainService } from '../src/nodechain_engine/nodechain.service';
 import { NodeType, Block } from '../src/nodechain_engine/consensus.types';
 import { hashData } from '../src/processing/processing.utils';
 
+import { ShardingManager } from '../src/nodechain_engine/sharding.manager';
+import { GossipSimulationService } from '../src/nodechain_engine/gossip.simulation';
+
 describe('NodeChainService', () => {
     let service: NodeChainService;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
-            providers: [NodeChainService],
+            providers: [
+                NodeChainService,
+                { provide: ShardingManager, useValue: {} }, // Mock ShardingManager
+                { provide: GossipSimulationService, useValue: { broadcastBlockProposal: jest.fn() } }, // Mock GossipSimulationService
+            ],
         }).compile();
 
         service = module.get<NodeChainService>(NodeChainService);

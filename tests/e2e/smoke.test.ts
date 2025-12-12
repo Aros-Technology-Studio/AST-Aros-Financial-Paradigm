@@ -1,12 +1,13 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
 import { createServer } from '../../src/platform/server';
 import { type AddressInfo } from 'node:net';
 
-test('serves healthcheck', async () => {
-  const server = createServer().listen(0);
-  const { port } = server.address() as AddressInfo;
-  const res = await fetch(`http://localhost:${port}`);
-  assert.equal(res.status, 200);
-  server.close();
+describe('Smoke Test', () => {
+  it('serves healthcheck', async () => {
+    const server = createServer().listen(0);
+    const { port } = server.address() as AddressInfo;
+    const res = await fetch(`http://localhost:${port}`);
+    expect(res.status).toBe(200);
+    server.close();
+  });
 });
+

@@ -4,14 +4,14 @@
 
 This document outlines the functional design and architectural principles of the NodeChain Engine — the core subsystem responsible for executing decentralized transaction processing within the AST (Aros Studio Tokenomics) ecosystem.
 
-It introduces the logic behind how nodes participate, verify, and process encrypted transactional payloads, and how this engine deviates from classical PoW/PoS systems to create a novel, trust-separated validation mesh.
+It introduces the logic behind how nodes participate, verify, and process encrypted transactional payloads, and how this engine deviates from classical PoW/PoS block-based systems to create a novel, trust-separated validation mesh based on **Execution Snapshots** and **Task Batches**.
 
 ---
 
 ## 🧭 Core Objectives
 
-1. Describe the role of the NodeChain as the **primary execution layer** of decentralized logic in AST.
-2. Define the **non-mining**, **fee-based incentive** mechanism for decentralized participation.
+1. Describe the role of the NodeChain as the **primary distributed task ledger** of decentralized logic in AST.
+2. Define the **non-mining**, **work-based incentive** mechanism (Proof of Transaction) for decentralized participation.
 3. Detail the **transaction sharding and partial encryption model** that guarantees privacy while enabling distributed processing.
 4. Set the stage for **auth-controlled node registration**, with flexible inclusion rules for future AI-based oracles.
 5. Prepare the reader for deeper layers: node registration, encryption logic, payment distribution, and consensus model.

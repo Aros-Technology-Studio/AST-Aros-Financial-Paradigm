@@ -1,17 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Block, Vote } from './consensus.types';
+import { ExecutionSnapshot, Vote } from './consensus.types';
 
 @Injectable()
 export class GossipSimulationService {
     private readonly logger = new Logger(GossipSimulationService.name);
 
     /**
-     * Simulates broadcasting a block header to the p2p network.
+     * Simulates broadcasting a snapshot header to the p2p network.
      */
-    broadcastBlockProposal(block: Block) {
+    broadcastSnapshotProposal(snapshot: ExecutionSnapshot) {
         // In a real P2P system, this would push to connected peers via generic messages
         // Here we just log the propagation event
-        this.logger.debug(`[GOSSIP] Propagating Block #${block.index} (${block.hash.substring(0, 8)}...) to network.`);
+        this.logger.debug(`[GOSSIP] Propagating Snapshot #${snapshot.sequenceId} (${snapshot.hash.substring(0, 8)}...) to network.`);
 
         // Simulate latency
         // setTimeout(() => {}, 100);
@@ -21,7 +21,7 @@ export class GossipSimulationService {
      * Simulates propagating a vote.
      */
     broadcastVote(vote: Vote) {
-        this.logger.debug(`[GOSSIP] Propagating Vote from ${vote.voterId} for Block ${vote.blockHash.substring(0, 8)}...`);
+        this.logger.debug(`[GOSSIP] Propagating Vote from ${vote.voterId} for Snapshot ${vote.snapshotHash.substring(0, 8)}...`);
     }
 
     /**

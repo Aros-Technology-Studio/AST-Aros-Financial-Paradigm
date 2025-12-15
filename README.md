@@ -2,7 +2,7 @@
 
 This repository contains the comprehensive architecture, documentation, and reference implementations for the **AST (Aros Studio) Foundational Platform**.
 
-AST is not just a blockchain; it is a **foundational infrastructure platform** engineered to operate with the precision of a Swiss watch. It serves as a secure, high-performance, and **regulatory-native** engine designed specifically for institutional and governmental finance.
+AST is not just a ledger; it is a **foundational infrastructure platform** engineered to operate with the precision of a Swiss watch. It serves as a secure, high-performance, and **regulatory-native** engine designed specifically for institutional and governmental finance.
 
 The platform addresses the "Great Divide" between Traditional Finance (TradFi) and Decentralized Finance (DeFi) by solving three core risks at the architectural level:
 
@@ -21,7 +21,7 @@ The system is composed of 14 independent, patent-pending modules:
 | ID | Module Name | Core Responsibility |
 | :---- | :---- | :---- |
 | **01** | **Coin Engine** | *(Deprecated)* Conceptual economic specifications. |
-| **02** | **Nodechain Engine** | The L1 blockchain core: Consensus, Sharding, P2P. |
+| **02** | **Nodechain Engine** | The NodeChain Task Ledger: Consensus, Sharding, P2P. |
 | **03** | **Token Management** | Smart contracts for lifecycle: Mint, Burn, Lock. |
 | **04** | **Value Circulation** | Economic plumbing: Vaults, Reserves, Liquidity. |
 | **05** | **Bridge Layer** | **Mandatory** Regulatory Gateway (KYC/AML). |

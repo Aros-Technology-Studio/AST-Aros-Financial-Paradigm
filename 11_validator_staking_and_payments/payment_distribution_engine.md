@@ -29,15 +29,17 @@ This module defines the mechanism for calculating and distributing payments to v
 ## Payment Calculation Formula
 
 ```text
-validator_payment = epoch_(payout|settlement)_pool
-                 × (validator_stake / total_stake)
+validator_payment = epoch_payout_pool
+                 × (validator_work_share)
                  × performance_score
                  - penalties
 
+validator_work_share = (tasks_validated_by_node / total_epoch_tasks)
 ```
 
 - `performance_score` ∈ [0.0, 1.0]
 - `penalties` dynamically computed based on epoch audit logs
+- **Note:** Stake acts effectively as a license bond. It does not multiply rewards.
 
 ---
 
@@ -51,7 +53,7 @@ sequenceDiagram
     participant W as WalletContract
 
     E->>R: triggerPaymentDistribution(epoch_id)
-    R->>R: calculateAllValidatorPayments()
+    R->>R: calculateWorkmetrics()
     R->>V: notifyPaymentAmount
     R->>W: commitPaymentTransfer(address, amount)
     W-->>V: transferPayment()
@@ -66,7 +68,7 @@ sequenceDiagram
 | --- | --- |
 | `Epoch End` | Every 7 days (default) |
 | `Manual Override` | Governance may issue early or delayed payments |
-| `Emergency Payout` | In case of chain fork recovery |
+| `Emergency Payout` | In case of ledger fork recovery |
 
 ---
 
@@ -107,7 +109,7 @@ sequenceDiagram
 Each payment event is linked to:
 
 - Epoch ID
-- Block Height
+- Sequence ID (Snapshot)
 - Validator ID (VID)
 - Node Hash
 - JSON Report Snapshot
@@ -122,10 +124,9 @@ Sample Report:
   "penalties": 1,
   "final_score": 0.89,
   "tx_hash": "0x09AF...",
-  "block": 18200123
+  "sequence_id": 18200123
 }
-
-```
+````
 
 ---
 

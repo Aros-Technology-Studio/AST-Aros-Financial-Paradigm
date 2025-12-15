@@ -11,8 +11,6 @@ export class NodeChainService {
 
     // In-memory storage for prototype
     private nodes: Map<string, ConnectedNode> = new Map();
-    // In-memory storage for prototype
-    private nodes: Map<string, ConnectedNode> = new Map();
     private ledger: ExecutionSnapshot[] = [];
     private pendingVotes: Map<string, Vote[]> = new Map(); // snapshotHash -> Votes[]
 
@@ -20,36 +18,32 @@ export class NodeChainService {
         private readonly shardingManager: ShardingManager,
         private readonly gossipService: GossipSimulationService
     ) {
-        constructor(
-            private readonly shardingManager: ShardingManager,
-            private readonly gossipService: GossipSimulationService
-        ) {
-            // Initialize Genesis Snapshot
-            this.initializeGenesisSnapshot();
+        // Initialize Genesis Snapshot
+        this.initializeGenesisSnapshot();
+    }
+
+    /**
+     * Registers a new node to the network.
+     */
+    registerNode(id: string, type: NodeType, ip: string): ConnectedNode {
+        if (this.nodes.has(id)) {
+            this.logger.warn(`Node ${id} already registered.`);
+            return this.nodes.get(id);
         }
 
-        /**
-         * Registers a new node to the network.
-         */
-        registerNode(id: string, type: NodeType, ip: string): ConnectedNode {
-            if (this.nodes.has(id)) {
-                this.logger.warn(`Node ${id} already registered.`);
-                return this.nodes.get(id);
-            }
+        const newNode: ConnectedNode = {
+            id,
+            type,
+            ip,
+            joinedAt: Date.now(),
+            isActive: true,
+            metrics: { uptime: 100, batchesProposed: 0, batchesValidated: 0, missedVotes: 0 }
+        };
 
-            const newNode: ConnectedNode = {
-                id,
-                type,
-                ip,
-                joinedAt: Date.now(),
-                isActive: true,
-                metrics: { uptime: 100, batchesProposed: 0, batchesValidated: 0, missedVotes: 0 }
-            };
-
-            this.nodes.set(id, newNode);
-            this.logger.log(`Node registered: ${id} (${type})`);
-            return newNode;
-        }
+        this.nodes.set(id, newNode);
+        this.logger.log(`Node registered: ${id} (${type})`);
+        return newNode;
+    }
 
     /**
      * Creates the Genesis Snapshot.

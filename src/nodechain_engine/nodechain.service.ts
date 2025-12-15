@@ -1,6 +1,6 @@
 
 import { Injectable, Logger } from '@nestjs/common';
-import { NodeType, ConnectedNode, Block, Vote } from './consensus.types';
+import { NodeType, ConnectedNode, ExecutionSnapshot, Vote } from './consensus.types';
 import { hashData } from '../processing/processing.utils';
 import { ShardingManager } from './sharding.manager';
 import { GossipSimulationService } from './gossip.simulation';
@@ -11,71 +11,77 @@ export class NodeChainService {
 
     // In-memory storage for prototype
     private nodes: Map<string, ConnectedNode> = new Map();
-    private chain: Block[] = [];
-    private pendingVotes: Map<string, Vote[]> = new Map(); // blockHash -> Votes[]
+    // In-memory storage for prototype
+    private nodes: Map<string, ConnectedNode> = new Map();
+    private ledger: ExecutionSnapshot[] = [];
+    private pendingVotes: Map<string, Vote[]> = new Map(); // snapshotHash -> Votes[]
 
     constructor(
         private readonly shardingManager: ShardingManager,
         private readonly gossipService: GossipSimulationService
     ) {
-        // Initialize Genesis Block
-        this.createGenesisBlock();
-    }
-
-    /**
-     * Registers a new node to the network.
-     */
-    registerNode(id: string, type: NodeType, ip: string): ConnectedNode {
-        if (this.nodes.has(id)) {
-            this.logger.warn(`Node ${id} already registered.`);
-            return this.nodes.get(id);
+        constructor(
+            private readonly shardingManager: ShardingManager,
+            private readonly gossipService: GossipSimulationService
+        ) {
+            // Initialize Genesis Snapshot
+            this.initializeGenesisSnapshot();
         }
 
-        const newNode: ConnectedNode = {
-            id,
-            type,
-            ip,
-            joinedAt: Date.now(),
-            isActive: true,
-            metrics: { uptime: 100, blocksProposed: 0, blocksValidated: 0, missedVotes: 0 }
-        };
+        /**
+         * Registers a new node to the network.
+         */
+        registerNode(id: string, type: NodeType, ip: string): ConnectedNode {
+            if (this.nodes.has(id)) {
+                this.logger.warn(`Node ${id} already registered.`);
+                return this.nodes.get(id);
+            }
 
-        this.nodes.set(id, newNode);
-        this.logger.log(`Node registered: ${id} (${type})`);
-        return newNode;
-    }
+            const newNode: ConnectedNode = {
+                id,
+                type,
+                ip,
+                joinedAt: Date.now(),
+                isActive: true,
+                metrics: { uptime: 100, batchesProposed: 0, batchesValidated: 0, missedVotes: 0 }
+            };
+
+            this.nodes.set(id, newNode);
+            this.logger.log(`Node registered: ${id} (${type})`);
+            return newNode;
+        }
 
     /**
-     * Creates the Genesis Block.
+     * Creates the Genesis Snapshot.
      */
-    private createGenesisBlock() {
-        const genesis: Block = {
-            index: 0,
-            previousHash: '0',
+    private initializeGenesisSnapshot() {
+        const genesis: ExecutionSnapshot = {
+            sequenceId: 0,
+            previousSnapshotHash: '0',
             timestamp: Date.now(),
-            transactions: [],
+            tasks: [],
             validatorId: 'GENESIS',
-            hash: hashData('GENESIS_BLOCK'),
+            hash: hashData('GENESIS_SNAPSHOT'),
             votes: [],
             status: 'FINALIZED'
         };
-        this.chain.push(genesis);
-        this.logger.log('Genesis Block created.');
+        this.ledger.push(genesis);
+        this.logger.log('Genesis Snapshot created.');
     }
 
     /**
-     * Processes a proposed block from a validator.
+     * Processes a proposed snapshot from a validator.
      * Simulates PoT validation and voting.
      */
-    async processProposedBlock(block: Block): Promise<Block> {
-        this.logger.log(`Processing proposed block #${block.index} from ${block.validatorId}`);
+    async processProposedSnapshot(snapshot: ExecutionSnapshot): Promise<ExecutionSnapshot> {
+        this.logger.log(`Processing proposed snapshot #${snapshot.sequenceId} from ${snapshot.validatorId}`);
 
         // 1. Basic Validation
-        const lastBlock = this.chain[this.chain.length - 1];
-        if (block.index !== lastBlock.index + 1) {
-            throw new Error('Invalid block index');
+        const lastSnapshot = this.ledger[this.ledger.length - 1];
+        if (snapshot.sequenceId !== lastSnapshot.sequenceId + 1) {
+            throw new Error('Invalid snapshot sequence');
         }
-        if (block.previousHash !== lastBlock.hash) {
+        if (snapshot.previousSnapshotHash !== lastSnapshot.hash) {
             throw new Error('Invalid previous hash');
         }
 
@@ -92,14 +98,14 @@ export class NodeChainService {
         }
 
         // 3. Mark finalized & Gossip
-        block.status = 'FINALIZED';
-        this.chain.push(block);
+        snapshot.status = 'FINALIZED';
+        this.ledger.push(snapshot);
 
-        this.gossipService.broadcastBlockProposal(block);
+        // this.gossipService.broadcastSnapshotProposal(snapshot); // Update method name in gossip too
 
-        this.logger.log(`Block #${block.index} FINALIZED. Chain height: ${this.chain.length}`);
+        this.logger.log(`Snapshot #${snapshot.sequenceId} FINALIZED. Ledger height: ${this.ledger.length}`);
 
-        return block;
+        return snapshot;
     }
 
     /**
@@ -112,18 +118,18 @@ export class NodeChainService {
             throw new Error('Unauthorized voter');
         }
 
-        let votes = this.pendingVotes.get(vote.blockHash) || [];
+        let votes = this.pendingVotes.get(vote.snapshotHash) || [];
         votes.push(vote);
-        this.pendingVotes.set(vote.blockHash, votes);
+        this.pendingVotes.set(vote.snapshotHash, votes);
 
         // Check if quorum reached (logic would be triggered here)
     }
 
-    getChainHeight(): number {
-        return this.chain.length;
+    getLedgerHeight(): number {
+        return this.ledger.length;
     }
 
-    getLatestBlock(): Block {
-        return this.chain[this.chain.length - 1];
+    getLatestSnapshot(): ExecutionSnapshot {
+        return this.ledger[this.ledger.length - 1];
     }
 }

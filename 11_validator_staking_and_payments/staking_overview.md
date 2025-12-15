@@ -1,6 +1,7 @@
 # staking_overview.md
 
 ## Module: Staking Overview
+
 - **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
@@ -21,7 +22,7 @@ Staking in AST is not only an economic commitment but a governance and security 
 - **PoT Activity + Security Deposit**: Only nodes with an active stake are eligible to validate transactions and participate in PoT attestation.
 - **Epoch-Based Lifecycle**: Stake commitment is tied to epoch duration; early withdrawal is not permitted.
 - **Slashing Enforcement**: Misbehavior or inactivity results in stake reduction or full penalty.
-- **Payment Binding**: Emission payments are distributed proportionally to stake-weighted and performance-based validators.
+- **Payment Binding**: Emission payments are distributed to compliant validators based on **Work Performed (Proof of Transaction)**, requiring active stake as a bond.
 
 ---
 
@@ -115,7 +116,3 @@ Performance score directly impacts both payment multiplier and slashing sensitiv
 ## Next
 
 → See [`validator_registration.md`](https://www.notion.so/aros-studio/validator_registration.md) to understand how validator identities are created, verified, and enrolled.
-
-```
-
-```

@@ -1,9 +1,9 @@
 
 /**
  * Role of a node in the Aros Network.
- * - VALIDATOR: Actively proposes/votes on blocks.
- * - OBSERVER: Audits chain state, does not vote.
- * - SHARD: Processes specific partition of the ledger.
+ * - VALIDATOR: Actively proposes/votes on execution snapshots.
+ * - OBSERVER: Audits ledger state, does not vote.
+ * - SHARD: Processes specific partition of the task queue.
  */
 export enum NodeType {
     VALIDATOR = 'VALIDATOR',
@@ -12,24 +12,25 @@ export enum NodeType {
 }
 
 /**
- * Represents a single vote in the consensus process.
+ * Represents a single vote in the PoT consensus process.
  */
 export interface Vote {
     voterId: string;
-    blockHash: string;
+    snapshotHash: string;
     signature: string;
     timestamp: number;
     approved: boolean;
 }
 
 /**
- * Represents a Block in the NodeChain.
+ * Represents a discrete Execution Snapshot (Task Batch) in the NodeChain.
+ * Replaces the concept of a 'Block'.
  */
-export interface Block {
-    index: number;
-    previousHash: string;
+export interface ExecutionSnapshot {
+    sequenceId: number;
+    previousSnapshotHash: string;
     timestamp: number;
-    transactions: any[]; // Replace 'any' with Transaction type when available
+    tasks: any[]; // List of executed tasks (formerly transactions)
     validatorId: string; // Proposer
     hash: string;
     votes: Vote[];
@@ -41,8 +42,8 @@ export interface Block {
  */
 export interface NodeMetrics {
     uptime: number;
-    blocksProposed: number;
-    blocksValidated: number;
+    batchesProposed: number;
+    batchesValidated: number;
     missedVotes: number;
 }
 

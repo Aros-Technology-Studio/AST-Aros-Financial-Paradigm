@@ -1,6 +1,7 @@
 # payment_distribution_engine.md
 
 ## Module: Payment Distribution Engine
+
 - **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
@@ -140,7 +141,3 @@ Sample Report:
 ## Next
 
 → See [`validator_performance_score.md`](https://www.notion.so/aros-studio/validator_performance_score.md) to understand how scores are calculated and impact payment allocation.
-
-```
-
-```

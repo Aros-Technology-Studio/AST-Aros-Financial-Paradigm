@@ -23,6 +23,7 @@ Define the architecture, lifecycle, and technical requirements of the decentrali
 ### a. Base Software
 
 Each node runs:
+
 - AST Node Daemon (`astd`)
 - Encrypted Transport Layer (TLS)
 - ARO wallet integration module
@@ -50,53 +51,58 @@ graph TD;
   E --> F[Active Validator Role via rotation];
 ```
 
-⸻
+---
 
-4. Registration and Staking
-•Validator node must stake minimum X ARO (configurable).
-•Smart contract verifies identity and stake.
-•Generates node keypair and tokenizes node ID.
-•Adds node to candidate pool.
+## 4. Registration and Staking
 
-⸻
+- Validator node must stake minimum X ARO (configurable).
+- Smart contract verifies identity and stake.
+- Generates node keypair and tokenizes node ID.
+- Adds node to candidate pool.
 
-5. Rotation Logic
-•Rotation interval: every 15 minutes
-•Rotation criteria:
-•Node uptime
-•Fault rate
-•Governance score
-•Recent activity
-•Implemented via NodeRotationContract
+---
 
-⸻
+## 5. Rotation Logic
 
-6. Security Model
-•TLS for transport
-•Token-signed payloads
-•Two-key infrastructure: identity key + signing key
-•Tamper logging via The All-Seeing Eye module
+- Rotation interval: every 15 minutes
+- Rotation criteria:
+  - Node uptime
+  - Fault rate
+  - Governance score
+  - Recent activity
+- Implemented via NodeRotationContract
 
-⸻
+---
 
-7. Misbehavior Handling
+## 6. Security Model
 
-Violation TypePenalty
-Downtime > thresholdTemporary suspension
-Malicious tamperingStake slashing & blacklist
-Collusion behaviorAI-auditor flag → governance vote
+- TLS for transport
+- Token-signed payloads
+- Two-key infrastructure: identity key + signing key
+- Tamper logging via The All-Seeing Eye module
 
-⸻
+---
 
-8. Observability Hooks
-•All nodes stream logs to Observer Mesh
-•Events monitored:
-•Uptime, load, anomalies
-•Protocol version drift
-•Unauthorized packet patterns
+## 7. Misbehavior Handling
 
-⸻
+| Violation Type | Penalty |
+|----------------|---------|
+| Downtime > threshold | Temporary suspension |
+| Malicious tampering | Stake slashing & blacklist |
+| Collusion behavior | AI-auditor flag → governance vote |
 
-9. Summary
+---
+
+## 8. Observability Hooks
+
+- All nodes stream logs to Observer Mesh
+- Events monitored:
+  - Uptime, load, anomalies
+  - Protocol version drift
+  - Unauthorized packet patterns
+
+---
+
+## 9. Summary
 
 The AST node network is designed to be modular, secure, auditable, and dynamically adjustable via contracts and governance. Observability and automation ensure zero-trust compliance and scalable participation.

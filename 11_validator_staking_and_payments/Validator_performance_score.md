@@ -1,6 +1,7 @@
-# Validator_performance_score.md 
+# Validator_performance_score.md
 
 ## Module: Validator Performance Score
+
 - **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio Blockchain Division
@@ -111,7 +112,3 @@ All inputs are normalized on a 0.00–1.00 scale.
 ## Next
 
 → See [`slashing_and_penalty_rules.md`](https://www.notion.so/aros-studio/slashing_and_penalty_rules.md) to understand how low scores trigger penalties and when governance overrides can apply.
-
-```
-
-```

@@ -1,12 +1,12 @@
 # aro_emission_protocol.md
 
-### **I. Purpose**
+**## **I. Purpose****
 
 This document defines the **emission protocol** for the native token ARO within the AST (Aros Studio Tokenomics) system. The protocol governs how, when, and under what rules ARO tokens are minted, allocated, and monitored to ensure sustainability, fairness, and transparency.
 
 ---
 
-### **II. Emission Principles**
+## II. Emission Principles
 
 1. **No Pre-Mining**
     - ARO tokens are **not pre-mined**.
@@ -20,7 +20,7 @@ This document defines the **emission protocol** for the native token ARO within 
 
 ---
 
-### **III. Emission Trigger Logic**
+## **III. Emission Trigger Logic**
 
 ```mermaid
 sequenceDiagram
@@ -36,7 +36,7 @@ sequenceDiagram
 
 ---
 
-### **IV. Emission Governance**
+## **IV. Emission Governance**
 
 | **Component** | **Role** |
 | --- | --- |
@@ -46,7 +46,7 @@ sequenceDiagram
 
 ---
 
-### **V. Allocation Strategy**
+## **V. Allocation Strategy**
 
 - Emitted tokens are **not immediately released** to the public. Instead, they are:
     1. Stored in a **smart reserve contract**.
@@ -57,11 +57,9 @@ sequenceDiagram
 
 ---
 
-### **VI. Emission Formula (Simplified)**
+## **VI. Emission Formula (Simplified)**
 
-```
 EMISSION_AMOUNT = Σ(transaction_load × scaling_index × node_payment_ratio)
-```
 
 Where:
 
@@ -71,20 +69,20 @@ Where:
 
 ---
 
-### **VII. Emission Cap and Degradation**
+## **VII. Emission Cap and Degradation**
 
 - ARO has a **finite hard cap** (MAX_SUPPLY) enforced at the protocol level.
 - Once 80% of MAX_SUPPLY is reached, **emission rate linearly degrades** until halted at 100%.
 
 ---
 
-### **VIII. Emergency Brake**
+## **VIII. Emergency Brake**
 
 In case of protocol anomaly or exploit:
 
 - The **Emission Engine** can be halted by multi-signature from:
-    - All-Seeing Eye
-    - Oracle Committee
-    - Founder Authority (if defined in initial config)
+  - All-Seeing Eye
+  - Oracle Committee
+  - Founder Authority (if defined in initial config)
 
 ---

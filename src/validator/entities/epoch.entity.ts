@@ -24,5 +24,5 @@ export class Epoch {
     status: EpochStatus;
 
     @Column('decimal', { precision: 20, scale: 9, default: '0' })
-    total_rewards: string;
+    total_payments: string;
 }

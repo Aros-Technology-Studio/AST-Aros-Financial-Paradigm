@@ -25,7 +25,7 @@
       "risk_adjustment",
       "settle_payments",
       "PoT",
-      "Dynamic Emission"
+      "Dynamic Fee Distribution"
     ],
     "audit_markers": [
       "rollback",

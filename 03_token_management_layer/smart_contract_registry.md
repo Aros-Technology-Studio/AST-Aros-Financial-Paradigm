@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the design and structure of the **Smart Contract Registry** used by AST to track, verify, and manage all deployed smart contracts related to the Aros Blockchain and Tokenomics infrastructure.
+This document defines the design and structure of the **Smart Contract Registry** used by AST to track, verify, and manage all deployed smart contracts related to the Aros NodeChain and Tokenomics infrastructure.
 
 ---
 

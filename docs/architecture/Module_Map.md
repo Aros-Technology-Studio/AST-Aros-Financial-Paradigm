@@ -7,7 +7,7 @@ For a detailed breakdown of how these modules interact, see the **[Architecture 
 | Module ID | Module Name | Core Responsibility (One-Line Summary) | Key Source File (Reference) |
 | :--- | :--- | :--- | :--- |
 | **01** | **Coin Engine** | *(Deprecated)*. Defines the foundational economic concepts and specs. | `AROS_Coin_TokenSpec.json` |
-| **02** | **Nodechain Engine** | The core L1 blockchain: manages consensus (ADR-001), node identity, and sharding (ADR-004). | `network_consensus_model.md` |
+| **02** | **Nodechain Engine** | The core L1 NodeChain: manages consensus (ADR-001), node identity, and sharding (ADR-004). | `network_consensus_model.md` |
 | **03** | **Token Management** | The on-chain contracts that control token lifecycle: `mint`, `burn`, `lock`, `freeze`. | `token_issuance_protocol.md` |
 | **04** | **Value Circulation** | Defines the economic models: vaults, reserve policies, and internal liquidity mechanisms. | `value_circulation_overview.md` |
 | **05** | **Bridge Layer** | The mandatory regulatory gateway (ADR-003). Manages all fiat/crypto entry/exit via the ALB. | `kyc_aml_interface_bridge.md` |

@@ -11,7 +11,7 @@ The AST Platform is a modular, layered system. Each numbered module represents a
 * **Module 01: Coin Engine**
     * *DEPRECATED/Reference.* Defines the conceptual economic model and emission protocols. (Superceded by Module 08).
 * **Module 02: Nodechain Engine**
-    * The core L1 blockchain layer. Manages consensus (ADR-001), node authentication, and sharding (ADR-004).
+    * The core L1 NodeChain layer. Manages consensus (ADR-001), node authentication, and sharding (ADR-004).
 * **Module 03: Token Management Layer**
     * Handles the on-chain smart contracts for all token operations: `mint`, `burn`, `lock`, `freeze`.
 * **Module 04: Aros Value Circulation**

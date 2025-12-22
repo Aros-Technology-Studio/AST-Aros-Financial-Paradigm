@@ -21,7 +21,7 @@ Upgrades may be initiated for:
 - Protocol logic changes reflecting updated business rules
 - Compliance alignment (regulatory or KYC/AML)
 - Performance or gas cost optimization
-- Compatibility with updated AST modules or Aros Blockchain versions
+- Compatibility with updated AST modules or Aros NodeChain versions
 
 ## 4. Upgrade Flow (Governance-based)
 

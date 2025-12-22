@@ -1,15 +1,15 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
-@Entity('emission_events')
-export class EmissionEventEntity {
+@Entity('distribution_events')
+export class DistributionEventEntity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column('decimal')
-    amountMinted: number;
+    amountDistributed: number;
 
     @Column()
-    reason: string; // e.g. 'epoch_reward'
+    reason: string; // e.g. 'epoch_payment'
 
     @Column()
     relatedConsensusEventId: string;

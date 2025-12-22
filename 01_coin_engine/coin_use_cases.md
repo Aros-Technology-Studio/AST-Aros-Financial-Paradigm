@@ -10,7 +10,7 @@ This document outlines the **primary functions** and **real-world applications**
 
 ### 1. **Transaction Processing Fuel**
 
-AROS Coin is the sole payment medium for processing decentralized transactions on the AROS blockchain. Each transaction triggers:
+AROS Coin is the sole payment medium for processing decentralized transactions on the AROS NodeChain. Each transaction triggers:
 
 - A micro-fee charged in ARO.
 - Fee distribution to the verifying nodes.

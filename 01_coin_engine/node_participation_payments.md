@@ -8,7 +8,7 @@ This document defines the logic for incentivizing node operators in AST’s dece
 
 II. Scope
 
-The payment model applies to all verified nodes participating in the decentralized encryption and validation of transactional data in the AST blockchain. This mechanism supports fairness, redundancy, and uptime guarantees.
+The payment model applies to all verified nodes participating in the decentralized encryption and validation of transactional data in the AST NodeChain. This mechanism supports fairness, redundancy, and uptime guarantees.
 
 ⸻
 

@@ -2,7 +2,7 @@
 
 This document provides the public-facing API specification for the AST (Aros Studio) Platform. This is the primary API used by end-user wallets, applications, and services to interact with the Nodechain.
 
-This API provides core blockchain functionality, such as submitting transactions and querying network data.
+This API provides core NodeChain functionality, such as submitting transactions and querying network data.
 
 ---
 

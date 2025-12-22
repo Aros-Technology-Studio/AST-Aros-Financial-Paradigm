@@ -1,6 +1,7 @@
 # agent_roles_matrix.md
 
 ## Module: Agent Roles Matrix
+
 - **Layer**: NodeChain AI Agents – AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
@@ -37,7 +38,7 @@ flowchart TD
     OBS1[OBS-AI-0001] --> DISP
     OBS2[OBS-AI-0002] --> BEHAV
     OBS3[OBS-AI-0003] --> FRAUD
-    BEHAV --> REWARD
+    BEHAV --> PAYMENT
     FRAUD --> GOV
     DISP --> AUDIT
     GOV --> AUDIT
@@ -53,7 +54,7 @@ flowchart TD
     OBS1[OBS-AI-0001] --> DISP
     OBS2[OBS-AI-0002] --> BEHAV
     OBS3[OBS-AI-0003] --> FRAUD
-    BEHAV --> REWARD
+    BEHAV --> PAYMENT
     FRAUD --> GOV
     DISP --> AUDIT
     GOV --> AUDIT

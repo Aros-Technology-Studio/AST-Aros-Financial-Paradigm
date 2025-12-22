@@ -227,7 +227,7 @@ This module directly integrates with:
 ## Author
 
 - **Module Owner**: AST Core Team  
-- **Maintained By**: Aros Studio Blockchain Division  
+- **Maintained By**: Aros Studio NodeChain Division  
 - **Last Updated**: 2025-07-05
 
 ```

@@ -3,7 +3,7 @@
 ## Module: Transaction Failure Modes
 - **Layer**: Processing Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
-- **Author**: Aros Studio Blockchain Division
+- **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
 
 ---

@@ -10,6 +10,9 @@ The platform addresses the "Great Divide" between Traditional Finance (TradFi) a
 2. **Compliance Risk:** Via a mandatory, built-in Regulatory Bridge (Module 05).  
 3. **Security Risk:** Using an autonomous AI Supervisory Framework (Module 12 & 13).
 
+> [!IMPORTANT]
+> **Regulatory Status**: AST is a **technological process** for encryption and routing. It is **NOT** a financial institution, bank, or custodian. It does not hold funds or manage assets. All value is managed by the fully isolated ALB (Authorized Liquidity Bridge).
+
 ## **Central Documentation**
 
 **For all technical specifications, API references, architectural decisions (ADRs), and conceptual guides, please navigate to the [Central Documentation Hub](https://www.google.com/search?q=./docs/README.md).**

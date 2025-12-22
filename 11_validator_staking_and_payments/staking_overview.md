@@ -2,7 +2,7 @@
 
 ## Module: Staking Overview
 
-- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Security Deposit & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -11,18 +11,18 @@
 
 ## Purpose
 
-This document provides a high-level overview of the staking mechanism in the AST network. It defines the goals, structure, actors, and lifecycle of validator staking within the Proof of Transaction (PoT)-driven architecture.
+This document provides a high-level overview of the **Node Security Deposit** mechanism in the AST network. It defines the goals, structure, actors, and lifecycle of validator deposits within the Proof of Transaction (PoT)-driven architecture.
 
-Staking in AST is not only an economic commitment but a governance and security requirement. All validator rights and payments are conditional on active stake lock-in and performance adherence.
+Node Security Deposit in AST is not only an economic commitment but a governance and security requirement. All validator rights and payments are conditional on active deposit lock-in and performance adherence.
 
 ---
 
 ## Key Principles
 
-- **PoT Activity + Security Deposit**: Only nodes with an active stake are eligible to validate transactions and participate in PoT attestation.
-- **Epoch-Based Lifecycle**: Stake commitment is tied to epoch duration; early withdrawal is not permitted.
-- **Slashing Enforcement**: Misbehavior or inactivity results in stake reduction or full penalty.
-- **Payment Binding**: Emission payments are distributed to compliant validators based on **Work Performed (Proof of Transaction)**, requiring active stake as a bond.
+- **PoT Activity + Security Deposit**: Only nodes with an active deposit are eligible to validate transactions and participate in PoT attestation.
+- **Epoch-Based Lifecycle**: Deposit commitment is tied to epoch duration; early withdrawal is not permitted.
+- **Forfeiture Enforcement**: Misbehavior or inactivity results in deposit reduction or full forfeiture.
+- **Payment Binding**: Emission payments are distributed to compliant validators based on **Work Performed (Proof of Transaction)**, requiring active deposit as a bond.
 
 ---
 
@@ -30,9 +30,9 @@ Staking in AST is not only an economic commitment but a governance and security 
 
 | Role              | Description |
 |-------------------|-------------|
-| `Validator`        | Node that locks stake and validates transactions |
-| `Delegator`        | (Optional) Entity that delegates stake to validator node |
-| `Governance`       | Oversees staking contracts, slashing, and payment policies |
+| `Validator`        | Node that locks deposit and validates transactions |
+| `Delegator`        | (Optional) Entity that provides deposit capital to validator node |
+| `Governance`       | Oversees deposit contracts, forfeiture, and payment policies |
 | `Epoch Controller` | Coordinates epoch lifecycle and validator scheduling |
 
 ---

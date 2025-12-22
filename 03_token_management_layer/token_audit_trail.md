@@ -42,7 +42,7 @@ All audit data must be cryptographically verifiable and publicly observable (wit
 
 ### 3. Validator Checkpoints
 
-- Validators publish signed state hashes at regular intervals (e.g. every 100 blocks)
+- Validators publish signed state hashes at regular intervals (e.g. every X snapshots)
 - Used as reference for dispute resolution and rollback operations
 
 ### 4. Governance Access Logs

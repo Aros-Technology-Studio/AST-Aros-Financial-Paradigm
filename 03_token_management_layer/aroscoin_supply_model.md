@@ -25,7 +25,7 @@ This document defines the monetary policy and total supply logic of ArosCoin, es
 | Node Incentives    | 35% (350M)        | Emission-based, dynamic          |
 | Public Circulation | 30% (300M)        | Gradual release via operations   |
 
-### 2.2 Block Emission Rules
+### 2.2 Snapshot Emission Rules
 
 - No PoW mining: emission is tied to **transaction throughput** and **validated participation**.
 - Each transaction pays a small fee → split among validator nodes.

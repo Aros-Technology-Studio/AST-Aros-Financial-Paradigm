@@ -1,5 +1,6 @@
 # AST Platform: A Conceptual Overview
-**(DRAFT 1.0)**
+
+**DRAFT 1.0**
 
 ## 1. Abstract: The "Swiss Watch" Vision
 
@@ -12,6 +13,7 @@ This platform is the "Phase 1" foundation, built to flawlessly service "Phase 2"
 ## 2. The Problem: The Great Divide
 
 The digital asset economy is locked in a paradox.
+
 * **Traditional Finance (TradFi)** operates with high trust, regulatory clarity, and stability but suffers from inefficiency, high costs, and slow settlement (T+2).
 * **Decentralized Finance (DeFi)** offers instant settlement, transparency, and programmability but is plagued by speculation, extreme volatility, rampant fraud, and a complete lack of a viable regulatory path.
 
@@ -22,17 +24,23 @@ This divide exists because no platform has been architected from the ground up t
 The AST Platform is the "Swiss Watch" engine designed to bridge this divide. Its architecture is built on three pillars that directly address the three primary institutional risks.
 
 ### Pillar 1: The High-Performance Engine (Addressing Technical Risk)
+
 The core of AST is the `Nodechain` (Module 02), a sharded, high-performance consensus network.
+
 * **Model:** It uses a novel **delegated, asynchronous proof-of-processing** consensus (see [ADR-001](./../adr/ADR-001-Network_Consensus_Model.md)). Nodes are paymented for *verifiable processing*, not capital.
 * **Scalability:** The network is horizontally scalable via **State and Transaction Sharding** (see [ADR-004](./../adr/ADR-004-Network-Sharding-Strategy.md)), allowing it to handle institutional-level volume.
 
 ### Pillar 2: The Regulatory-Native Gateway (Addressing Compliance Risk)
+
 AST is not an anonymous network. It is built to be "legally correct" by design.
+
 * **Model:** The `Bridge Layer` (Module 05) is a **mandatory, zero-trust gateway** for all value entering or exiting the ecosystem (see [ADR-003](./../adr/ADR-003-Regulatory-Compliance-Bridge.md)).
 * **Enforcement:** This layer enforces **KYC/AML checks** for 100% of all tokenization and reverse-tokenization requests via a trusted "Compliance Oracle."
 
 ### Pillar 3: The Autonomous Supervisory Framework (Addressing Security Risk)
+
 AST operates with a level of oversight that mimics (and automates) the supervisory functions of a central bank.
+
 * **Model:** The platform is monitored 24/7 by a federation of AI Agents (Modules 12/13), also known as "The All-Seeing Eye" (see [ADR-002](./../adr/ADR-002-AI_Supervisory_Framework.md)).
 * **Functions:** These agents perform real-time **anomaly detection**, **fraud prevention**, and behavioral analysis.
 * **Auditability:** The system generates a **Multi-Layered Audit Trail** (see [ADR-006](./../adr/ADR-006-Multi-Layered-Audit-Trail.md)), including a "meta-log" of the AI's own observations, providing unprecedented transparency for regulators.

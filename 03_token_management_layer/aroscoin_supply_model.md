@@ -66,6 +66,4 @@ This document defines the monetary policy and total supply logic of ArosCoin, es
 - [ ] Burn engine functional
 - [ ] Supply dashboard live and syncing
 
-```
-
 ---

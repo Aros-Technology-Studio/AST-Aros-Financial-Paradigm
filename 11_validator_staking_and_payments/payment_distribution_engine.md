@@ -2,7 +2,7 @@
 
 ## Module: Payment Distribution Engine
 
-- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Node Security Deposit & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -20,7 +20,7 @@ This module defines the mechanism for calculating and distributing payments to v
 | Component                | Description |
 |--------------------------|-------------|
 | `Base Epoch Payment`      | Fixed emission allocation for each epoch |
-| `Stake Weight`           | Validator's stake relative to total active stake |
+| `Deposit Weight`           | Validator's deposit relative to total active deposit |
 | `Performance Modifier`   | Score from validator performance engine |
 | `Penalty Adjustments`    | Deducted for downtime, fraud, or missed attestations |
 
@@ -39,7 +39,7 @@ validator_work_share = (tasks_validated_by_node / total_epoch_tasks)
 
 - `performance_score` ∈ [0.0, 1.0]
 - `penalties` dynamically computed based on epoch audit logs
-- **Note:** Stake acts effectively as a license bond. It does not multiply payments.
+- **Note:** Deposit acts effectively as a license bond. It does not multiply payments.
 
 ---
 
@@ -77,7 +77,7 @@ sequenceDiagram
 | Violation Type | Impact on Payment |
 | --- | --- |
 | Missed Attestations | −15% per event |
-| Fraudulent Signature | −100%, trigger slashing |
+| Fraudulent Signature | −100%, trigger forfeiting |
 | Downtime > 5% | −30% penalty |
 | Metadata Manipulation | Blocked payment |
 
@@ -134,7 +134,7 @@ Sample Report:
 
 - `validator_epoch_commitments.md`
 - `validator_performance_score.md`
-- `slashing_and_penalty_rules.md`
+- `forfeiting_and_penalty_rules.md`
 - `emission_flow_pipeline.md`
 
 ---

@@ -1,7 +1,7 @@
 # validator_epoch_commitments.md
 
 ## Module: Validator Epoch Commitments
-- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Node Security Deposit & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This document defines the rules and lifecycle for epoch-level validator commitments. Validators in the AST network must commit their stake and performance to fixed-duration validation epochs. Each epoch operates as a checkpoint for eligibility, performance assessment, and payment allocation.
+This document defines the rules and lifecycle for epoch-level validator commitments. Validators in the AST network must commit their deposit and performance to fixed-duration validation epochs. Each epoch operates as a checkpoint for eligibility, performance assessment, and payment allocation.
 
 Epoch commitments are strictly binding once confirmed and are managed through the Epoch Scheduler component of AST.
 
@@ -23,7 +23,7 @@ Epoch commitments are strictly binding once confirmed and are managed through th
 | Epoch Duration   | 7 days (default)          |
 | Epoch ID Format  | `uint64` sequence         |
 | Max Validators   | 512 per epoch             |
-| Min Stake        | 10,000 AROS               |
+| Min Deposit        | 10,000 AROS               |
 | Finality Window  | Last 24h of epoch         |
 
 ---
@@ -34,12 +34,12 @@ Epoch commitments are strictly binding once confirmed and are managed through th
 flowchart TD
     A[Epoch Begins] --> B[Validator Enters Queue]
     B --> C[Epoch Slot Assigned]
-    C --> D[Stake Lock Activated]
+    C --> D[Deposit Lock Activated]
     D --> E[Validation Activity Window]
     E --> F[Epoch Nearing End]
     F --> G{Performance OK?}
     G -- Yes --> H[Eligible for Payment]
-    G -- No --> I[Trigger Slashing]
+    G -- No --> I[Trigger Forfeiture]
     H --> J[Epoch Ends]
     I --> J
     J --> K[Next Epoch Recommit or Exit]
@@ -52,12 +52,12 @@ flowchart TD
 flowchart TD
     A[Epoch Begins] --> B[Validator Enters Queue]
     B --> C[Epoch Slot Assigned]
-    C --> D[Stake Lock Activated]
+    C --> D[Deposit Lock Activated]
     D --> E[Validation Activity Window]
     E --> F[Epoch Nearing End]
     F --> G{Performance OK?}
     G -- Yes --> H[Eligible for Payment]
-    G -- No --> I[Trigger Slashing]
+    G -- No --> I[Trigger Forfeiture]
     H --> J[Epoch Ends]
     I --> J
     J --> K[Next Epoch Recommit or Exit]
@@ -66,7 +66,7 @@ flowchart TD
 ## Key Commitment Rules
 
 - Validators must confirm entry at least 12 hours before the epoch start
-- Missed entry window results in stake being deferred to the next available epoch
+- Missed entry window results in deposit being deferred to the next available epoch
 - Exit requests must be filed at least 24 hours before epoch end
 - Early withdrawals are forbidden unless triggered by governance override
 
@@ -96,7 +96,7 @@ During each epoch, validator behavior is evaluated continuously. Performance met
 Failure to meet these standards results in:
 
 - Payment reduction
-- Potential freeze or slashing
+- Potential freeze or forfeiting
 - Eligibility suspension for upcoming epochs
 
 ---
@@ -115,7 +115,7 @@ Failure to meet these standards results in:
 | Function | Description |
 | --- | --- |
 | `assignValidatorToEpoch()` | Assign validator to next available slot |
-| `confirmEpochEntry()` | Lock in stake for upcoming epoch |
+| `confirmEpochEntry()` | Lock in deposit for upcoming epoch |
 | `requestEpochExit()` | Mark validator for removal after current epoch |
 | `getEpochState(vid)` | Retrieve validator epoch status |
 
@@ -123,9 +123,9 @@ Failure to meet these standards results in:
 
 ## Dependencies
 
-- `staking_overview.md`
+- `security deposit_overview.md`
 - `validator_registration.md`
-- `stake_freeze_unlock_rules.md`
+- `deposit_freeze_unlock_rules.md`
 - `payment_distribution_engine.md`
 - `validator_performance_score.md`
 

@@ -1,7 +1,7 @@
 # validator_registration.md
 
 ## Module: Validator Registration
-- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Node Security Deposit & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -9,7 +9,7 @@
 
 ## Overview
 
-This document outlines the formal registration procedure for becoming a validator in the AST network. Validators must undergo identity provisioning, stake verification, epoch scheduling, and key binding prior to participating in any transaction validation or attestation.
+This document outlines the formal registration procedure for becoming a validator in the AST network. Validators must undergo identity provisioning, deposit verification, epoch scheduling, and key binding prior to participating in any transaction validation or attestation.
 
 ---
 
@@ -17,7 +17,7 @@ This document outlines the formal registration procedure for becoming a validato
 
 | Requirement                  | Detail |
 |------------------------------|--------|
-| Stake Commitment             | ≥ 10,000 AROS |
+| Deposit Commitment             | ≥ 10,000 AROS |
 | Unique Node Identity         | Enforced via cryptographic keypair |
 | Network Reachability         | Must expose gRPC + REST ports |
 | Performance Baseline         | Must pass testnet trial or benchmark |
@@ -33,8 +33,8 @@ sequenceDiagram
     participant G as Governance Layer
 
     V->>R: submitRegistrationRequest[pubKey, nodeMetadata]
-    R-->>V: assignProvisionalID + awaitStake
-    V->>R: stake[amount ≥ min]
+    R-->>V: assignProvisionalID + awaitDeposit
+    V->>R: deposit[amount ≥ min]
     R->>G: notifyGovernanceForReview
     G-->>R: approveOrReject[]
     R-->>V: registrationFinalized / rejected
@@ -62,7 +62,7 @@ sequenceDiagram
 Once governance approval is received, the validator must:
 
 1. Complete signature handshake for private key validation
-2. Acknowledge slashing policy and binding agreements
+2. Acknowledge forfeiting policy and binding agreements
 3. Be scheduled into next open epoch by Epoch Controller
 4. Receive validator ID (VID) and node hash
 
@@ -73,7 +73,7 @@ Once governance approval is received, the validator must:
 | Contract | Function | Purpose |
 | --- | --- | --- |
 | ValidatorRegistry | `submitRegistration()` | Accepts new validator metadata |
-| StakingContract | `stake()` | Locks required AROS |
+| Node Security DepositContract | `deposit()` | Locks required AROS |
 | GovernanceBridge | `approveValidator(address)` | Confirms validator approval |
 | EpochScheduler | `assignEpoch(address)` | Assigns node to epoch window |
 
@@ -84,7 +84,7 @@ Once governance approval is received, the validator must:
 - Duplicate node identity
 - Use of banned infrastructure (e.g. TOR nodes, VPN chains)
 - Jurisdictional conflict (e.g. sanctions list)
-- Failure to stake within 12 hours
+- Failure to deposit within 12 hours
 - Governance rejection after metadata analysis
 
 ---
@@ -102,16 +102,16 @@ Once governance approval is received, the validator must:
 
 ## Dependencies
 
-- `staking_overview.md`
-- `stake_freeze_unlock_rules.md`
+- `security deposit_overview.md`
+- `deposit_freeze_unlock_rules.md`
 - `validator_epoch_commitments.md`
-- `staking_governance_interface.md`
+- `security deposit_governance_interface.md`
 
 ---
 
 ## Next
 
-→ See [`stake_freeze_unlock_rules.md`](https://www.notion.so/aros-studio/stake_freeze_unlock_rules.md) to learn how staked funds are locked, released, or penalized.
+→ See [`deposit_freeze_unlock_rules.md`](https://www.notion.so/aros-studio/deposit_freeze_unlock_rules.md) to learn how depositd funds are locked, released, or penalized.
 
 ```
 

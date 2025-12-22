@@ -2,7 +2,7 @@
 
 ## Module: Validator Performance Score
 
-- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
+- **Layer**: Validator Node Security Deposit & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -50,7 +50,7 @@ All inputs are normalized on a 0.00–1.00 scale.
 
 ## Score Tiers and Outcomes
 
-| Score Range | Label | Payment Multiplier | Slashing Risk |
+| Score Range | Label | Payment Multiplier | Forfeiture Risk |
 | --- | --- | --- | --- |
 | 0.90–1.00 | ✅ Excellent | 1.10× | Very low |
 | 0.75–0.89 | 👍 Good | 1.00× | Low |
@@ -75,7 +75,7 @@ All inputs are normalized on a 0.00–1.00 scale.
     "finalization": 0.82,
     "fraudSignal": 0.0
   },
-  "slashing_risk": "Low",
+  "forfeiting_risk": "Low",
   "payment_multiplier": 1.00
 }
 
@@ -96,7 +96,7 @@ All inputs are normalized on a 0.00–1.00 scale.
 ## Governance Influence
 
 - Validators with >3 low scores in 10 epochs may be suspended
-- High-performing validators may earn bonus slots or unlock staking benefits
+- High-performing validators may earn bonus slots or unlock security deposit benefits
 - Score weights are adjustable via governance vote
 
 ---
@@ -105,10 +105,10 @@ All inputs are normalized on a 0.00–1.00 scale.
 
 - `payment_distribution_engine.md`
 - `validator_epoch_commitments.md`
-- `slashing_and_penalty_rules.md`
+- `forfeiting_and_penalty_rules.md`
 
 ---
 
 ## Next
 
-→ See [`slashing_and_penalty_rules.md`](https://www.notion.so/aros-studio/slashing_and_penalty_rules.md) to understand how low scores trigger penalties and when governance overrides can apply.
+→ See [`forfeiting_and_penalty_rules.md`](https://www.notion.so/aros-studio/forfeiting_and_penalty_rules.md) to understand how low scores trigger penalties and when governance overrides can apply.

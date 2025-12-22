@@ -1,4 +1,9 @@
-# **AST (Aros Studio) Financial Paradigm**
+# AST: Aros Financial Paradigm
+
+> [!CAUTION]
+> **ATTENTION: AST IS A TECHNOLOGICAL PROCESS, NOT A WALLET OR BANK. IT DOES NOT HOLD ASSETS (Thesis 5).**
+
+## Overview
 
 This repository contains the comprehensive architecture, documentation, and reference implementations for the **AST (Aros Studio) Foundational Platform**.
 
@@ -6,9 +11,8 @@ AST is not just a ledger; it is a **foundational infrastructure platform** engin
 
 The platform addresses the "Great Divide" between Traditional Finance (TradFi) and Decentralized Finance (DeFi) by solving three core risks at the architectural level:
 
-1. **Speculation Risk:** Through deterministic value circulation models.  
-2. **Compliance Risk:** Via a mandatory, built-in Regulatory Bridge (Module 05).  
-3. **Security Risk:** Using an autonomous AI Supervisory Framework (Module 12 & 13).
+2.**Compliance Risk:** Via a mandatory, built-in Regulatory Bridge (Module 05).  
+3.**Security Risk:** Using an autonomous AI Supervisory Framework (Module 12 & 13).
 
 > [!IMPORTANT]
 > **Regulatory Status**: AST is a **technological process** for encryption and routing. It is **NOT** a financial institution, bank, or custodian. It does not hold funds or manage assets. All value is managed by the fully isolated ALB (Authorized Liquidity Bridge).

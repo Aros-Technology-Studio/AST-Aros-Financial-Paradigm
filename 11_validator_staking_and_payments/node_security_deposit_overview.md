@@ -20,7 +20,7 @@ Node Security Deposit in AST is not only an economic commitment but a governance
 ## Key Principles
 
 - **PoT Activity + Security Deposit**: Only nodes with an active deposit are eligible to validate transactions and participate in PoT attestation.
-- **Epoch-Based Lifecycle**: Deposit commitment is tied to epoch duration; early withdrawal is not permitted.
+- **Epoch-Based Lifecycle**: Deposit commitment is tied to epoch duration; Withdrawal terms are governed by the API Contract and executed via the Financial Institution (ALB).
 - **Forfeiture Enforcement**: Misbehavior or inactivity results in deposit reduction or full forfeiture.
 - **Payment Binding**: Emission payments are distributed to compliant validators based on **Work Performed (Proof of Transaction)**, requiring active deposit as a bond.
 
@@ -72,14 +72,14 @@ flowchart TD
 
 ## Performance-Linked Mechanism
 
-Stake is not static: validator performance is continuously monitored via:
+Deposit is not static: validator performance is continuously monitored via:
 
 - TX confirmation latency
 - Attestation accuracy
 - Fraud flag rate
 - Participation ratio
 
-Performance score directly impacts both payment multiplier and slashing sensitivity.
+Performance score directly impacts both payment multiplier and forfeiting sensitivity.
 
 ---
 
@@ -97,7 +97,7 @@ Performance score directly impacts both payment multiplier and slashing sensitiv
 
 ## Governance Hooks
 
-- Stake thresholds adjustable via `deposit_governance_interface.md`
+- Deposit thresholds adjustable via `deposit_governance_interface.md`
 - Emergency freeze or override callable by governance quorum
 - Epoch performance snapshots reviewed every cycle
 

@@ -1,7 +1,7 @@
-# staking_governance_interface.md 
+# security deposit_governance_interface.md 
 
-## Module: Staking Governance Interface
-- **Layer**: Validator Staking & Payment System — AST (Aros Studio Tokenomics)
+## Module: Node Security Deposit Governance Interface
+- **Layer**: Validator Node Security Deposit & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This module defines the governance API layer through which validators, protocol agents, and governance actors interact with the staking and slashing subsystems of the AST protocol. It provides a structured interface for submitting appeals, voting on slashing proposals, adjusting staking rules, and executing governance decisions that affect validator status or emission parameters.
+This module defines the governance API layer through which validators, protocol agents, and governance actors interact with the security deposit and forfeiting subsystems of the AST protocol. It provides a structured interface for submitting appeals, voting on forfeiting proposals, adjusting security deposit rules, and executing governance decisions that affect validator status or emission parameters.
 
 ---
 
@@ -20,7 +20,7 @@ This module defines the governance API layer through which validators, protocol 
 |-----------------------------------|---------|
 | `/governance/proposal/create`     | Submit a new governance proposal |
 | `/governance/proposal/vote`       | Cast vote on existing proposal |
-| `/governance/appeal`              | Submit slashing appeal |
+| `/governance/appeal`              | Submit forfeiting appeal |
 | `/governance/validator/override`  | Force-add/remove validator |
 | `/governance/epoch/modify`        | Change epoch duration or settings |
 
@@ -57,7 +57,7 @@ sequenceDiagram
 
 ## Appeal Interface
 
-Validators can appeal slashing actions through the `/governance/appeal` endpoint. Required fields:
+Validators can appeal forfeiting actions through the `/governance/appeal` endpoint. Required fields:
 
 ```json
 {
@@ -73,7 +73,7 @@ Validators can appeal slashing actions through the `/governance/appeal` endpoint
 
 ```
 
-Appeals are routed to the Slashing Review Committee and must be decided within 96 hours.
+Appeals are routed to the Forfeiture Review Committee and must be decided within 96 hours.
 
 ---
 
@@ -83,7 +83,7 @@ Governance has the ability to override validator status via:
 
 - Emergency removal (e.g. threat to consensus)
 - Temporary admission of new validator during fork recovery
-- Resurrecting slashed validator on successful appeal
+- Resurrecting forfeited validator on successful appeal
 
 All overrides are logged with audit hash and timestamp.
 
@@ -93,7 +93,7 @@ All overrides are logged with audit hash and timestamp.
 
 - Every action is cryptographically signed
 - All governance actions are hashed and time-stamped
-- Slashing actions require multi-sig governance key (≥ 3-of-5)
+- Forfeiture actions require multi-sig governance key (≥ 3-of-5)
 - All decisions logged to `governance_ledger` contract
 
 ---
@@ -105,7 +105,7 @@ All overrides are logged with audit hash and timestamp.
 | `submitGovernanceProposal()` | Register proposal metadata on-chain |
 | `castVote(proposalId, vote)` | Vote for or against proposal |
 | `overrideValidator(address)` | Add or remove validator |
-| `submitSlashingAppeal()` | Appeal a slashing event |
+| `submitForfeitureAppeal()` | Appeal a forfeiting event |
 | `adjustEpochParameters()` | Modify epoch duration and rules |
 
 ---
@@ -130,7 +130,7 @@ All overrides are logged with audit hash and timestamp.
 
 ## Dependencies
 
-- `slashing_and_penalty_rules.md`
+- `forfeiting_and_penalty_rules.md`
 - `validator_epoch_commitments.md`
 - `payment_distribution_engine.md`
 

@@ -1,6 +1,6 @@
 # staking_overview.md
 
-## Module: Staking Overview
+## Module: Node Security Deposit Overview
 
 - **Layer**: Validator Security Deposit & Payment System — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
@@ -26,7 +26,7 @@ Node Security Deposit in AST is not only an economic commitment but a governance
 
 ---
 
-## Staking Roles
+## Node Deposit Roles
 
 | Role              | Description |
 |-------------------|-------------|
@@ -37,20 +37,20 @@ Node Security Deposit in AST is not only an economic commitment but a governance
 
 ---
 
-## Stake Requirements
+## Deposit Requirements
 
 | Parameter        | Value                          |
 |------------------|--------------------------------|
-| Minimum Stake    | 10,000 AROS                    |
+| Minimum Deposit  | 10,000 AROS                    |
 | Lock Period      | 1 Epoch (default = 7 days)     |
 | Withdrawal Delay | 1 additional epoch             |
-| Slash Threshold  | 3 missed attestations/epoch    |
+| Forfeiture Threshold  | 3 missed attestations/epoch    |
 
-All staking actions are finalized on-chain and signed by the validator’s keypair. Governance can increase the minimum dynamically based on network conditions.
+All deposit actions are finalized on-chain and signed by the validator’s keypair. Governance can increase the minimum dynamically based on network conditions.
 
 ---
 
-## Staking Lifecycle
+## Deposit Lifecycle
 
 ```mermaid
 flowchart TD
@@ -87,11 +87,11 @@ Performance score directly impacts both payment multiplier and slashing sensitiv
 
 | Function | Description |
 | --- | --- |
-| `stake(address, amount)` | Lock tokens for validator |
-| `unstake()` | Request withdrawal after epoch ends |
-| `penalize(address)` | Slash specific validator |
+| `deposit(address, amount)` | Lock tokens for validator |
+| `withdraw()` | Request withdrawal after epoch ends |
+| `forfeit(address)` | Forfeit deposit of specific validator |
 | `payment(address)` | Issue payment after epoch |
-| `getStake(address)` | Query current stake amount |
+| `getDeposit(address)` | Query current deposit amount |
 
 ---
 

@@ -3,22 +3,12 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class TokenService {
     /**
-     * Calculates dynamic token price based on utilization and volatility.
-     * P = alpha * log(Utilization) + beta * FX_vol + gamma
-     * @param utilizationIndex Network/Token utilization index (0.1 to infinity)
-     * @param fxVolatility Volatility of underlying assets
-     * @param params Configuration parameters (alpha, beta, gamma)
+     * returns the standard Exchange Rate.
+     * Enforces Thesis 3: No Speculation.
+     * The rate is determined 1:1 by ALB entrance/exit.
      */
-    calculateTokenPrice(
-        utilizationIndex: number,
-        fxVolatility: number,
-        params: { alpha: number; beta: number; gamma: number } = { alpha: 1, beta: 1, gamma: 0 },
-    ): number {
-        // Avoid log(0) or negative inputs
-        const u = Math.max(utilizationIndex, 0.000001);
-        const { alpha, beta, gamma } = params;
-
-        return alpha * Math.log(u) + beta * fxVolatility + gamma;
+    getExchangeRate(): number {
+        return 1.0;
     }
 
     /**
@@ -34,8 +24,7 @@ export class TokenService {
         params: { alpha: number; beta: number; gamma: number } = { alpha: 0.01, beta: 0.05, gamma: 0 },
     ): number {
         const { alpha, beta, gamma } = params;
-
-        // Ensure emission implies positive growth or zero, depending on policy
+        // NOTE: Emission is strictly coupled to Transaction Volume (fee recycling), NOT inflation.
         return Math.max(0, alpha * transactionVolume + beta * utilization + gamma);
     }
 

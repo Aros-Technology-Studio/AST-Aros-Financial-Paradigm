@@ -51,7 +51,7 @@ All votes are cryptographically signed and stored in the **Shard Signature Log**
 
 ## 4. Time-Sync and Leader Rotation
 
-A deterministic **clock sync protocol** ensures that validator windows are aligned. Leader nodes are rotated on a round-robin basis every **X blocks**, with fallback logic in case of non-response or timeout.
+A deterministic **clock sync protocol** ensures that validator windows are aligned. Leader nodes are rotated on a round-robin basis every **X epochs**, with fallback logic in case of non-response or timeout.
 
 Time discrepancies above a certain threshold automatically initiate a **fallback leader swap**.
 
@@ -83,7 +83,7 @@ Aros employs the following mechanisms:
 
 - System tolerates up to **1/3 Byzantine faults** per shard.
 - In the event of node failure, votes are rebalanced via **Quorum Rebalancer Engine**.
-- **Checkpointing Protocol** persists full shard states every N blocks for rollback and recovery.
+- **Checkpointing Protocol** persists full shard states every N snapshots for rollback and recovery.
 
 ---
 

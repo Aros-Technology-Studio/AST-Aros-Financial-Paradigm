@@ -6,9 +6,13 @@ import { TokenService } from './token.service';
 export class TokenController {
     constructor(private readonly tokenService: TokenService) { }
 
-    @Get('balance/:address')
-    getBalance(@Param('address') address: string) {
-        // Placeholder for actual logic calling service
-        return { address, balance: 0 };
+    @Get('utilization')
+    getSystemUtilization() {
+        // Returns network load/utilization metrics (Thesis 3 compliant)
+        return {
+            tps_current: 0,
+            node_count: 0,
+            network_load_index: 0.1
+        };
     }
 }

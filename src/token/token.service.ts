@@ -40,18 +40,18 @@ export class TokenService {
     }
 
     /**
-     * Calculates reward for a specific node based on NRI.
-     * Ti = (NRIi / TotalNRI) * TotalEmission
+     * Calculates payment for a specific node based on NRI.
+     * Ti = (NRIi / TotalNRI) * TotalPaymentPool
      * @param nodeNRI Reputation score of the node
      * @param totalNRI Sum of all eligible node NRIs
-     * @param totalEmission Total tokens to distribute
+     * @param totalPaymentPool Total tokens to distribute
      */
-    calculateNodeReward(
+    calculateNodePayment(
         nodeNRI: number,
         totalNRI: number,
-        totalEmission: number,
+        totalPaymentPool: number,
     ): number {
         if (totalNRI === 0) return 0;
-        return (nodeNRI / totalNRI) * totalEmission;
+        return (nodeNRI / totalNRI) * totalPaymentPool;
     }
 }

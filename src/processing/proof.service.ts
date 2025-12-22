@@ -5,7 +5,8 @@ import * as crypto from 'crypto';
 export class ProofService {
     /**
      * Generates Proof of Claim (PoC) hash.
-     * PoC = Hash(TX_origin || KYC_ID || Timestamp || Signatures)
+     * PoC = Hash(TX_origin || KYC_ID_OPAQUE || Timestamp || Signatures)
+     * NOTE: kycId is an opaque handle provided by ALB. AST does not process PII.
      */
     generatePoC(
         txOrigin: string,

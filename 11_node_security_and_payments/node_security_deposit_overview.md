@@ -22,7 +22,7 @@ Node Security Deposit in AST is not only an economic commitment but a governance
 - **PoT Activity + Security Deposit**: Only nodes with an active deposit are eligible to validate transactions and participate in PoT attestation.
 - **Epoch-Based Lifecycle**: Deposit commitment is tied to epoch duration; Withdrawal terms are governed by the API Contract and executed via the Financial Institution (ALB).
 - **Forfeiture Enforcement**: Misbehavior or inactivity results in deposit reduction or full forfeiture.
-- **Payment Binding**: Emission payments are distributed to compliant validators based on **Work Performed (Proof of Transaction)**, requiring active deposit as a bond.
+- **Payment Binding**: Processing Pool payments are distributed to compliant validators based on **Work Performed (Proof of Transaction)**, requiring active deposit as a bond.
 
 ---
 

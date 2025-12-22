@@ -72,7 +72,7 @@ Where `penalty_ratio` ∈ [0.0, 1.0], as defined per violation.
 
 ## Appeal Process
 
-- Slashed validators may appeal via `/governance/appeal`
+- Forfeited validators may appeal via `/governance/appeal`
 - Review committee votes based on log records and metadata snapshots
 - Successful appeal → partial refund, flag cleared
 - Failed appeal → blacklist + cooldown (5 epochs)
@@ -85,7 +85,7 @@ Where `penalty_ratio` ∈ [0.0, 1.0], as defined per violation.
 | --- | --- |
 | `Multi-signature Override` | Manual forfeit requires ≥ 66% validator vote |
 | `Audit Snapshot Lock` | Forfeiture must reference immutable audit hash |
-| `Cooldown Enforcement` | Slashed node cannot re-register for N epochs |
+| `Cooldown Enforcement` | Forfeited node cannot re-register for N epochs |
 | `Penalty Disclosure` | All events publicly logged in payment engine |
 
 ---

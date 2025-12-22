@@ -22,7 +22,7 @@ This module defines the lifecycle of validator deposit once locked in the networ
 | `Active`            | Deposit linked to a validator’s epoch commitment |
 | `Frozen`            | Temporarily locked due to violation or investigation |
 | `Unlocked`          | Eligible for withdrawal after exit conditions met |
-| `Slashed`           | Deposit partially or fully burned for violation |
+| `Forfeited`           | Deposit partially or fully burned for violation |
 
 ---
 
@@ -90,7 +90,7 @@ flowchart TD
 ## Governance Hooks
 
 - Manual override possible via `/governance/deposit/forceUnlock`
-- Slashed deposit enters audit ledger via `tx_audit_log_format`
+- Forfeited deposit enters audit ledger via `tx_audit_log_format`
 - Frozen deposit can be restored via vote (`unfreezeDeposit(address)`)
 
 ---

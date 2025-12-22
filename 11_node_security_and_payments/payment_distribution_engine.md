@@ -79,7 +79,7 @@ sequenceDiagram
 | Missed Attestations | −15% per event |
 | Fraudulent Signature | −100%, trigger forfeiting |
 | Downtime > 5% | −30% penalty |
-| Metadata Manipulation | Blocked payment |
+| Metadata Manipulation | Batched payment |
 
 ---
 
@@ -87,7 +87,7 @@ sequenceDiagram
 
 | Type | Description |
 | --- | --- |
-| `AROS-Emission` | Standard validator payments in AROS |
+| `AROS-Processing Pool` | Standard validator payments in AROS |
 | `Reputation Points` | Non-transferable points for governance rank |
 | `Epoch Bonus` | Randomized incentive pools for top performers |
 

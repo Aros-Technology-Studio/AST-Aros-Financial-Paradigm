@@ -2,28 +2,28 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
-import { Block } from './entities/block.entity';
+import { LedgerBatch } from './entities/ledger_batch.entity';
 
 @Injectable()
 export class LedgerService {
     constructor(
         @InjectRepository(Transaction)
-        private readonly transactionRepo: Repository<Transaction>,
-        @InjectRepository(Block)
-        private readonly blockRepo: Repository<Block>,
+        private readonly txRepo: Repository<Transaction>,
+        @InjectRepository(LedgerBatch)
+        private readonly batchRepo: Repository<LedgerBatch>,
     ) { }
 
     async createTransaction(data: Partial<Transaction>): Promise<Transaction> {
-        const tx = this.transactionRepo.create({
+        const tx = this.txRepo.create({
             ...data,
             status: 'pending',
             timestamp: new Date()
         });
-        return this.transactionRepo.save(tx);
+        return this.txRepo.save(tx);
     }
 
     async getTransaction(tx_id: string): Promise<Transaction> {
-        const tx = await this.transactionRepo.findOne({ where: { tx_id } });
+        const tx = await this.txRepo.findOne({ where: { tx_id } });
         if (!tx) {
             throw new NotFoundException(`Transaction ${tx_id} not found`);
         }
@@ -31,8 +31,8 @@ export class LedgerService {
     }
 
     async getEpochSummary(epoch_id: string): Promise<any> {
-        const txs = await this.transactionRepo.find({ where: { epoch_id } });
-        const blocks = await this.blockRepo.find({ where: { epoch_id } });
+        const txs = await this.txRepo.find({ where: { epoch_id } });
+        const batches = await this.batchRepo.find({ where: { epoch_id } });
 
         // Aggregation logic placeholder
         const totalVolume = txs.reduce((acc, tx) => acc + parseFloat(tx.amount), 0);
@@ -40,10 +40,10 @@ export class LedgerService {
         return {
             epoch_id,
             transaction_count: txs.length,
-            block_count: blocks.length,
+            batch_count: batches.length,
             total_volume: totalVolume,
             transactions: txs.map(t => t.tx_id),
-            blocks: blocks.map(b => b.block_id)
+            batches: batches.map(b => b.batch_id)
         };
     }
 }

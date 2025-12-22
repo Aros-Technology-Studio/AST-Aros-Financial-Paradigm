@@ -37,7 +37,7 @@ The system is composed of 14 independent, patent-pending modules:
 
 ## **Key Links**
 
-* [**AST Developer Deep Dive**](docs/AST_Developer_Deep_Dive.md) - **The Single Source of Truth**
+* [**NodeChain Developer Deep Dive**](docs/AST_Developer_Deep_Dive.md) - **The Single Source of Truth**
 * [**Architecture Overview**](docs/architecture/Architecture_Overview.md)  
 * [**API Specifications**](docs/api/README.md)  
 * [**Legal & Patent Info**](docs/legal/README.md)

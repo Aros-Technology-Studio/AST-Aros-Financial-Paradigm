@@ -5,11 +5,11 @@ import { AstNodeService } from './ast_node.service';
 import { DteModule } from '../dte/dte.module';
 import { LedgerModule } from '../ledger/ledger.module';
 import { ValidatorModule } from '../validator/validator.module';
-import { Block } from '../ledger/entities/block.entity';
+import { LedgerBatch } from '../ledger/entities/ledger_batch.entity';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Block]), // Needed to save blocks directly
+        TypeOrmModule.forFeature([LedgerBatch]), // Needed to save batches directly
         DteModule,
         LedgerModule,
         ValidatorModule

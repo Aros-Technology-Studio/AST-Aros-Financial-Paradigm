@@ -10,8 +10,8 @@ export class AstNodeController {
         return this.astNodeService.processTransaction(body);
     }
 
-    @Post('trigger-block')
-    async triggerBlock() {
-        return this.astNodeService.mineBlock();
+    @Post('finalize-batch')
+    async finalizeBatch() {
+        return this.astNodeService.finalizeBatch();
     }
 }

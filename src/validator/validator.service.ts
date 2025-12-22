@@ -96,7 +96,7 @@ export class ValidatorService {
 
         activeEpoch.status = EpochStatus.FINALIZED;
         activeEpoch.end_time = new Date();
-        activeEpoch.total_rewards = rewards;
+        activeEpoch.total_payments = rewards;
 
         return this.epochRepo.save(activeEpoch);
     }

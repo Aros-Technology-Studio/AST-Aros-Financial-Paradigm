@@ -1,9 +1,9 @@
 import { Entity, Column, PrimaryColumn, CreateDateColumn } from 'typeorm';
 
-@Entity('blocks')
-export class Block {
+@Entity('ledger_batches')
+export class LedgerBatch {
     @PrimaryColumn()
-    block_id: string; // Hash of the block
+    batch_id: string; // Hash of the batch
 
     @Column()
     epoch_id: string;
@@ -15,7 +15,7 @@ export class Block {
     merkle_root: string;
 
     @Column()
-    prev_block_hash: string;
+    prev_batch_hash: string;
 
     @CreateDateColumn()
     created_at: Date;

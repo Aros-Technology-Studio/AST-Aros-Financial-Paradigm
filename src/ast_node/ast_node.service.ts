@@ -3,7 +3,7 @@ import { DteService } from '../dte/dte.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Block } from '../ledger/entities/block.entity';
+import { LedgerBatch } from '../ledger/entities/ledger_batch.entity';
 import { sha3_512 } from 'js-sha3';
 
 @Injectable()
@@ -13,8 +13,8 @@ export class AstNodeService {
     constructor(
         private readonly dteService: DteService,
         private readonly ledgerService: LedgerService,
-        @InjectRepository(Block)
-        private readonly blockRepo: Repository<Block>,
+        @InjectRepository(LedgerBatch)
+        private readonly batchRepo: Repository<LedgerBatch>,
     ) { }
 
     /**
@@ -50,28 +50,28 @@ export class AstNodeService {
     }
 
     /**
-     * Simulates mining a block.
-     * Aggregates pending transactions (mocked logic) and creates a Block entity.
+     * Finalizes a Ledger Batch.
+     * Aggregates pending transactions and creates a LedgerBatch entity.
      */
-    async mineBlock() {
-        this.logger.log('Mining new block...');
+    async finalizeBatch() {
+        this.logger.log('Finalizing new ledger batch...');
 
         // In a real implementation: fetch pending txs from LedgerService
-        // For MVP: We just create a new block and assume it "includes" recent txs implicitly by epoch linkage
+        // For MVP: We just create a new batch and assume it "includes" recent txs implicitly by epoch linkage
 
-        const blockId = sha3_512(new Date().toISOString() + Math.random());
+        const batchId = sha3_512(new Date().toISOString() + Math.random());
 
-        const block = this.blockRepo.create({
-            block_id: blockId,
+        const batch = this.batchRepo.create({
+            batch_id: batchId,
             epoch_id: '1', // Mocked epoch linkage
             height: '100', // Mocked height
             merkle_root: '0x0000000000000000000000000000000000000000000000000000000000000000', // Mocked
-            prev_block_hash: '0xGENESIS', // Mocked
+            prev_batch_hash: '0xGENESIS', // Mocked
         });
 
-        await this.blockRepo.save(block);
-        this.logger.log(`Block ${blockId} mined and saved.`);
+        await this.batchRepo.save(batch);
+        this.logger.log(`Batch ${batchId} finalized and saved.`);
 
-        return block;
+        return batch;
     }
 }

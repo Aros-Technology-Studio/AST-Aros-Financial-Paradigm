@@ -24,7 +24,7 @@ export interface Vote {
 
 /**
  * Represents a discrete Execution Snapshot (Task Batch) in the NodeChain.
- * Replaces the concept of a 'Block'.
+ * Replaces the concept of a 'Batch'.
  */
 export interface ExecutionSnapshot {
     sequenceId: number;

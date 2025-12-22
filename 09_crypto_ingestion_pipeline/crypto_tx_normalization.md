@@ -11,7 +11,7 @@ Normalization is critical to ensure that heterogeneous blockchain inputs can be 
 
 External blockchains differ in structure:
 
-| Blockchain | TX Model     | Format         |
+| Batchchain | TX Model     | Format         |
 |------------|--------------|----------------|
 | Bitcoin    | UTXO         | Binary/Hex     |
 | Ethereum   | Account-based| JSON-RPC       |

@@ -28,7 +28,7 @@ ArosCoin is issued exclusively as a response to verifiable incoming assets, eith
 
 ---
 
-### **2.Immutable Conversion Registry & Emission Lock**
+### **2.Immutable Conversion Registry & Fee Distribution Lock**
 
 All token emissions are registered within the **Conversion & Custody Registry**, a core component of the AFC protocol, and enforced by the **Immutable Execution Contracts** of the AST layer. This registry ensures that:
 

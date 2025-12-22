@@ -42,7 +42,7 @@ Both processes are essential for:
 ### 🔥 Burn Mechanism
 - Burn contract receives: `{ burnAmount, originTxID, burnReason }`.
 - Updates `burnLedger` with full audit metadata.
-- Emission count adjusted and pushed to public index.
+- Fee Distribution count adjusted and pushed to public index.
 
 ---
 
@@ -56,7 +56,7 @@ Both processes are essential for:
 
 ---
 
-## 4. Emission Parameters
+## 4. Fee Distribution Parameters
 
 | Parameter           | Description                                      | Example Value     |
 |---------------------|--------------------------------------------------|-------------------|

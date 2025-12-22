@@ -18,7 +18,7 @@ This token is **strictly internal** to the governance layer and is **not tradabl
 | Principle                | Description                                                         |
 |--------------------------|---------------------------------------------------------------------|
 | 🔒 Non-Transferability   | Tokens cannot be freely transferred between users                   |
-| 🪙 Staking-Based Voting  | Governance power is activated only when tokens are staked           |
+| 🪙 Security Deposit-Based Voting  | Governance power is activated only when tokens are staked           |
 | 🧾 No Monetary Function  | Token has no exchange value and cannot be sold or swapped           |
 | 🧠 Delegation with Limits| Delegation allowed, but capped and revocable                       |
 | 🧮 Epoch-Based Payments   | Tokens may be earned via participation in governance epochs         |
@@ -41,7 +41,7 @@ They **cannot be purchased**, claimed via liquidity, or bridged from other syste
 
 To use tokens for governance actions (vote, propose, delegate), the user must:
 
-1. Lock them in the `GovernanceStakingContract`
+1. Lock them in the `GovernanceSecurity DepositContract`
 2. Maintain eligibility status from Compliance Oracle
 3. Wait for snapshot block to complete before activation
 

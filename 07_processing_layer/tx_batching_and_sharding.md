@@ -34,7 +34,7 @@ Together, these mechanisms form the backbone of AST’s horizontal scaling model
 | Commit interval                  | Every 4 seconds (or after batch fills)                    |
 | Same-token grouping              | Transactions using same token are grouped where possible |
 | Risk-aware sorting               | High-risk TXs are batched separately                      |
-| Emission-coherent batching       | Only one emission trigger per batch is allowed            |
+| Fee Distribution-coherent batching       | Only one emission trigger per batch is allowed            |
 | Failure containment              | One failed TX does not invalidate the full batch          |
 
 ---
@@ -63,7 +63,7 @@ Shards represent logical partitions of the system. Each shard operates its own i
 - **State snapshot context**
 - **Validator queue**
 - **Batching mechanism**
-- **Emission buffer**
+- **Fee Distribution buffer**
 - **Audit and hash logs**
 
 Shards may be defined by:
@@ -97,7 +97,7 @@ Shards may be defined by:
 3. Once batch fills or time expires, it's sealed
 4. Sealed batch dispatched to execution engine
 5. Results journaled and hash mapped per shard
-6. Emission logic applied if conditions met
+6. Fee Distribution logic applied if conditions met
 
 ---
 
@@ -121,7 +121,7 @@ flowchart TD
 - Each shard maintains its own consensus snapshot
 - Cross-shard consistency is ensured via Merkle diffing
 - Failed shards are quarantined and failover nodes activated
-- Emission caps are shard-specific and enforced by validator quorum
+- Fee Distribution caps are shard-specific and enforced by validator quorum
 
 ---
 
@@ -142,7 +142,7 @@ flowchart TD
 - Batching engine runs on async thread to avoid execution blocking
 - Shard definitions are policy-driven and hot-reloadable
 - Batches should be persisted before dispatch in case of crash recovery
-- Emission logic must include shard prefix in traceable hash to avoid collisions
+- Fee Distribution logic must include shard prefix in traceable hash to avoid collisions
 
 ---
 

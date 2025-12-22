@@ -1,16 +1,16 @@
-# AROS Coin Emission Model
+# AROS Coin Fee Distribution Model
 
 ## Overview
 
 The emission model of AROS Coin is designed to ensure **predictability**, **non-speculative growth**, and **self-sustainability** of the ecosystem. Unlike mining-based blockchains (e.g. Bitcoin), AROS Coin uses a **transaction-fee-based emission principle** tightly coupled with decentralized transaction processing. This makes it energy-efficient, economically justified, and resistant to artificial inflation or manipulation.
 
-## Core Emission Principles
+## Core Fee Distribution Principles
 
 - **No Pre-allocation**: No coins are created at launch or reserved for founders or institutions.
 - **No Fixed Supply**: AROS Coin does not enforce a hard cap. Instead, supply is organically regulated by network demand and usage intensity.
-- **Emission by Transaction Processing**: Coins are generated *only* as a result of real transactions processed on the decentralized network. Each verified transaction pays a small fee, which is then distributed as emission across processing nodes.
+- **Fee Distribution by Transaction Processing**: Coins are generated *only* as a result of real transactions processed on the decentralized network. Each verified transaction pays a small fee, which is then distributed as emission across processing nodes.
 
-## Emission Formula
+## Fee Distribution Formula
 
 Let:
 
@@ -22,10 +22,10 @@ Let:
 Then:
 
 E = F / N
-Total Emission per block = Σ (F / N) over all transactions
+Total Fee Distribution per block = Σ (F / N) over all transactions
 
 This ensures:
-- Emission is tied to network activity.
+- Fee Distribution is tied to network activity.
 - The more active the network, the more coins are generated.
 - No idle emission occurs without usage.
 
@@ -42,14 +42,14 @@ The emission logic includes:
 - **Dynamic adjustment models** based on network stress, coin velocity, and macro indicators.
 - **Audit hooks** into every emission cycle for reproducibility and trust.
 
-## Emission Phases
+## Fee Distribution Phases
 
 | Phase       | Description                                       | Trigger Condition                         |
 |-------------|---------------------------------------------------|-------------------------------------------|
 | Bootstrap   | Minimal emission for early transactions           | First 10,000 verified transactions         |
 | Expansion   | Normal fee-based emission begins                  | After bootstrap phase                      |
 | Stability   | Adaptive emission scaling and partial burn        | Coin velocity > threshold X               |
-| Correction  | Emission slows down, burn ratio increases         | Inflation risk or validator overloading   |
+| Correction  | Fee Distribution slows down, burn ratio increases         | Inflation risk or validator overloading   |
 
 ## Example (JSON Spec)
 

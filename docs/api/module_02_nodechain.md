@@ -139,7 +139,7 @@ Returns the high-level health and status of the entire AST Nodechain.
   "activeNodes": 150,
   "tps_5min_avg": 874.5,
   "consensusHealth": "Healthy", // "Healthy", "Degraded", "Halted"
-  "lastFinalizedBlock": 987654
+  "lastFinalizedBatch": 987654
 }
 ```
 

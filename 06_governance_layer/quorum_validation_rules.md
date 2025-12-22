@@ -47,7 +47,7 @@ The `impactLevel` is declared by the proposer but must be confirmed by Governanc
 ```solidity
 function isQuorumReached(uint256 proposalId) public view returns (bool) {
     Proposal memory p = proposals[proposalId];
-    uint256 totalWeight = getTotalStakedAtSnapshot(p.snapshotBlock);
+    uint256 totalWeight = getTotalStakedAtSnapshot(p.snapshotBatch);
     uint256 voteWeight = p.totalVotesWeight;
     return (voteWeight * 100 / totalWeight) >= p.requiredQuorumPercent;
 }

@@ -22,13 +22,13 @@ The AST Platform is a modular, layered system. Each numbered module represents a
     * Manages on-chain governance, including proposals, voting, and emergency procedures (ADR-005).
 * **Module 07: Processing Layer**
     * The "engine room" for transactions. Manages the TX queue, validation pipeline, and writing to audit logs (ADR-006).
-* **Module 08: Emission Layer**
+* **Module 08: Fee Distribution Layer**
     * The protocol-level system that controls the release of new tokens based on network epochs.
 * **Module 09: Crypto Ingestion Pipeline**
     * A sub-component of the Bridge Layer (Module 05) designed to handle crypto-to-crypto (e.g., BTC/ETH to AST) conversions.
 * **Module 10: Proof-of-Transaction Engine**
     * A novel mechanism for weighting transactions and paymenting network participation.
-* **Module 11: Validator Staking & Payments**
+* **Module 11: Validator Security Deposit & Payments**
     * Manages the economic incentives for nodes, including performance scoring and slashing rules.
 * **Module 12: Nodechain AI Agents**
     * The *active* supervisory layer (ADR-002). A federation of AI agents that monitor, score risk, and dispatch fraud signals.
@@ -73,12 +73,12 @@ These are the three most important processes in the system.
 * **Flow:** This process is detailed in the **[Fiat-to-AST Tokenization Lifecycle Diagram](./sequence_diagrams.md)**.
 * **Modules Involved:** `Module 05 (Bridge/ALB)`, `3rd-Party KYC Provider`, `Module 03 (Token Management)`.
 
-### 3. Emission Epochs
+### 3. Fee Distribution Epochs
 * **Description:** The protocol-level flow for issuing new tokens based on network time (epochs).
 * **Flow:**
     1.  The **Nodechain (Module 02)** reaches a new `epochId` (see `epoch.schema.json`).
-    2.  This change triggers the **Emission Layer (Module 08)**.
-    3.  The **Emission Layer** calculates the new token allocation for this epoch based on the `epoch_allocation_model.md`.
+    2.  This change triggers the **Fee Distribution Layer (Module 08)**.
+    3.  The **Fee Distribution Layer** calculates the new token allocation for this epoch based on the `epoch_allocation_model.md`.
     4.  It calls the `mint()` function on the **Token Management (Module 03)** contract.
     5.  The new tokens are minted to their target addresses (e.g., validator payment pools, governance treasury).
     6.  The **Token Management (Module 03)** writes this action to the `token_audit_trail.md` (ADR-006) for auditors.

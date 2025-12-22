@@ -74,7 +74,7 @@ flowchart TD
     D -- Yes --> F[Execute TX]
     F --> G{Execution Success?}
     G -- No --> H[Execution Failure Logged]
-    G -- Yes --> I[Proceed to Emission]
+    G -- Yes --> I[Proceed to Fee Distribution]
 
 ```
 
@@ -105,7 +105,7 @@ All failures are tagged with `trace_flag = true` and classified into the followi
 
 - **Per node failure rate**
 - **Top failure codes (7d / 30d / YTD)**
-- **Emission-preventing incidents**
+- **Fee Distribution-preventing incidents**
 - **Guardrail efficiency metrics**
 - **False-positive validation events**
 

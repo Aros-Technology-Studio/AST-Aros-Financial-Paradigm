@@ -33,7 +33,7 @@ Nodes are not anonymous by default. Each participant must:
 flowchart TD
     A[Node submits registration request] --> B[Identity verification]
     B --> C{Node type?}
-    C -->|Validator| D[Staking & audit]
+    C -->|Validator| D[Security Deposit & audit]
     C -->|Relay| E[Basic auth]
     C -->|Oracle| F[AI-Review Layer]
     D & E & F --> G[Gatekeeper review]

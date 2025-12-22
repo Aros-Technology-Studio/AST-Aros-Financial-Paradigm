@@ -1,6 +1,6 @@
 # AST Global Threat Model
 
-This document outlines the comprehensive threat model for the AROS Studio Tokenomics (AST) system, identifying potential risks across all layers (Coin Engine, NodeChain, Token Management, Value Circulation, Bridges, Governance, Processing, Emission, Crypto Ingestion, PoT, Validator Staking, AI Agents, and The All-Seeing Eye) and providing mitigations to ensure security, integrity, and compliance. It integrates principles of zero-trust, immutability, and regulatory adherence, aligning with AST's non-speculative, utility-driven design. The model is designed for developers, auditors, and governance stakeholders to prioritize security enhancements and inform deployment strategies. Last updated: 2025-08-17.
+This document outlines the comprehensive threat model for the AROS Studio Tokenomics (AST) system, identifying potential risks across all layers (Coin Engine, NodeChain, Token Management, Value Circulation, Bridges, Governance, Processing, Fee Distribution, Crypto Ingestion, PoT, Validator Security Deposit, AI Agents, and The All-Seeing Eye) and providing mitigations to ensure security, integrity, and compliance. It integrates principles of zero-trust, immutability, and regulatory adherence, aligning with AST's non-speculative, utility-driven design. The model is designed for developers, auditors, and governance stakeholders to prioritize security enhancements and inform deployment strategies. Last updated: 2025-08-17.
 
 ## 1. Purpose
 The global threat model aims to:
@@ -12,17 +12,17 @@ The global threat model aims to:
 
 ## 2. Scope
 Covers all AST components:
-- **Coin Engine**: Emission, burn, payments.
+- **Coin Engine**: Fee Distribution, burn, payments.
 - **NodeChain Engine**: Node registration, sharding, encryption.
 - **Token Management**: Lifecycle, audits, emergency protocols.
 - **Value Circulation**: Vaults, liquidity, buybacks.
 - **Bridges**: Fiat/crypto ingress/egress, KYC/AML.
 - **Governance**: Proposals, voting, quorum.
 - **Processing Layer**: TX queuing, validation, journaling.
-- **Emission Layer**: Triggers, fraud prevention.
+- **Fee Distribution Layer**: Triggers, fraud prevention.
 - **Crypto Ingestion**: Multi-chain normalization.
 - **PoT Engine**: Validation, weighting, slashing.
-- **Validator Staking**: Payments, penalties.
+- **Validator Security Deposit**: Payments, penalties.
 - **AI Agents**: Anomaly detection, escalation.
 - **The All-Seeing Eye**: Passive oversight, signals.
 
@@ -46,10 +46,10 @@ Below is a detailed table of identified threats, their implications, and mitigat
 | **Governance Capture** | Governance | Elevation | Medium | Critical | Whale voters dominate proposals. | Token-weighted voting with quorum anchor (67%), separate GOV token (06_governance_layer/governance_token_logic.md). |
 | **Smart Contract Bug** | Coin Engine/Bridges | Tampering | Low | Critical | Reentrancy in mint/burn or bridge contracts. | Slither/MythX audits, formal verification, emergency pause (01_coin_engine/token_generation_contract.sol, 06_governance_layer/emergency_governance_procedures.md). |
 | **Replay Attacks** | Processing Layer | Repudiation | Medium | High | Resubmitting valid TX to duplicate effects. | Nonce + prev_tx_ref in ARO_TX, immutable journaling (07_processing_layer/tx_structure_and_metadata.md). |
-| **Emission Fraud** | Emission Layer | Tampering | Medium | High | Fake TX to trigger minting. | PoT-verified triggers, fraud detection (08_emission_layer/emission_fraud_prevention.md). |
+| **Fee Distribution Fraud** | Fee Distribution Layer | Tampering | Medium | High | Fake TX to trigger minting. | PoT-verified triggers, fraud detection (08_emission_layer/emission_fraud_prevention.md). |
 | **Node Collusion** | NodeChain | Elevation | Low | High | Validators collude to approve invalid TX. | Random rotation, slashing for >3% deviation (02_nodechain_engine/network_consensus_model.md). |
 | **Data Leakage** | All Layers | Information Disclosure | Low | Medium | Sensitive metadata (e.g., user_id) exposed. | Zero-knowledge proofs for logs, encrypted payloads (02_nodechain_engine/encryption_protocol.md). |
-| **Validator Misbehavior** | Validator Staking | Tampering | Medium | High | Invalid attestations to gain payments. | Performance scoring, slashing (25-100% stake burn) (11_validator_staking_payments/slashing_and_penalty_rules.md). |
+| **Validator Misbehavior** | Validator Security Deposit | Tampering | Medium | High | Invalid attestations to gain payments. | Performance scoring, slashing (25-100% stake burn) (11_validator_staking_payments/slashing_and_penalty_rules.md). |
 | **Log Tampering** | The All-Seeing Eye | Repudiation | Low | Critical | Altering audit logs. | Merkle-linked logs, IPFS/Arweave mirroring (13_extra_supervisory_layer/meta_event_logging_protocol.md). |
 
 ## 5. Cross-Layer Mitigations
@@ -91,7 +91,7 @@ Below is a detailed table of identified threats, their implications, and mitigat
 - `05_bridge_layer/bridge_threat_model.md`: Bridge-specific risks.
 - `06_governance_layer/emergency_governance_procedures.md`: Freeze protocols.
 - `07_processing_layer/tx_validation_pipeline.md`: TX validation rules.
-- `08_emission_layer/emission_fraud_prevention.md`: Emission safeguards.
+- `08_emission_layer/emission_fraud_prevention.md`: Fee Distribution safeguards.
 - `10_proof_of_transaction_engine/pot_tx_weighting_model.md`: PoT scoring.
 - `12_nodechain_ai_agents/ai_governance_escalation.md`: AI-human handoff.
 - `13_extra_supervisory_layer/security_audit_protocol.md`: Audit processes.

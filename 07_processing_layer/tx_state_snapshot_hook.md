@@ -23,7 +23,7 @@ This hook is fundamental to preserving determinism and reproducibility within AS
   - Validation pipeline evaluation
   - Simulation mode dry-runs
   - Guardrail enforcement
-  - Emission eligibility logic
+  - Fee Distribution eligibility logic
 - Enable external and internal consistency checks without mutation
 - Support rollback comparison (before/after diffs)
 

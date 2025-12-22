@@ -33,7 +33,7 @@ Each transaction record in the journal contains:
 | Field                   | Description                                                  |
 |-------------------------|--------------------------------------------------------------|
 | `tx_id`                | Unique identifier of the transaction                          |
-| `timestamp`            | Block-level or wallclock timestamp of processing              |
+| `timestamp`            | Batch-level or wallclock timestamp of processing              |
 | `status`               | One of: `validated`, `rejected`, `executed`, `rolled_back`    |
 | `execution_node`       | Node ID that handled the transaction                          |
 | `snapshot_id`          | Reference to the state snapshot used                          |

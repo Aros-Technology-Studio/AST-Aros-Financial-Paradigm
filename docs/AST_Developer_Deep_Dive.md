@@ -12,7 +12,7 @@ AST is an autonomous decentralized platform managing value exchange and tokeniza
 
 1. **NodeChain Execution Layer.** AST utilizes a distributed network of nodes (validators, attestators, observers) that process transactions and participate in consensus. Participating nodes register via a cryptographic onboarding API and authenticate via a challenge-signature. Upon successful registration, a node receives an auth-token and can request transaction batches for validation. All operations are performed deterministically, ensuring reproducibility and auditability.
 2. **PoT Engine.** Unlike Proof of Work/Stake, PoT evaluates a node's contribution based on activity, reputation, and transaction load. Validators are assigned roles according to weight calculated by TVS and NRI functions, and they confirm transactions; attestators verify signatures. The role assignment algorithm includes randomness to prevent cartels.
-3. **Dynamic Emission Model.** ArosCoin emission equals the sum of transaction processing fees; there is no pre-mining or gift tokens. The dynamic emission formula is described in the "Aros Coin Dynamic Emission Model" document — total issuance `T_E` is defined as `α·TV + β·U + γ` , where TV is transaction volume, U is network utilization, and α, β, γ are tuning parameters. A separate distribution function `R_i = (S_i / ΣS)·T_adj` divides emission among nodes proportional to their weight (S_i). This guarantees nodes are paid for work, not paymented; burning a portion of emission prevents inflation.
+3. **Dynamic Fee Distribution Model.** ArosCoin emission equals the sum of transaction processing fees; there is no pre-mining or gift tokens. The dynamic emission formula is described in the "Aros Coin Dynamic Fee Distribution Model" document — total issuance `T_E` is defined as `α·TV + β·U + γ` , where TV is transaction volume, U is network utilization, and α, β, γ are tuning parameters. A separate distribution function `R_i = (S_i / ΣS)·T_adj` divides emission among nodes proportional to their weight (S_i). This guarantees nodes are paid for work, not paymented; burning a portion of emission prevents inflation.
 4. **Bridge Layer and Tokenization.** AST includes an official tokenization protocol allowing conversion of external assets (fiat or other cryptocurrencies) into ArosCoin. Upon deposit, the asset is placed in reserve, and the `ArosCoinReserveManager.sol` contract mints an equivalent amount of ArosCoin using a unique identifier to prevent double issuance. Reverse conversion burns tokens and returns the asset to the owner. An internal "usedReferences" ledger ensures legal transparency and prevents re-issuance.
 5. **AI Oversight and Governance.** Network integrity is monitored by a federation of AI agents (the so-called All-Seeing Eye). Agents detect anomalies (wash-trading, front-running, Sybil attacks) and maintain meta-audit logs. Critical events are escalated to a multi-sig committee where governance decisions on validator rotation, emission parameter adjustment, or rollback mechanism activation are made.
 6. **Legal Compatibility.** AST features a patented "Cross-Jurisdiction Legal Bridge" concept, allowing synchronization of operations between different legal regimes. Jurisdictional Trust Tokens (JTT) and a Dual Attestation Engine are used during conversion to ensure legal validation of transactions.
@@ -139,7 +139,7 @@ AST ensures a deterministic and auditable ledger of all transactions. The audit 
 
 * **Throughput Limiting.** Limiting transaction count from one address/node prevents DoS.
 * **Multi-Level Authentication.** Hardware wallets mandatory for governance operations; nodes undergo certification and KYC.
-* **Slashing and Penalties.** Nodes caught in violations (front-running, double voting) receive penalties in PoT; stake burning may apply.
+* **Deposit Forfeiture and Penalties.** Nodes caught in violations (front-running, double voting) receive penalties in PoT; stake burning may apply.
 * **AI Monitoring.** Agents analyze streams and detect anomalies (Sybil attacks, oracle manipulation).
 * **Multi-Provider Oracles.** Multiple oracles are used for external data; results are aggregated to prevent manipulation.
 
@@ -190,7 +190,7 @@ In case of error (e.g., duplicate ID detected), AI agents signal, governance com
 AST can adapt to various jurisdictions and business requirements via forks:
 
 1. **Compliance Parameters.** Each fork network can set its own KYC/AML rules, allowed assets, transaction limits.
-2. **Emission Parameters.** Fork can change coefficients α, β, γ in dynamic emission formula and burn rate to regulate inflation and stimulate participation.
+2. **Fee Distribution Parameters.** Fork can change coefficients α, β, γ in dynamic emission formula and burn rate to regulate inflation and stimulate participation.
 3. **AI Layer.** Organization can train its own AI models for anomaly detection considering local specifics.
 4. **Immutable Core.** Basic principles — payment for work, absence of pre-mining, real reserve backing, ledger, and PoT — remain immutable.
 
@@ -202,10 +202,10 @@ AST can adapt to various jurisdictions and business requirements via forks:
 4. **Register Oracles.** To integrate external data, register an oracle and ensure minimum three independent sources to avoid manipulation.
 5. **Implement Logs and Monitoring.** Store local copies of audit logs.
 
-## XII. Scaling and Dynamic Emission
+## XII. Scaling and Dynamic Fee Distribution
 
 1. **Scaling via Sharding.** Increasing shard count distributes load; shard manager changes fragment count depending on parameter U (network utilization).
-2. **Dynamic Emission.** Formula `T_E = α·TV + β·U + γ` adapts total token issuance.
+2. **Dynamic Fee Distribution.** Formula `T_E = α·TV + β·U + γ` adapts total token issuance.
 3. **Economic Simulations.** Regulatory committees use simulations to tune parameters.
 4. **Autonomous Adjustment.** AI agents analyze network load and propose parameter adjustments.
 
@@ -259,7 +259,7 @@ AST can adapt to various jurisdictions and business requirements via forks:
 
 ### B. Formulas
 
-* Block Emission: E = F / N (F - fee, N - validator count)
+* Batch Fee Distribution: E = F / N (F - fee, N - validator count)
 * Total Issuance: T_E = α·TV + β·U + γ
 * Distribution: R_i = (S_i / ΣS)·T_adj
 

@@ -1,7 +1,7 @@
 # emission_layer_api_interface.md
 
-## Module: Emission Layer API Interface
-- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+## Module: Fee Distribution Layer API Interface
+- **Layer**: Fee Distribution Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This module defines the API interface through which internal and external components can interact with the Emission Layer. The API supports transaction-based emission queries, epoch summaries, validator audit calls, and integration with governance or observer modules.
+This module defines the API interface through which internal and external components can interact with the Fee Distribution Layer. The API supports transaction-based emission queries, epoch summaries, validator audit calls, and integration with governance or observer modules.
 
 It provides read/write endpoints for validators and governance nodes, and read-only endpoints for external monitors or API clients.
 
@@ -20,7 +20,7 @@ It provides read/write endpoints for validators and governance nodes, and read-o
 
 | Category                | Description |
 |-------------------------|-------------|
-| Emission Query API      | Returns data about past, current, or pending emission events |
+| Fee Distribution Query API      | Returns data about past, current, or pending emission events |
 | Epoch Summary API       | Provides snapshot of emission volume, quota usage, and shard distribution |
 | Validator Control API   | Enables validator nodes to confirm, submit, or flag emissions |
 | Governance Override API | Allows supernodes to freeze, reinstate, or correct emissions |

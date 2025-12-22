@@ -11,7 +11,8 @@ AST is not just a ledger; it is a **foundational infrastructure platform** engin
 
 The platform addresses the "Great Divide" between Traditional Finance (TradFi) and Decentralized Finance (DeFi) by solving three core risks at the architectural level:
 
-2.**Compliance Risk:** Via a mandatory, built-in Regulatory Bridge (Module 05).  
+1. **Technical Risk:** Using the **NodeChain Process** (Module 02), a directed acyclic sequence of batches, instead of blocks.
+2. **Compliance Risk:** Via a mandatory, built-in Regulatory Bridge (Module 05).  
 3.**Security Risk:** Using an autonomous AI Supervisory Framework (Module 12 & 13).
 
 > [!IMPORTANT]
@@ -34,10 +35,10 @@ The system is composed of 14 independent, patent-pending modules:
 | **05** | **Bridge Layer** | **Mandatory** Regulatory Gateway (KYC/AML). |
 | **06** | **Governance Layer** | Voting, Proposals, Emergency Circuit Breakers. |
 | **07** | **Processing Layer** | Transaction Engine: Queue, Validation, Logging. |
-| **08** | **Emission Layer** | Protocol-level issuance based on Epochs. |
+| **08** | **Fee Distribution Layer** | Protocol-level issuance based on Epochs. |
 | **09** | **Crypto Ingestion** | Crypto-to-Crypto bridge infrastructure. |
 | **10** | **Proof-of-Transaction** | Consensus weighting mechanism. |
-| **11** | **Staking & Payments** | Validator incentives and performance scoring. |
+| **11** | **Security Deposit & Payments** | Node incentives and performance scoring. |
 | **12** | **Nodechain AI Agents** | **Active** supervision: Risk Scoring, Fraud Signals. |
 | **13** | **Supervisory Layer** | **Passive** meta-auditing ("The All-Seeing Eye"). |
 | **14** | **TX Encoding** | Binary data serialization standards. |
@@ -48,7 +49,7 @@ The system is composed of 14 independent, patent-pending modules:
 * [**Architecture Overview**](docs/architecture/Architecture_Overview.md)  
 * [**API Specifications**](docs/api/README.md)  
 * [**Legal & Patent Info**](docs/legal/README.md)
-* [**Tokenomics & Emission**](docs/tokenomics/README.md)
+* [**Tokenomics & Fee Distribution**](docs/tokenomics/README.md)
 * [**Transaction Processing**](docs/processing/README.md)
 
 ## **License**

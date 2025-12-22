@@ -46,7 +46,7 @@ flowchart TD
 
 | Route ID | Description | Target Engine |
 | --- | --- | --- |
-| `R-01` | Stake Slashing | `slashStake()` API |
+| `R-01` | Stake Deposit Forfeiture | `slashStake()` API |
 | `R-02` | Temporary Validator Suspension | `validatorFreeze()` |
 | `R-03` | Flag and Report Only | `AUDIT-EMIT` only |
 | `R-04` | Multi-Agent Crosscheck Required | `DISP-AI` arbitration |
@@ -85,7 +85,7 @@ flowchart TD
 
 Every dispatched signal triggers the following:
 
-- Emission of audit log via `AUDIT-EMIT-0009`
+- Fee Distribution of audit log via `AUDIT-EMIT-0009`
 - Update to `fraud_signal_ledger` with indexable reference
 - Inclusion in agent accountability journal
 

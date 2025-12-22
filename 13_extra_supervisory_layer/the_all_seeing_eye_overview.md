@@ -38,7 +38,7 @@ graph TD
 | --- | --- |
 | Passive Observation | Observes internal AST events and flows without execution rights |
 | Architecture-Only Focus | Watches for protocol drift, coordination failures, and structural anomalies |
-| Signal Emission Only | Can emit alerts or integrity signals but never commands |
+| Signal Fee Distribution Only | Can emit alerts or integrity signals but never commands |
 | Immutable Logging | All observations are timestamped and stored in external immutable logs |
 
 ---
@@ -59,7 +59,7 @@ Why introduce this system?
 The Eye cannot:
 
 - Execute transactions
-- Block proposals or votes
+- Batch proposals or votes
 - Change system state
 - Override governance decisions
 

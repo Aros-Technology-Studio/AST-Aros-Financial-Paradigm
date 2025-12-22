@@ -9,7 +9,7 @@ Core documentation for the AROS Coin Engine (ACE), the tokenomics module inside 
 **1) What is the Coin Engine?**
 
 The Coin Engine (ACE) is the deterministic subsystem that defines:
-	•	Emission logic for AROS (base unit: arx),
+	•	Fee Distribution logic for AROS (base unit: arx),
 	•	Mint/Burn rules bound to Proof-of-Transaction (PoT),
 	•	Payment distribution for validators and network actors,
 	•	State transitions audited by NodeChain,
@@ -28,7 +28,7 @@ The Coin Engine (ACE) is the deterministic subsystem that defines:
 01_coin_engine/
 ├── README.md                    # This file
 ├── coin_engine_overview.md      # Narrative architecture & invariants
-├── coin_emission_model.md       # Emission schedules & formulas (math spec)
+├── coin_emission_model.md       # Fee Distribution schedules & formulas (math spec)
 ├── coin_use_cases.md            # Canonical flows: payments, fees, subsidies
 ├── burn_and_mint_rules.md       # Allowed state transitions & guards
 ├── payment_distribution.md       # Validator/actor payment logic
@@ -66,7 +66,7 @@ pnpm lint && pnpm typecheck
 **4) Token Specification (Essentials)**
 	•	Symbol: AROS
 	•	Base unit: arx (1 AROS = 10^6 arx, fixed)
-	•	Supply type: Emission-bounded with PoT-weighted payments
+	•	Supply type: Fee Distribution-bounded with PoT-weighted payments
 	•	Decimals: 6
 	•	Pause switches:
 	•	EMISSION_PAUSE (governance circuit-breaker)
@@ -76,9 +76,9 @@ Machine-readable spec lives in AROS_Coin_TokenSpec.json.
 
 ⸻
 
-**5) Emission Model (Summary)**
+**5) Fee Distribution Model (Summary)**
 
-Emission = Base schedule × Network activity multiplier × Compliance factor.
+Fee Distribution = Base schedule × Network activity multiplier × Compliance factor.
 
 Base schedule is a predictable curve (piecewise geometric decay). Activity multiplier derives from PoT (volume/uniques/latency buckets). Compliance factor is a capped modifier from The All-Seeing Eye (0.0–1.0).
 

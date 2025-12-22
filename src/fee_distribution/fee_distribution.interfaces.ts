@@ -3,6 +3,6 @@ export interface IEpochControl {
     endEpoch(epochNumber: number): Promise<void>;
 }
 
-export interface IEmissionTrigger {
+export interface IFee DistributionTrigger {
     triggerMintingSequence(consensusEventId: string): Promise<void>;
 }

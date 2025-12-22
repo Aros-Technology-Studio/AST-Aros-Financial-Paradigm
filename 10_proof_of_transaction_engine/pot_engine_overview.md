@@ -41,7 +41,7 @@ flowchart TD
     F --> G[Final Confirmation]
     G --> H[NodeChain Ledger Commit]
     subgraph "Penalties"
-    E --> I[Slashing Conditions]
+    E --> I[Deposit Forfeiture Conditions]
     end
 ```
 

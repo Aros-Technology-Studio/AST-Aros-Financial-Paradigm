@@ -12,7 +12,7 @@ The roadmap serves to:
 
 ## 2. Scope
 Covers all AST components:
-- **Core Layers**: Coin Engine, NodeChain, Token Management, Value Circulation, Bridges, Governance, Processing, Emission, Crypto Ingestion, PoT, Validator Staking, AI Agents, The All-Seeing Eye, Decentralized TX Encoding.
+- **Core Layers**: Coin Engine, NodeChain, Token Management, Value Circulation, Bridges, Governance, Processing, Fee Distribution, Crypto Ingestion, PoT, Validator Security Deposit, AI Agents, The All-Seeing Eye, Decentralized TX Encoding.
 - **Infrastructure**: Smart contracts (Solidity), backend services (Python/FastAPI), databases (PostgreSQL/Redis), and monitoring (All-Seeing Eye).
 - **Deployment**: Testnet (Sepolia) and mainnet (Ethereum-compatible).
 - **Compliance**: KYC/AML integration, regulatory audits.
@@ -187,7 +187,7 @@ gantt
 - **Audit Costs**: $50k per external audit (2 planned).
 
 ## 7. Dependencies
-- `01_coin_engine/coin_emission_model.md`: Emission logic for Phase 1.
+- `01_coin_engine/coin_emission_model.md`: Fee Distribution logic for Phase 1.
 - `05_bridge_layer/kyc_aml_interface_bridge.md`: Compliance for Phase 3.
 - `06_governance_layer/governance_token_logic.md`: Voting for Phases 2-4.
 - `12_nodechain_ai_agents/anomaly_detection_engine.md`: AI for Phase 2.

@@ -1,7 +1,7 @@
 # emission_trigger_conditions.md
 
-## Module: Emission Trigger Conditions
-- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+## Module: Fee Distribution Trigger Conditions
+- **Layer**: Fee Distribution Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -10,18 +10,18 @@
 
 ## Overview
 
-This module defines the precise set of conditions under which an emission event can be legally and technically triggered within the AST system. Emission is never spontaneous — it is initiated only when a qualifying transaction or batch satisfies predefined requirements for legitimacy, risk level, and systemic alignment.
+This module defines the precise set of conditions under which an emission event can be legally and technically triggered within the AST system. Fee Distribution is never spontaneous — it is initiated only when a qualifying transaction or batch satisfies predefined requirements for legitimacy, risk level, and systemic alignment.
 
 ---
 
-## Core Emission Triggers
+## Core Fee Distribution Triggers
 
-Emission can only be triggered when **all** of the following are satisfied:
+Fee Distribution can only be triggered when **all** of the following are satisfied:
 
 | Condition                         | Description |
 |----------------------------------|-------------|
 | ✅ Validated PoT Event            | Transaction or batch must pass the Proof of Transaction attestation |
-| ✅ Emission Quota Available       | Epoch-specific or shard-level ceiling has not been reached |
+| ✅ Fee Distribution Quota Available       | Epoch-specific or shard-level ceiling has not been reached |
 | ✅ Risk Score Within Threshold    | Aggregated risk must be below defined emission-safe limits |
 | ✅ Transaction Not Previously Used| TX must not be already linked to another emission event |
 | ✅ Timestamp Within Valid Window  | TX must fall within the emission-active epoch and time frame |
@@ -44,7 +44,7 @@ These exceptions are **logged separately** and must include full trace context.
 
 ---
 
-## Emission Blacklist Logic
+## Fee Distribution Blacklist Logic
 
 Certain transactions are **automatically disqualified** from triggering emission:
 

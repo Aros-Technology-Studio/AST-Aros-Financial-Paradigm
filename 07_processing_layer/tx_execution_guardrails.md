@@ -33,10 +33,10 @@ Guardrails may activate under the following scenarios:
 | Scenario                          | Triggered Action             |
 |-----------------------------------|-------------------------------|
 | High transaction velocity         | Delay + log transaction       |
-| Sudden token burst                | Block + alert admin node      |
+| Sudden token burst                | Batch + alert admin node      |
 | Transaction below risk threshold | Proceed                       |
 | Execution path anomaly            | Redirect to simulation mode   |
-| Emission policy breach            | Reject + freeze token ID      |
+| Fee Distribution policy breach            | Reject + freeze token ID      |
 | Node time desync > 3s             | Queue in holding tank         |
 | Unauthorized jurisdiction         | Full rejection                |
 
@@ -91,7 +91,7 @@ flowchart TD
   "status": "rejected",
   "error": {
     "code": "EMISSION_GUARDRAIL_BREACH",
-    "message": "Emission quota exceeded for token AROS-041"
+    "message": "Fee Distribution quota exceeded for token AROS-041"
   },
   "timestamp": 1720249442,
   "guardrail_trigger": true

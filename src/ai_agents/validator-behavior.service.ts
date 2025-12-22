@@ -6,7 +6,7 @@ export interface ValidatorMetrics {
     attestation: number;    // 0.0 - 1.0 (Timeliness)
     stake: number;          // 0.0 - 1.0 (Consistency)
     gossip: number;         // 0.0 - 1.0 (Participation)
-    miss_rate: number;      // 0.0 - 1.0 (Block Miss Rate inverse? Or pure rate?)
+    miss_rate: number;      // 0.0 - 1.0 (Batch Miss Rate inverse? Or pure rate?)
     // Docs say "Percentage of missed slots", so lower is better.
     // But scores imply higher is better (0.90 is Trusted).
     // So we will assume input is "Success Rate" or we invert "Miss Rate" for scoring.

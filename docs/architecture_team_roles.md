@@ -4,17 +4,17 @@ This document outlines the major subsystems of the AROS-PARADIGM AST platform an
 
 | Layer / Subsystem           | Primary Responsibilities                    | Owning Team              |
 | --------------------------- | ------------------------------------------- | ------------------------ |
-| Coin Engine                 | Emission protocol, volatility controls      | Tokenomics               |
+| Coin Engine                 | Fee Distribution protocol, volatility controls      | Tokenomics               |
 | NodeChain Engine            | Node registration, sharding, consensus      | Core Protocol            |
 | Token Management Layer      | Issuance, distribution, burn rules          | Smart Contract           |
 | AROS Value Circulation      | Vaults, liquidity, reserves                 | Treasury                 |
 | Bridge Layer                | Tokenization bridges, compliance interfaces | Integration & Compliance |
 | Governance Layer            | Proposal lifecycle, quorum, permissions     | Governance               |
 | Processing Layer            | TX queue, validation pipeline               | Ledger Ops               |
-| Emission Layer              | Trigger conditions, flow pipeline           | Economics                |
+| Fee Distribution Layer              | Trigger conditions, flow pipeline           | Economics                |
 | Crypto Ingestion Pipeline   | External crypto ingestion, conversion       | Bridge Ops               |
 | Proof of Transaction Engine | TX validation, slashing                     | Consensus                |
-| Validator Staking & Payments | Registration, performance scoring           | Validator Relations      |
+| Validator Security Deposit & Payments | Registration, performance scoring           | Validator Relations      |
 | NodeChain AI Agents         | Anomaly detection, fraud signaling          | AI/ML                    |
 | Extra Supervisory Layer     | Meta-monitoring, audit signals              | Oversight                |
 | Decentralized TX Encoding   | Encoding governance and benchmarking        | Research                 |
@@ -32,7 +32,7 @@ This document defines the high-level "squads" or teams responsible for developin
 * **Responsibilities:**
   * Maintaining the `Nodechain Engine (Module 02)`.
   * Optimizing the `Processing Layer (Module 07)` for TPS.
-  * Implementing and balancing `Staking & Payments (Module 11)`.
+  * Implementing and balancing `Security Deposit & Payments (Module 11)`.
 
 ## 2. Compliance Team: Bridge (The "Gatekeepers")
 
@@ -49,7 +49,7 @@ This document defines the high-level "squads" or teams responsible for developin
 * **Focus:** The on-chain economy and token lifecycle.
 * **Responsibilities:**
   * Managing the `Token Management (Module 03)` contracts (`mint`, `burn`).
-  * Implementing the `Emission Layer (Module 08)` logic.
+  * Implementing the `Fee Distribution Layer (Module 08)` logic.
   * Overseeing the `Value Circulation (Module 04)` policies (vaults, reserves).
 
 ### 4. Supervisory Team: AI (The "Watchmen")

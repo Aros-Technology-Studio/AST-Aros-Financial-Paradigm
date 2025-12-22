@@ -5,7 +5,7 @@ import { NodeChainModule } from './nodechain/nodechain.module';
 import { BridgeModule } from './bridge/bridge.module';
 import { TokenModule } from './token/token.module';
 import { GovernanceModule } from './governance/governance.module';
-import { EmissionModule } from './emission/emission.module';
+import { FeeDistributionModule } from './fee_distribution/fee_distribution.module';
 import { ProcessingModule } from './processing/processing.module';
 import { AiAgentsModule } from './ai_agents/ai_agents.module';
 import { NodeChainEngineModule } from './nodechain_engine/nodechain_engine.module';
@@ -45,7 +45,7 @@ import { AppController } from './app.controller';
         BridgeModule,
         TokenModule,
         GovernanceModule,
-        EmissionModule,
+        FeeDistributionModule,
         ProcessingModule,
         AiAgentsModule,
         LedgerModule,

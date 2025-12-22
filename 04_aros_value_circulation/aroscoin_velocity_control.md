@@ -25,7 +25,7 @@ Velocity control acts as a **protocol brake system**.
 
 The following metrics are constantly monitored by the Processing Layer and the All-Seeing Eye:
 
-- `Token Flow Rate per Block`
+- `Token Flow Rate per Batch`
 - `Vault Unlock Rate`
 - `Payment Claim Frequency`
 - `User Circulation Density`

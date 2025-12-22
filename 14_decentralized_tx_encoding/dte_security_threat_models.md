@@ -54,7 +54,7 @@ The threat model considers the following **attack surfaces**:
 **Impact:** Injection of falsified transaction data into the chain.  
 **Mitigation:**
 - Randomized quorum selection per transaction.  
-- Staking-slash penalties for proven malicious consensus participation.  
+- Security Deposit-slash penalties for proven malicious consensus participation.  
 - Cross-validation with randomly selected external observer nodes.
 
 ---

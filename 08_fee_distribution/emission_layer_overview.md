@@ -1,7 +1,7 @@
 # emission_layer_overview.md
 
-## Module: Emission Layer Overview
-- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+## Module: Fee Distribution Layer Overview
+- **Layer**: Fee Distribution Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -11,7 +11,7 @@
 
 ## Overview
 
-The Emission Layer governs the controlled generation of ArosCoin (AROS) in response to validated, risk-assessed transactional activity. Unlike traditional systems that rely on staking, mining, or fixed inflation, AST uses a dynamic, event-triggered mechanism rooted in Proof of Transaction (PoT) to determine when tokens may be minted.
+The Fee Distribution Layer governs the controlled generation of ArosCoin (AROS) in response to validated, risk-assessed transactional activity. Unlike traditional systems that rely on staking, mining, or fixed inflation, AST uses a dynamic, event-triggered mechanism rooted in Proof of Transaction (PoT) to determine when tokens may be minted.
 
 This layer ensures that every minted AROS token is:
 - Causally linked to legitimate transaction flow,
@@ -35,7 +35,7 @@ This layer ensures that every minted AROS token is:
 
 ## Core Components
 
-The Emission Layer works as a coordination layer across the following systems:
+The Fee Distribution Layer works as a coordination layer across the following systems:
 
 - **PoT Attestation Engine**
   Triggers emission by finalizing attested transaction batches.
@@ -43,24 +43,24 @@ The Emission Layer works as a coordination layer across the following systems:
 - **Epoch Control Unit**
   Enforces emission boundaries within defined time or volume frames.
 
-- **Emission Pipeline Processor**
+- **Fee Distribution Pipeline Processor**
   Executes the minting procedure, applies policies, and invokes distribution.
 
 - **Fraud & Manipulation Guardrails**
-  Blocks attempts to generate false triggers or overload the emission path.
+  Batchs attempts to generate false triggers or overload the emission path.
 
 - **Audit Log Hooks**
   Appends every emission to hash-chained logs and syncs with `tx_audit_log_format`.
 
 ---
 
-## Emission Control Principles
+## Fee Distribution Control Principles
 
 | Principle            | Enforced Behavior |
 |----------------------|-------------------|
 | One trigger → one event | No batch may generate multiple emissions unless explicitly permitted |
 | Time-locked emission  | No token is emitted before the end of its verification window |
-| Shard-segregated caps | Emission ceilings apply per shard/domain, not globally |
+| Shard-segregated caps | Fee Distribution ceilings apply per shard/domain, not globally |
 | Predictable supply    | All emission volumes are pre-modelled and adjustable only by governance |
 
 ---

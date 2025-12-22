@@ -1,4 +1,4 @@
-# PoT Slashing Conditions
+# PoT Deposit Forfeiture Conditions
 
 **Module:** AST PoT Engine  
 **Status:** Draft  

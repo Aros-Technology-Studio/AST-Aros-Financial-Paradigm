@@ -1,7 +1,7 @@
 # emission_reporting_and_traceability.md
 
-## Module: Emission Reporting & Traceability
-- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+## Module: Fee Distribution Reporting & Traceability
+- **Layer**: Fee Distribution Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -18,11 +18,11 @@ This module defines how emission events are recorded, logged, published, and mad
 - Anchored in an immutable record
 - Reconstructable for any point in time or node
 
-Emission traceability is mandatory not only for internal consistency but also for regulatory transparency and governance trust.
+Fee Distribution traceability is mandatory not only for internal consistency but also for regulatory transparency and governance trust.
 
 ---
 
-## Emission Record Structure
+## Fee Distribution Record Structure
 
 Each finalized emission must generate a structured log entry with the following fields:
 
@@ -30,7 +30,7 @@ Each finalized emission must generate a structured log entry with the following 
 |----------------------|-------------|
 | `emission_id`        | Unique identifier of the emission event |
 | `trigger_tx_id`      | Transaction that initiated the emission |
-| `epoch_id`           | Emission epoch index |
+| `epoch_id`           | Fee Distribution epoch index |
 | `minted_amount`      | Total number of AROS tokens generated |
 | `distribution_map`   | Mapping of where tokens were sent |
 | `risk_score`         | Risk score of the original TX |
@@ -54,7 +54,7 @@ All emissions are hash-linked in a Merkle tree per epoch and node:
 
 ## Audit Streams
 
-Emission logs are published to the following destinations:
+Fee Distribution logs are published to the following destinations:
 
 - Internal validator logs (append-only)
 - Governance analytics stream
@@ -63,7 +63,7 @@ Emission logs are published to the following destinations:
 
 ---
 
-## Public Emission Snapshot (Example)
+## Public Fee Distribution Snapshot (Example)
 
 ```json
 {
@@ -91,7 +91,7 @@ Emission logs are published to the following destinations:
 To ensure external parties can verify emission claims:
 
 - Hash preimages are optionally disclosed via governance vote
-- Emission verification tools are published as open-source packages
+- Fee Distribution verification tools are published as open-source packages
 - Validators publish Merkle paths to root commitment
 - Governance may publish epoch-level emission summaries
 
@@ -99,7 +99,7 @@ To ensure external parties can verify emission claims:
 
 ## Regulatory Alignment
 
-Emission traceability is designed to meet compliance standards such as:
+Fee Distribution traceability is designed to meet compliance standards such as:
 
 - ISO 37301 (compliance management)
 - OECD blockchain transparency principles

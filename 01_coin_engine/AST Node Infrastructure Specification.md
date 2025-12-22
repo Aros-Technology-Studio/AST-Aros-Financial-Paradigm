@@ -45,7 +45,7 @@ Each node runs:
 ```mermaid
 graph TD;
   A[Node Registration Request] --> B[Identity Verification];
-  B --> C[Smart Contract Validator Staking];
+  B --> C[Smart Contract Validator Security Deposit];
   C --> D[Node Key Signing];
   D --> E[Start Observing];
   E --> F[Active Validator Role via rotation];
@@ -53,7 +53,7 @@ graph TD;
 
 ---
 
-## 4. Registration and Staking
+## 4. Registration and Security Deposit
 
 - Validator node must stake minimum X ARO (configurable).
 - Smart contract verifies identity and stake.

@@ -6,16 +6,16 @@ This document defines the rules, conditions, and algorithmic principles under wh
 
 ---
 
-## Emission Principles
+## Fee Distribution Principles
 
-- **No Central Authority**: Tokens are not minted by a centralized party. Emission is triggered solely by on-chain activity.
+- **No Central Authority**: Tokens are not minted by a centralized party. Fee Distribution is triggered solely by on-chain activity.
 - **Utility-Driven Supply**: The creation of tokens is directly tied to validated transaction processing. If the system is idle, no new tokens are minted.
 - **Finite Maximum Supply**: The total number of ArosCoins is capped. No further issuance is possible once the hard cap is reached.
 - **On-Demand Generation**: Tokens are created only when a transaction requires validation and decentralized encryption.
 
 ---
 
-## Emission Trigger Conditions
+## Fee Distribution Trigger Conditions
 
 Tokens are minted **only** when the following criteria are simultaneously met:
 
@@ -26,14 +26,14 @@ Tokens are minted **only** when the following criteria are simultaneously met:
 
 ---
 
-## Emission Calculation Logic
+## Fee Distribution Calculation Logic
 
 ```mermaid
 flowchart TD
     A[New Transaction Received] --> B[Validated and Fragmented]
     B --> C[Encrypted by Nodes]
     C --> D[Signature Consensus Achieved]
-    D --> E[Payment Engine Calculates Emission]
+    D --> E[Payment Engine Calculates Fee Distribution]
     E --> F[Tokens Minted Proportionally to Workload]
 ```
 
@@ -71,7 +71,7 @@ Newly minted tokens are distributed as follows (default values):
 
 - **Double-Mint Protection**: Once an emission is triggered, the transaction ID is locked from further issuance.
 - **Fork Safety**: All minting events are checkpointed and auditable on-chain.
-- **Slashing Risk**: Malicious nodes attempting to inflate minting are penalized via stake slashing.
+- **Deposit Forfeiture Risk**: Malicious nodes attempting to inflate minting are penalized via stake slashing.
 
 ---
 

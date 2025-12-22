@@ -67,7 +67,7 @@ Trace flags are applied dynamically during processing based on system context, r
     - If redirected or rejected by runtime logic → `guardrail_triggered`
 3. **During Rollback or Failure**
     - If rollback is performed → `rollback_occurred`
-4. **During Emission Preparation**
+4. **During Fee Distribution Preparation**
     - If edge-case PoT behavior is detected → `emission_edge_case`
 5. **Post-Factum by Monitor**
     - Flag may be injected retroactively by forensic or monitoring module

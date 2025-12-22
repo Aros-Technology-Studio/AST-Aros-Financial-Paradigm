@@ -14,7 +14,7 @@ Simulate the ArosCoin economy to:
 - **Initial Supply**: 0 ARO (no pre-mine, per `01_coin_engine/coin_emission_model.md`).
 - **Transaction Volume**: 1,000 TX per epoch (default, adjustable for scenarios).
 - **Transaction Fee**: 0.05 ARO per TX (dynamic, based on network load).
-- **Emission Ratio**: 0.6 (60% of fees to nodes as new tokens).
+- **Fee Distribution Ratio**: 0.6 (60% of fees to nodes as new tokens).
 - **Burn Ratio**: 0.1 (10% of emitted tokens burned per epoch).
 - **Epoch Duration**: 7 days (configurable).
 - **Epochs Simulated**: 100 (700 days, ~2 years).
@@ -23,9 +23,9 @@ Simulate the ArosCoin economy to:
 
 ## 3. Simulation Model
 The model calculates net emission per epoch, updates supply, and tracks inflation. Key formulas:
-- **Gross Emission**: `emission = tx_per_epoch * fee * emission_ratio`
+- **Gross Fee Distribution**: `emission = tx_per_epoch * fee * emission_ratio`
 - **Burn Amount**: `burn = emission * burn_ratio`
-- **Net Emission**: `net_emission = emission - burn`
+- **Net Fee Distribution**: `net_emission = emission - burn`
 - **Supply Update**: `supply[t+1] = supply[t] + net_emission`
 - **Inflation Rate**: `inflation = (net_emission / supply[t+1]) * 100` (if supply > 0)
 
@@ -130,7 +130,7 @@ plot_simulation(supply_high, inflation_high, "ast_economy_high_tx.png")
   - Use simulation outputs in governance proposals for parameter votes.
 
 ## 7. Dependencies
-- `01_coin_engine/coin_emission_model.md`: Emission formulas and phases.
+- `01_coin_engine/coin_emission_model.md`: Fee Distribution formulas and phases.
 - `08_emission_layer/emission_trigger_conditions.md`: TX-based triggers.
 - `11_validator_staking_payments/payment_distribution_engine.md`: Node payments.
 - `06_governance_layer/proposal_submission_protocol.md`: Parameter adjustments.

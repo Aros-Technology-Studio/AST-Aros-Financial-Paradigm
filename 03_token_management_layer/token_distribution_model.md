@@ -8,7 +8,7 @@ This document outlines the distribution logic of newly minted ArosCoins and the 
 
 ## Distribution Pools
 
-Upon issuance (triggered by the Dynamic Emission Formula `T_E = α·TV + β·U + γ`), tokens are distributed into the following allocations:
+Upon issuance (triggered by the Dynamic Fee Distribution Formula `T_E = α·TV + β·U + γ`), tokens are distributed into the following allocations:
 
 | Pool Name           | Purpose                                             | Default Share |
 |---------------------|------------------------------------------------------|---------------|
@@ -58,7 +58,7 @@ graph TD
 - May be used for:
   - Upgrading protocol-level logic
   - Funding audits, legal infrastructure
-  - Staking-based community voting incentives
+  - Security Deposit-based community voting incentives
 
 ---
 

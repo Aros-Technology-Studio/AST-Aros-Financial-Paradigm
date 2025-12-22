@@ -40,17 +40,17 @@ Signals are emitted as structured JSON events, cryptographically signed.
 
 ---
 
-## 4. Emission Rules
+## 4. Fee Distribution Rules
 
 - Signals are **read-only** and **non-binding**
-- Emission is **asynchronous** — no coupling to execution timing
+- Fee Distribution is **asynchronous** — no coupling to execution timing
 - Signals are **logged**, then optionally **broadcast to observer nodes**
 
 They **cannot trigger state changes**, execution halts, or reverts.
 
 ---
 
-## 5. Emission Triggers
+## 5. Fee Distribution Triggers
 
 Signals are emitted when:
 

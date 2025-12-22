@@ -2,7 +2,7 @@
 
 ## Module: Epoch Allocation Model
 
-- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+- **Layer**: Fee Distribution Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -25,14 +25,14 @@ Epochs serve as **bounded time or event windows**, each with a defined **maximum
 | `start_timestamp`  | Beginning of epoch (UTC) |
 | `end_timestamp`    | End of epoch (UTC) |
 | `max_emission_cap` | Maximum AROS that may be emitted during this epoch |
-| `shard_distribution_map` | Emission quotas per shard/domain |
+| `shard_distribution_map` | Fee Distribution quotas per shard/domain |
 | `policy_version`   | Governance policy version applied to this epoch |
 
 ---
 
 ## Allocation Rules
 
-### 1. Global Emission Cap
+### 1. Global Fee Distribution Cap
 
 Each epoch defines a strict upper bound of tokens that may be emitted across the network. No bypass or overflow is permitted unless explicitly voted on via governance.
 
@@ -73,7 +73,7 @@ These ratios may evolve under governance consensus.
 Epochs may end under:
 
 - Time expiration (e.g., 7 days)
-- Emission exhaustion (100% of max cap used)
+- Fee Distribution exhaustion (100% of max cap used)
 - Governance override (emergency stop or restart)
 - Fork-resolution checkpoint (new epoch forces sync)
 
@@ -99,10 +99,10 @@ This data is stored via emission_reporting_and_traceability.md.
 ## **Mermaid Diagram**
 
 flowchart TD
-    A[New Epoch Starts] --> B[Track Emission Triggers]
+    A[New Epoch Starts] --> B[Track Fee Distribution Triggers]
     B --> C [Check Quotas per Shard]
     C --> D [Distribute Tokens by Role]
-    D --> E [Update Emission Counters]
+    D --> E [Update Fee Distribution Counters]
     E --> F {Cap Reached or Time Expired?}
     F -- Yes --> G [End Epoch & Freeze Snapshot]
     F -- No --> B

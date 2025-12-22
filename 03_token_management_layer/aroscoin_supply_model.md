@@ -13,7 +13,7 @@ This document defines the monetary policy and total supply logic of ArosCoin, es
 
 ---
 
-## 2. Emission Schedule
+## 2. Fee Distribution Schedule
 
 ### 2.1 Initial Allocation
 
@@ -22,7 +22,7 @@ This document defines the monetary policy and total supply logic of ArosCoin, es
 | Genesis Reserve    | 15% (150M)        | Locked 2 years, linear release   |
 | Development Fund   | 10% (100M)        | 4-year vesting                   |
 | Treasury & Grants  | 10% (100M)        | Available on governance trigger |
-| Node Incentives    | 35% (350M)        | Emission-based, dynamic          |
+| Node Incentives    | 35% (350M)        | Fee Distribution-based, dynamic          |
 | Public Circulation | 30% (300M)        | Gradual release via operations   |
 
 ### 2.2 Epoch Payment Rules
@@ -54,7 +54,7 @@ This document defines the monetary policy and total supply logic of ArosCoin, es
 
 ## 5. Economic Safeguards
 
-- Emission throttle mechanism if transaction volume spikes unexpectedly.
+- Fee Distribution throttle mechanism if transaction volume spikes unexpectedly.
 - Circuit breaker in place if validator pool exceeds emission curve.
 
 ---

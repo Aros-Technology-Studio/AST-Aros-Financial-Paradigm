@@ -6,7 +6,7 @@ The All-Seeing Eye is a passive meta-observation system that ensures architectur
 ## Core Services & Components
 - **Passive Observation**: Reads internal events without execution rights.
 - **Architectural Integrity**: Watches for structural deviations.
-- **Signal Emission**: Alerts on anomalies (integrity signals).
+- **Signal Fee Distribution**: Alerts on anomalies (integrity signals).
 - **Immutable Logging**: Archives observations in external logs.
 
 ## Key Specifications

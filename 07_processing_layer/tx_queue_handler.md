@@ -839,7 +839,7 @@ Each channel defines its own policy for handling queue overflow:
 | --- | --- |
 | `disk` | Moves oldest TXs to disk-based fallback (preserves order) |
 | `drop` | Silently drops lowest-priority TXs (logs event for audit) |
-| `backpressure` | Blocks upstream intake until space is freed (delays propagation) |
+| `backpressure` | Batchs upstream intake until space is freed (delays propagation) |
 | `reject` | Returns rejection to source module (TX never enters queue) |
 
 Overflow handling is **non-blocking** unless `backpressure` is explicitly selected.

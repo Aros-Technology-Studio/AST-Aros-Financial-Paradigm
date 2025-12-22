@@ -46,4 +46,4 @@ def assign_roles(nodes: list[dict]) -> dict:
 
 ## 6. Notes
 - Rotation: Every epoch to avoid dominance in NodeChain.
-- Slashing: Reassign if slashed.
+- Deposit Forfeiture: Reassign if slashed.

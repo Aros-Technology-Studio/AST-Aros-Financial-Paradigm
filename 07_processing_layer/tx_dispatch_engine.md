@@ -120,7 +120,7 @@ flowchart TD
     Start[Tick Start]
     Poll[Poll All Queue Channels]
     Extract[Extract Eligible TXs by Priority]
-    Filter[Filter Expired / Held / Blocked]
+    Filter[Filter Expired / Held / Batched]
     Check[Check System Load & Guardrails]
     Submit[Submit to Execution Context]
     Retry[Requeue or Delay if Invalid]

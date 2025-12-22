@@ -1,7 +1,7 @@
 # emission_fraud_prevention.md
 
-## Module: Emission Fraud Prevention
-- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+## Module: Fee Distribution Fraud Prevention
+- **Layer**: Fee Distribution Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -65,7 +65,7 @@ All fraud prevention logic is enforced **before**, **during**, and **after** the
 
 ---
 
-## Safeguards in Emission Flow
+## Safeguards in Fee Distribution Flow
 
 | Layer | Checkpoint |
 |-------|------------|
@@ -100,7 +100,7 @@ flowchart TD
     D --> E[Risk Score Verification]
     E --> F{Fraud Detected?}
     F -- Yes --> G[Reject or Simulate TX]
-    F -- No --> H[Proceed to Emission Pipeline]
+    F -- No --> H[Proceed to Fee Distribution Pipeline]
 
 ```
 

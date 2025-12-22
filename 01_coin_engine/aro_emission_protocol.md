@@ -6,26 +6,26 @@ This document defines the **emission protocol** for the native token ARO within 
 
 ---
 
-## II. Emission Principles
+## II. Fee Distribution Principles
 
-1. **No Pre-Mining**
+1. **No Pre-Transaction Finalization**
     - ARO tokens are **not pre-mined**.
-    - Emission occurs **on-demand**, triggered strictly by transactional activity and systemic utility.
-2. **Utility-Based Emission**
+    - Fee Distribution occurs **on-demand**, triggered strictly by transactional activity and systemic utility.
+2. **Utility-Based Fee Distribution**
     - ARO tokens are minted as a direct consequence of **transactional processing needs**.
-    - Emission is proportional to the volume and complexity of decentralized processing operations.
+    - Fee Distribution is proportional to the volume and complexity of decentralized processing operations.
 3. **Controlled Supply**
     - A **maximum emission cap** is defined in the system config (hard limit).
     - Dynamic emission curves regulate supply inflation over time.
 
 ---
 
-## **III. Emission Trigger Logic**
+## **III. Fee Distribution Trigger Logic**
 
 ```mermaid
 sequenceDiagram
     participant T as Transaction Request
-    participant E as Emission Engine
+    participant E as Fee Distribution Engine
     participant L as Ledger
     T->>E: Submit transaction for processing
     E->>E: Calculate processing cost (network load, NPI, etc.)
@@ -36,11 +36,11 @@ sequenceDiagram
 
 ---
 
-## **IV. Emission Governance**
+## **IV. Fee Distribution Governance**
 
 | **Component** | **Role** |
 | --- | --- |
-| Emission Engine | Calculates when emission is required and how much to emit |
+| Fee Distribution Engine | Calculates when emission is required and how much to emit |
 | Node Oracle Committee | Monitors network state to approve emission thresholds |
 | All-Seeing Eye | Audits emission actions to prevent abuse or drift from emission law |
 
@@ -57,7 +57,7 @@ sequenceDiagram
 
 ---
 
-## **VI. Emission Formula (Simplified)**
+## **VI. Fee Distribution Formula (Simplified)**
 
 EMISSION_AMOUNT = Σ(transaction_load × scaling_index × node_payment_ratio)
 
@@ -69,7 +69,7 @@ Where:
 
 ---
 
-## **VII. Emission Cap and Degradation**
+## **VII. Fee Distribution Cap and Degradation**
 
 - ARO has a **finite hard cap** (MAX_SUPPLY) enforced at the protocol level.
 - Once 80% of MAX_SUPPLY is reached, **emission rate linearly degrades** until halted at 100%.
@@ -80,7 +80,7 @@ Where:
 
 In case of protocol anomaly or exploit:
 
-- The **Emission Engine** can be halted by multi-signature from:
+- The **Fee Distribution Engine** can be halted by multi-signature from:
   - All-Seeing Eye
   - Oracle Committee
   - Founder Authority (if defined in initial config)

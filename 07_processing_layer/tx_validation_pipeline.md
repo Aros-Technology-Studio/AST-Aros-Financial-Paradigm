@@ -18,7 +18,7 @@ The validation process is executed in a **multi-stage pipeline**, consisting of 
 4. **Stage 3: Contextual Rule Evaluation**
 5. **Stage 4: Token Compliance Evaluation**
 6. **Stage 5: Simulation Integrity Test (optional)**
-7. **Stage 6: Emission Readiness Flagging**
+7. **Stage 6: Fee Distribution Readiness Flagging**
 8. **Stage 7: PoT Injection and Sealing**
 
 ---
@@ -102,7 +102,7 @@ Violations result in errors like:
 
 ---
 
-### Stage 6: Emission Readiness Flagging
+### Stage 6: Fee Distribution Readiness Flagging
 
 - If all prior stages succeed, the transaction is marked with a metadata flag:
 ```json
@@ -126,7 +126,7 @@ Violations result in errors like:
   - Local validator risk score
   - NodeChain reference
 
-Resulting hash is then forwarded to `NodeChain_Emission_Engine`.
+Resulting hash is then forwarded to `NodeChain_Fee Distribution_Engine`.
 
 ---
 
@@ -142,7 +142,7 @@ flowchart TD
     F --> G{Simulation Mode?}
     G -- Yes --> H[Simulation Run]
     G -- No --> I[Skip Simulation]
-    H --> J[Emission Flagging]
+    H --> J[Fee Distribution Flagging]
     I --> J
     J --> K[PoT Injection & Sealing]
     K --> L[→ NodeChain Engine]
@@ -212,7 +212,7 @@ This module directly integrates with:
 - [`tx_execution_guardrails`](./tx_execution_guardrails.md)
 - [`tx_simulation_mode`](./tx_simulation_mode.md)
 - `PoT_Attestation_Engine` (external)
-- `NodeChain_Emission_Engine` (downstream)
+- `NodeChain_Fee Distribution_Engine` (downstream)
 
 ---
 

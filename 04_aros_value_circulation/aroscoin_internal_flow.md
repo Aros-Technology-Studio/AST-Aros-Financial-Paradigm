@@ -30,7 +30,7 @@ All flows are executed through a set of controller contracts that enforce routin
 interface IInternalFlowRouter {
     function move(address from, address to, uint256 amount, string memory reason) external returns (bool);
     function authorize(address module) external;
-    function setThrottleLimit(address module, uint256 maxPerBlock) external;
+    function setThrottleLimit(address module, uint256 maxPerBatch) external;
 }
 ```
 
@@ -64,9 +64,9 @@ Every movement must have:
 
 ## **5. Flow Throttling & Saturation Watch**
 
-To prevent abuse or over-distribution, each module has a maxPerBlock limit. Additionally, the Processing Layer monitors **saturation metrics**:
+To prevent abuse or over-distribution, each module has a maxPerBatch limit. Additionally, the Processing Layer monitors **saturation metrics**:
 
-- flowRatePerBlock
+- flowRatePerBatch
 - paymentBacklog
 - vaultReleaseQueue
 - circulationDensity

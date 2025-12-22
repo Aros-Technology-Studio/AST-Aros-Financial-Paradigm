@@ -8,6 +8,6 @@ export interface IShardingStrategy {
 }
 
 export interface IConsensusMechanism {
-    proposeBlock(blockData: any): Promise<void>;
-    validateBlock(blockHash: string, signature: string): Promise<boolean>;
+    proposeBatch(blockData: any): Promise<void>;
+    validateBatch(blockHash: string, signature: string): Promise<boolean>;
 }

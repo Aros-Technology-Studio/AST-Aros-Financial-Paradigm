@@ -1,4 +1,4 @@
-# Token Pricing & Emission Models
+# Token Pricing & Fee Distribution Models
 
 ## 1. Dynamic Token Pricing
 
@@ -17,7 +17,7 @@ Where:
 
 **Purpose**: To ensure the token price reflects real utility and risk.
 
-## 2. Emission Volume Calculation
+## 2. Fee Distribution Volume Calculation
 
 The total emission of new tokens is linked to transaction volume and network load.
 

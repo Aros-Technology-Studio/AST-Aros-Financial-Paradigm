@@ -39,7 +39,7 @@ flowchart TD
 
 | Input Type | Examples |
 | --- | --- |
-| Audit Outcomes | Slashing reversed by dispute ruling |
+| Audit Outcomes | Deposit Forfeiture reversed by dispute ruling |
 | False Positive Reports | Validator later cleared of fault |
 | False Negative Detection | Undetected fraud exposed post-factum |
 | Pattern Accuracy Drift | Pattern detection loses precision |

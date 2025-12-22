@@ -7,13 +7,13 @@ The Proof of Transaction (PoT) Engine is the core consensus validation logic of 
 - **Validation Logic**: Analyzes validity of transactions in NodeChain context.
 - **Weighting Model**: Calculates node influence based on activity and history.
 - **Node Assignment**: Determines which nodes validate specific shards.
-- **Slashing Conditions**: Penalizes malicious or lazy behavior.
+- **Deposit Forfeiture Conditions**: Penalizes malicious or lazy behavior.
 
 ## Key Specifications
 - [PoT Engine Overview](pot_engine_overview.md)
 - [Validation Logic](pot_tx_validation_logic.md)
 - [Weighting Model](pot_tx_weighting_model.md)
-- [Slashing Conditions](pot_slashing_conditions.md)
+- [Deposit Forfeiture Conditions](pot_slashing_conditions.md)
 
 ## Responsible Team
 - PoT Engine Team

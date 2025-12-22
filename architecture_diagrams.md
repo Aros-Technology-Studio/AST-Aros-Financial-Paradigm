@@ -10,9 +10,9 @@ graph TD
   C --> D[AROS Value Circulation]
   C --> E[Bridge Layer]
   D --> F[Processing Layer]
-  F --> G[Emission Layer]
+  F --> G[Fee Distribution Layer]
   G --> H[Proof of Transaction]
-  H --> I[Validator Staking & Payments]
+  H --> I[Validator Security Deposit & Payments]
   I --> J[NodeChain AI Agents]
   J --> K[Extra Supervisory Layer]
   F --> L[Crypto Ingestion]
@@ -23,8 +23,8 @@ graph TD
 ```mermaid
 graph TD
   A[Coin Engine]
-  A --> B[Emission Protocol]
-  A --> C[Emission Model]
+  A --> B[Fee Distribution Protocol]
+  A --> C[Fee Distribution Model]
   A --> D[Use Cases]
   A --> E[Burn & Mint Rules]
   A --> F[Volatility Controls]
@@ -114,10 +114,10 @@ graph TD
   A --> H[Rollback Strategy]
 ```
 
-## Emission Layer
+## Fee Distribution Layer
 ```mermaid
 graph TD
-  A[Emission Layer]
+  A[Fee Distribution Layer]
   A --> B[Trigger Conditions]
   A --> C[Flow Pipeline]
   A --> D[Epoch Allocation]
@@ -147,20 +147,20 @@ graph TD
   A --> D[Node Roles]
   A --> E[Signature Model]
   A --> F[Challenge/Response]
-  A --> G[Slashing Conditions]
+  A --> G[Deposit Forfeiture Conditions]
   A --> H[Incentive Distribution]
 ```
 
-## Validator Staking & Payments
+## Validator Security Deposit & Payments
 ```mermaid
 graph TD
-  A[Validator Staking]
+  A[Validator Security Deposit]
   A --> B[Registration]
   A --> C[Stake Freeze/Unlock]
   A --> D[Epoch Commitments]
   A --> E[Payment Distribution]
   A --> F[Performance Score]
-  A --> G[Slashing Rules]
+  A --> G[Deposit Forfeiture Rules]
   A --> H[Governance Interface]
 ```
 

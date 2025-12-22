@@ -12,7 +12,7 @@ The External Protocol Adapter enables AST to communicate with **external financi
 |------------------------|------------------------------------------------------------|
 | 🏦 Banking Rails        | Fiat entry/exit via IBAN, SWIFT, SEPA, or domestic systems |
 | 🪙 Stablecoin Networks | Entry/exit via tokenized USD, EUR, TRY, etc.               |
-| 🔗 Blockchain L1/L2     | Interoperability with Ethereum, Polygon, BSC, etc.         |
+| 🔗 Batchchain L1/L2     | Interoperability with Ethereum, Polygon, BSC, etc.         |
 | 🧾 Oracles & Reporting  | Fetching exchange rates, tax metadata, compliance feeds    |
 
 ---
@@ -62,7 +62,7 @@ Every external interaction must return a signed response payload:
 
 - Bank: SWIFT/SEPA confirmation with unique transaction ID
 - Stablecoin: On-chain transfer hash
-- Blockchain bridge: Merkle root or wrapped proof
+- Batchchain bridge: Merkle root or wrapped proof
 - Oracle: Signed response payload with nonce and timestamp
 
 These are hashed and matched to BridgeEventLog entries for traceability.

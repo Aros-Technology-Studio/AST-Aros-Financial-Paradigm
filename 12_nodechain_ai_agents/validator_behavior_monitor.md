@@ -25,7 +25,7 @@ The following metrics are tracked per validator in real-time and evaluated per e
 | `Attestation Timeliness`      | Compares signature timestamps against block time window |
 | `Stake Consistency`           | Evaluates sudden stake withdrawal or irregular top-ups |
 | `Peer Gossip Participation`   | Measures contribution to network-wide gossip pool |
-| `Block Miss Rate`             | Percentage of missed slots over rolling window |
+| `Batch Miss Rate`             | Percentage of missed slots over rolling window |
 | `Cluster Voting Divergence`   | Measures deviation from consensus majority within shard |
 | `Chain Uptime Ratio`          | Availability as percentage of epoch duration |
 

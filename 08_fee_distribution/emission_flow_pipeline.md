@@ -1,7 +1,7 @@
 # emission_flow_pipeline.md
 
-## Module: Emission Flow Pipeline
-- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+## Module: Fee Distribution Flow Pipeline
+- **Layer**: Fee Distribution Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -14,13 +14,13 @@ This module defines the full technical lifecycle of an emission event, from elig
 
 ---
 
-## Stages of the Emission Pipeline
+## Stages of the Fee Distribution Pipeline
 
 | Stage | Name                         | Description |
 |-------|------------------------------|-------------|
 | 1     | Trigger Acknowledgment       | A PoT-validated transaction is marked as eligible |
 | 2     | Epoch & Quota Check          | Ensures emission volume is within current epoch limits |
-| 3     | Emission Volume Calculation  | Computes how many tokens to emit based on predefined models |
+| 3     | Fee Distribution Volume Calculation  | Computes how many tokens to emit based on predefined models |
 | 4     | Minting Phase                | Creates new AROS tokens under controlled and locked state |
 | 5     | Distribution Routing         | Assigns tokens to destination wallets (nodes, treasury, etc.) |
 | 6     | Finalization & Logging       | Updates audit log, emission ledger, and hash index |
@@ -31,7 +31,7 @@ This module defines the full technical lifecycle of an emission event, from elig
 
 ### 🔹 1. Trigger Acknowledgment
 
-The `emission_trigger_conditions.md` module flags a TX as eligible. This signal enters the Emission Pipeline.
+The `emission_trigger_conditions.md` module flags a TX as eligible. This signal enters the Fee Distribution Pipeline.
 
 ### 🔹 2. Epoch & Quota Check
 
@@ -39,7 +39,7 @@ The `emission_trigger_conditions.md` module flags a TX as eligible. This signal 
 - Ensures that the shard or domain of origin has remaining capacity
 - If limit is reached → TX is queued for next epoch or rejected with `QUOTA_REACHED`
 
-### 🔹 3. Emission Volume Calculation
+### 🔹 3. Fee Distribution Volume Calculation
 
 Based on one or more of the following:
 - Fixed token-per-TX ratio (e.g., 1 AROS per 1 PoT)
@@ -66,8 +66,8 @@ Token allocation performed using one of the following models:
 ### 🔹 6. Finalization & Logging
 
 - Entry added to `tx_journal_writer`
-- Emission hash linked to `tx_hash_map_index`
-- Emission recorded in `emission_reporting_and_traceability.md`
+- Fee Distribution hash linked to `tx_hash_map_index`
+- Fee Distribution recorded in `emission_reporting_and_traceability.md`
 - Trigger TX is marked as "spent" for emission purposes
 
 ---
@@ -77,17 +77,17 @@ Token allocation performed using one of the following models:
 ```mermaid
 flowchart TD
     A[Eligible TX Received] --> B[Quota & Epoch Check]
-    B --> C[Calculate Emission Volume]
+    B --> C[Calculate Fee Distribution Volume]
     C --> D[Mint AROS Tokens]
     D --> E[Distribute Tokens]
     E --> F[Write Audit & Journal]
-    F --> G[Mark TX as Emission-Spent]
+    F --> G[Mark TX as Fee Distribution-Spent]
 
 ```
 
 ---
 
-## Example Output (Post-Emission Record)
+## Example Output (Post-Fee Distribution Record)
 
 ```json
 {

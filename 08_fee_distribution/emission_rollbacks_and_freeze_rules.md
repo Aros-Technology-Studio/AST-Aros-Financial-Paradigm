@@ -1,7 +1,7 @@
 # emission_rollbacks_and_freeze_rules.md
 
-## Module: Emission Rollbacks & Freeze Rules
-- **Layer**: Emission Layer — AST (Aros Studio Tokenomics)
+## Module: Fee Distribution Rollbacks & Freeze Rules
+- **Layer**: Fee Distribution Layer — AST (Aros Studio Tokenomics)
 - **Status**: Production-grade
 - **Author**: Aros Studio NodeChain Division
 - **Last Updated**: 2025-07-05
@@ -20,11 +20,11 @@ Rollback and freeze logic is bound by strict governance protocol and cryptograph
 
 | Scenario                          | Action Type     | Authority Level          |
 |-----------------------------------|------------------|---------------------------|
-| Fraudulent Emission Trigger       | **Rollback**     | Multi-sig governance vote |
+| Fraudulent Fee Distribution Trigger       | **Rollback**     | Multi-sig governance vote |
 | Validator Misbehavior             | **Freeze**       | Automatic + Governance    |
-| Technical Inconsistency (e.g. hash mismatch) | **Freeze**       | Emission Layer + Observer |
-| Over-quota Emission               | **Rollback**     | Epoch Controller          |
-| Emergency Regulatory Block        | **Freeze**       | Governance Only           |
+| Technical Inconsistency (e.g. hash mismatch) | **Freeze**       | Fee Distribution Layer + Observer |
+| Over-quota Fee Distribution               | **Rollback**     | Epoch Controller          |
+| Emergency Regulatory Batch        | **Freeze**       | Governance Only           |
 
 ---
 
@@ -34,7 +34,7 @@ Rollback and freeze logic is bound by strict governance protocol and cryptograph
 |--------------|-----------------------------------------------------|
 | Soft Freeze  | Prevents emission tokens from leaving origin wallet |
 | Hard Freeze  | Tokens are quarantined and marked non-transferable  |
-| Audit Freeze | Emission record flagged, pending investigation      |
+| Audit Freeze | Fee Distribution record flagged, pending investigation      |
 
 ---
 
@@ -43,7 +43,7 @@ Rollback and freeze logic is bound by strict governance protocol and cryptograph
 1. **Triggering Event Detected**
    - Fraud alert, validator self-report, or governance signal
 
-2. **Emission Record Identified**
+2. **Fee Distribution Record Identified**
    - Based on `emission_id`, associated `tx_id`, and `hash_link`
 
 3. **Governance Review or Auto-Freeze**
@@ -52,7 +52,7 @@ Rollback and freeze logic is bound by strict governance protocol and cryptograph
 
 4. **Rollback Execution**
    - Minted tokens are burned or reclaimed
-   - Emission record status updated to `reversed`
+   - Fee Distribution record status updated to `reversed`
    - All related audit logs are appended with rollback hash
 
 5. **Validator Penalty (if applicable)**
@@ -82,12 +82,12 @@ Rollback and freeze logic is bound by strict governance protocol and cryptograph
 
 ```mermaid
 flowchart TD
-    A[Emission Finalized] --> B[Anomaly Detected?]
+    A[Fee Distribution Finalized] --> B[Anomaly Detected?]
     B -- Yes --> C[Trigger Auto-Freeze]
     C --> D[Notify Governance Layer]
     D --> E{Vote Required?}
     E -- Yes --> F[Multisig Vote to Rollback]
-    F --> G[Burn Tokens & Flag Emission]
+    F --> G[Burn Tokens & Flag Fee Distribution]
     E -- No --> H[Retain Freeze Until Manual Review]
 
 ```

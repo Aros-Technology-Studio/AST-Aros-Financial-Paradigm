@@ -50,7 +50,7 @@ flowchart TD
     C --> D[Hash Comparison & Quorum Agreement]
     D --> E[Final Encoding Package]
     E --> F[PoT Validation Pipeline]
-    F --> G[Block Inclusion]
+    F --> G[Batch Inclusion]
 ```
 
 ---

@@ -1,5 +1,5 @@
-export interface IEmissionLogic {
-    calculateEmission(epochId: number, activityMetrics: any): number;
+export interface IFeeDistributionLogic {
+    calculateFee Distribution(epochId: number, activityMetrics: any): number;
 }
 
 export interface ITokenMinting {

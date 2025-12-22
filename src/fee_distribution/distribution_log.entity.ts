@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
-@Entity('emission_logs')
-export class EmissionLogEntity {
+@Entity('distribution_logs')
+export class DistributionLogEntity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
@@ -9,7 +9,7 @@ export class EmissionLogEntity {
     epochNumber: number;
 
     @Column('decimal')
-    calculatedEmission: number;
+    calculatedDistribution: number;
 
     @CreateDateColumn()
     loggedAt: Date;

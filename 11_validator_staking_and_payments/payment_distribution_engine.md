@@ -39,7 +39,7 @@ validator_work_share = (tasks_validated_by_node / total_epoch_tasks)
 
 - `performance_score` ∈ [0.0, 1.0]
 - `penalties` dynamically computed based on epoch audit logs
-- **Note:** Stake acts effectively as a license bond. It does not multiply rewards.
+- **Note:** Stake acts effectively as a license bond. It does not multiply payments.
 
 ---
 

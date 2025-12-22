@@ -158,9 +158,6 @@ Each agent logs structured output:
 
 → Proceed to [`validator_behavior_monitor.md`](https://www.notion.so/aros-studio/validator_behavior_monitor.md) to explore behavioral analysis logic in detail.
 
-```
-
 ---
 
 Если одобряешь — идём дальше: `validator_behavior_monitor.md`.
-```

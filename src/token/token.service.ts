@@ -5,26 +5,26 @@ export class TokenService {
     /**
      * returns the standard Exchange Rate.
      * Enforces Thesis 3: No Speculation.
-     * The rate is determined 1:1 by ALB entrance/exit.
+     * The rate is strictly fixed 1:1. Any deviation is an architectural violation of Thesis 3.
      */
     getExchangeRate(): number {
         return 1.0;
     }
 
     /**
-     * Calculates emission volume based on transaction volume and network load.
+     * Calculates processing pool based on transaction volume and network load.
      * TE = alpha * TV + beta * U + gamma
      * @param transactionVolume Total value of transactions
      * @param utilization Network utilization
-     * @param params Inflation control parameters
+     * @param params Recycling control parameters
      */
-    calculateEmissionVolume(
+    calculateProcessingPool(
         transactionVolume: number,
         utilization: number,
         params: { alpha: number; beta: number; gamma: number } = { alpha: 0.01, beta: 0.05, gamma: 0 },
     ): number {
         const { alpha, beta, gamma } = params;
-        // NOTE: Emission is strictly coupled to Transaction Volume (fee recycling), NOT inflation.
+        // NOTE: Pool is strictly coupled to Transaction Volume (fee recycling), NOT new token emission.
         return Math.max(0, alpha * transactionVolume + beta * utilization + gamma);
     }
 

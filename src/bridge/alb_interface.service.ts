@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class AlbInterfaceService {
+    // DISCLAIMER: This service only verifies cryptographic proofs; it has no access to fiat accounts or the authority to move assets.
     private readonly logger = new Logger(AlbInterfaceService.name);
 
     /**

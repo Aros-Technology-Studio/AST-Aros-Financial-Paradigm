@@ -25,9 +25,9 @@ This document defines the monetary policy and total supply logic of ArosCoin, es
 | Node Incentives    | 35% (350M)        | Emission-based, dynamic          |
 | Public Circulation | 30% (300M)        | Gradual release via operations   |
 
-### 2.2 Snapshot Emission Rules
+### 2.2 Epoch Payment Rules
 
-- No PoW mining: emission is tied to **transaction throughput** and **validated participation**.
+- No PoW mining: payment is tied to **transaction throughput** and **validated participation**.
 - Each transaction pays a small fee → split among validator nodes.
 - Validator nodes earn ARO from the Node Incentives Pool until exhausted.
 
@@ -65,6 +65,7 @@ This document defines the monetary policy and total supply logic of ArosCoin, es
 - [ ] Vesting contracts deployed and verified
 - [ ] Burn engine functional
 - [ ] Supply dashboard live and syncing
+
 ```
 
 ---

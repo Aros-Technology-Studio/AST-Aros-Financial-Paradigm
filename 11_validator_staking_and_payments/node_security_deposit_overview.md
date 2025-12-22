@@ -1,4 +1,4 @@
-# staking_overview.md
+# node_security_deposit_overview.md
 
 ## Module: Node Security Deposit Overview
 
@@ -97,7 +97,7 @@ Performance score directly impacts both payment multiplier and slashing sensitiv
 
 ## Governance Hooks
 
-- Stake thresholds adjustable via `staking_governance_interface.md`
+- Stake thresholds adjustable via `deposit_governance_interface.md`
 - Emergency freeze or override callable by governance quorum
 - Epoch performance snapshots reviewed every cycle
 
@@ -106,10 +106,10 @@ Performance score directly impacts both payment multiplier and slashing sensitiv
 ## Dependencies
 
 - `validator_registration.md`
-- `stake_freeze_unlock_rules.md`
+- `deposit_freeze_unlock_rules.md`
 - `payment_distribution_engine.md`
 - `validator_performance_score.md`
-- `staking_governance_interface.md`
+- `deposit_governance_interface.md`
 
 ---
 

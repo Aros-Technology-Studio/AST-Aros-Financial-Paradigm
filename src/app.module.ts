@@ -12,7 +12,7 @@ import { NodeChainEngineModule } from './nodechain_engine/nodechain_engine.modul
 import { PoTEngineModule } from './proof_of_transaction_engine/pot_engine.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { DteModule } from './dte/dte.module';
-import { ValidatorModule } from './validator/validator.module';
+import { NodeSecurityModule } from './node_security/node_security.module';
 import { AstNodeModule } from './ast_node/ast_node.module';
 import { OversightModule } from './oversight/oversight.module';
 import { AlbInterfaceModule } from './bridge/alb_interface.module';
@@ -50,7 +50,7 @@ import { AppController } from './app.controller';
         AiAgentsModule,
         LedgerModule,
         DteModule,
-        ValidatorModule,
+        NodeSecurityModule,
         AstNodeModule,
         OversightModule,
         AlbInterfaceModule,

@@ -1,35 +1,35 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Validator } from './validator.entity';
+import { ValidationNode } from './validation_node.entity';
 
-export enum StakeState {
+export enum SecurityDepositState {
     PENDING = 'pending',
     ACTIVE = 'active',
-    FROZEN = 'frozen',
-    SLASHED = 'slashed',
+    LOCKED = 'locked',
+    FORFEITED = 'forfeited',
     UNLOCKED = 'unlocked',
 }
 
-@Entity('stakes')
-export class Stake {
+@Entity('security_deposits')
+export class SecurityDeposit {
     @PrimaryGeneratedColumn('uuid')
-    stake_id: string;
+    deposit_id: string;
 
     @Column()
-    validator_id: string;
+    node_id: string;
 
-    @ManyToOne(() => Validator)
-    @JoinColumn({ name: 'validator_id' })
-    validator: Validator;
+    @ManyToOne(() => ValidationNode)
+    @JoinColumn({ name: 'node_id' })
+    node: ValidationNode;
 
     @Column('decimal', { precision: 20, scale: 9 })
     amount: string;
 
     @Column({
         type: 'enum',
-        enum: StakeState,
-        default: StakeState.PENDING,
+        enum: SecurityDepositState,
+        default: SecurityDepositState.PENDING,
     })
-    state: StakeState;
+    state: SecurityDepositState;
 
     @CreateDateColumn()
     created_at: Date;

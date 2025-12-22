@@ -1,29 +1,29 @@
 import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-export enum ValidatorStatus {
+export enum NodeStatus {
     PENDING = 'pending',
     ACTIVE = 'active',
-    SLASHED = 'slashed',
+    FORFEITED = 'forfeited',
     EXITED = 'exited',
 }
 
-@Entity('validators')
-export class Validator {
+@Entity('validation_nodes')
+export class ValidationNode {
     @PrimaryColumn()
-    validator_id: string; // Typically a hash or logical ID
+    node_id: string; // Typically a hash or logical ID
 
     @Column()
     pubkey: string;
 
     @Column({
         type: 'enum',
-        enum: ValidatorStatus,
-        default: ValidatorStatus.PENDING,
+        enum: NodeStatus,
+        default: NodeStatus.PENDING,
     })
-    status: ValidatorStatus;
+    status: NodeStatus;
 
     @Column('decimal', { precision: 20, scale: 9, default: '0' })
-    stake_amount: string;
+    security_deposit_amount: string;
 
     @Column('float', { default: 1.0 })
     score: number;

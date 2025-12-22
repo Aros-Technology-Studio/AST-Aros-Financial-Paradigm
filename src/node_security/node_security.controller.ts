@@ -1,42 +1,42 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
-import { ValidatorService } from './validator.service';
+import { NodeSecurityService } from './node_security.service';
 
-@Controller('validator')
-export class ValidatorController {
-    constructor(private readonly validatorService: ValidatorService) { }
+@Controller('node')
+export class NodeSecurityController {
+    constructor(private readonly securityService: NodeSecurityService) { }
 
     @Post('register')
-    async register(@Body() body: { validator_id: string; pubkey: string }) {
-        return this.validatorService.registerValidator(body);
+    async register(@Body() body: { node_id: string; pubkey: string }) {
+        return this.securityService.registerNode(body);
     }
 
-    @Post('stake')
-    async stake(@Body() body: { validator_id: string; amount: string }) {
-        return this.validatorService.addStake(body.validator_id, body.amount);
+    @Post('deposit')
+    async deposit(@Body() body: { node_id: string; amount: string }) {
+        return this.securityService.addSecurityDeposit(body.node_id, body.amount);
     }
 
     @Get('active')
     async getActive() {
-        return this.validatorService.getActiveValidators();
+        return this.securityService.getActiveNodes();
     }
 
     @Get(':id')
     async getOne(@Param('id') id: string) {
-        return this.validatorService.getValidator(id);
+        return this.securityService.getNode(id);
     }
 }
 
 @Controller('epoch')
 export class EpochController {
-    constructor(private readonly validatorService: ValidatorService) { }
+    constructor(private readonly securityService: NodeSecurityService) { }
 
     @Post('start')
     async startEpoch() {
-        return this.validatorService.startEpoch();
+        return this.securityService.startEpoch();
     }
 
     @Post('end')
-    async endEpoch(@Body() body: { rewards: string }) {
-        return this.validatorService.endEpoch(body.rewards);
+    async endEpoch(@Body() body: { payments: string }) {
+        return this.securityService.endEpoch(body.payments);
     }
 }

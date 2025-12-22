@@ -21,7 +21,7 @@ Provide a complete, detailed, and operational mapping of all AI Agents within th
 | `OBS-AI-0001`    | Transaction Volume Observer              | Live TX stream                         | TX count anomaly flag                | `DISP-AI-0013`                |
 | `OBS-AI-0002`    | Validator Activity Observer              | Validator heartbeat                    | Offline alert                        | `BEHAV-AI-0031`               |
 | `OBS-AI-0003`    | TX Fee Pattern Observer                  | TX fee metadata                        | Irregular fee flag                   | `FRAUD-AI-0078`               |
-| `BEHAV-AI-0031`  | Behavior Pattern Analyzer                | Validator attestation logs             | Score adjustment signal              | `REWARD-CORE`                 |
+| `BEHAV-AI-0031`  | Behavior Pattern Analyzer                | Validator attestation logs             | Score adjustment signal              | `PAYMENT-CORE`                 |
 | `FRAUD-AI-0078`  | Fraud Signature Detector                 | TX metadata + signature bundle         | Trigger `slashStake()`               | `GOV-AI-0049`                 |
 | `DISP-AI-0013`   | Dispute Resolver                         | Conflicting flags or agent disagreement| Resolution arbitration report        | `AUDIT-EMIT-0009`             |
 | `AUDIT-EMIT-0009`| Audit Hash Generator                     | Any confirmed action from agents       | Immutable log entry + anchor hash    | `CHAIN-ANCHOR`                |
@@ -108,7 +108,7 @@ flowchart TD
 
 | Scenario | Involved Agents | Result |
 | --- | --- | --- |
-| Validator goes offline unexpectedly | `OBS-AI-0002` → `BEHAV-AI-0031` | Score dropped; REWARD-CORE notified |
+| Validator goes offline unexpectedly | `OBS-AI-0002` → `BEHAV-AI-0031` | Score dropped; PAYMENT-CORE notified |
 | TX surge with high fees | `OBS-AI-0001`, `OBS-AI-0003` → `FRAUD-AI` | Flag issued; potential `slashStake()` initiated |
 | Two agents produce conflicting flags | `DISP-AI-0013` | Arbitration started; conflict resolved |
 | Critical override required (emergency) | `FRAUD-AI` → `GOV-AI` | Governance vote triggered via `/proposal` |

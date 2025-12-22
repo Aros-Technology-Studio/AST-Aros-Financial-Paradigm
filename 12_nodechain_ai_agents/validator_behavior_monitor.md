@@ -62,7 +62,7 @@ Each validator is assigned a composite trust score updated at the end of each ep
 | --- | --- | --- |
 | ≥ 0.90 | Trusted | No action |
 | 0.80–0.89 | Watchlist | Agent monitors with higher frequency |
-| 0.65–0.79 | Degraded | Escalation to `REWARD-CORE` and score alert |
+| 0.65–0.79 | Degraded | Escalation to `PAYMENT-CORE` and score alert |
 | < 0.65 | Unreliable | Flag for slash consideration |
 
 ---
@@ -73,7 +73,7 @@ If a validator's score drops below reliability threshold:
 
 - The agent emits a `behavior_alert` with contextual metadata
 - Triggers passive penalty: reduced emission weight
-- Escalates to `REWARD-CORE` and optionally to `FRAUD-AI` if pattern is malicious
+- Escalates to `PAYMENT-CORE` and optionally to `FRAUD-AI` if pattern is malicious
 
 ---
 
@@ -87,7 +87,7 @@ If a validator's score drops below reliability threshold:
   "composite_score": 0.61,
   "status": "Unreliable",
   "action": "emit_behavior_alert",
-  "escalated_to": ["REWARD-CORE", "FRAUD-AI-0078"],
+  "escalated_to": ["PAYMENT-CORE", "FRAUD-AI-0078"],
   "timestamp": 1720942822
 }
 

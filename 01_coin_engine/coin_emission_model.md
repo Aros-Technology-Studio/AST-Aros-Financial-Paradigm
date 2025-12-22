@@ -6,7 +6,7 @@ The emission model of AROS Coin is designed to ensure **predictability**, **non-
 
 ## Core Emission Principles
 
-- **No Pre-mining**: No coins are created at launch or reserved for founders or institutions.
+- **No Pre-allocation**: No coins are created at launch or reserved for founders or institutions.
 - **No Fixed Supply**: AROS Coin does not enforce a hard cap. Instead, supply is organically regulated by network demand and usage intensity.
 - **Emission by Transaction Processing**: Coins are generated *only* as a result of real transactions processed on the decentralized network. Each verified transaction pays a small fee, which is then distributed as emission across processing nodes.
 

@@ -54,17 +54,17 @@ All deposit actions are finalized on-chain and signed by the validator’s keypa
 
 ```mermaid
 flowchart TD
-    A[Start Stake Request] --> B[Lock AROS Tokens]
-    B --> C[Stake Confirmation]
+    A[Start Deposit Request] --> B[Lock AROS Tokens]
+    B --> C[Deposit Confirmation]
     C --> D[Assigned to Next Epoch]
     D --> E[Active Validation & Monitoring]
     E --> F[Epoch Ends]
-    F --> G{Penalty or Payment?}
-    G -- Penalty --> H[Slash Stake]
+    F --> G{Forfeiture or Payment?}
+    G -- Forfeiture --> H[Forfeit Deposit]
     G -- Payment --> I[Distribute Payment]
-    H --> J[Stake Frozen or Reduced]
+    H --> J[Deposit Frozen or Reduced]
     I --> J
-    J --> K[Recommit or Unstake]
+    J --> K[Recommit or Withdraw]
 
 ```
 

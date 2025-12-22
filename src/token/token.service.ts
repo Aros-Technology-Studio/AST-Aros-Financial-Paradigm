@@ -14,6 +14,7 @@ export class TokenService {
     /**
      * Calculates processing pool based on transaction volume and network load.
      * TE = alpha * TV + beta * U + gamma
+     * // Strictly fixed 1:1 asset-backed distribution as per Thesis 3
      * @param transactionVolume Total value of transactions
      * @param utilization Network utilization
      * @param params Recycling control parameters

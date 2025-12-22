@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
+/**
+ * This service is an API bridge only. It has zero authority over fiat movement and zero access to private banking data (Thesis 2).
+ */
 export class AlbInterfaceService {
     // DISCLAIMER: This service only verifies cryptographic proofs; it has no access to fiat accounts or the authority to move assets.
     private readonly logger = new Logger(AlbInterfaceService.name);

@@ -2,7 +2,7 @@
 
 ## Purpose of This Document
 
-This document defines the consensus mechanism used within the Aros NodeChain (AST Layer). It outlines how decentralized nodes agree on transaction validity, batch inclusion, and overall ledger integrity. The model is tailored for the Aros environment, balancing security, efficiency, and modular scalability.
+This document defines the consensus mechanism used within the Aros NodeChain (AST Layer). It outlines how decentralized nodes agree on transaction validity, batch finalization, and overall NodeChain transaction sequencing. The model is tailored for the Aros environment, balancing security, efficiency, and modular scalability.
 
 ---
 

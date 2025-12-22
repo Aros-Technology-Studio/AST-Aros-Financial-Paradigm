@@ -42,7 +42,12 @@ export class TokenomicsService {
      * Calculates the emission volume for a period/block.
      * Formula: TE = alpha * TV + beta * U + gamma
      */
-    calculateEmissionVolume(params: Omit<EmissionParams, 'alpha' | 'beta' | 'gamma'>): number {
+    /**
+     * Calculates processing pool based on transaction volume and network load.
+     * TE = alpha * TV + beta * U + gamma
+     * // Strictly fixed 1:1 asset-backed distribution as per Thesis 3
+     */
+    calculateProcessingPool(params: Omit<EmissionParams, 'alpha' | 'beta' | 'gamma'>): number {
         const { transactionVolume, networkUtilization } = params;
         const config = this.emissionConfig;
 

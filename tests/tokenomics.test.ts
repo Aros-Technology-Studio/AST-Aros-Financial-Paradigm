@@ -37,9 +37,9 @@ describe('TokenomicsService', () => {
         });
     });
 
-    describe('calculateEmissionVolume', () => {
-        it('should calculate emission based on volume and utilization', () => {
-            const emission = service.calculateEmissionVolume({
+    describe('calculateProcessingPool', () => {
+        it('should calculate correct processing pool', () => {
+            const emission = service.calculateProcessingPool({
                 transactionVolume: 1000,
                 networkUtilization: 0.8
             });

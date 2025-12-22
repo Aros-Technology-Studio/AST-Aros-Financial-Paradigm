@@ -63,7 +63,7 @@ describe('Financial Logic Services', () => {
             // TE = alpha * TV + beta * U + gamma
             // Config: alpha=0.05, beta=0.02, gamma=100
             // 0.05 * 1000 + 0.02 * 0.5 + 100 = 50 + 0.01 + 100 = 150.01
-            const emission = tokenEconomics.calculateEmissionVolume({
+            const emission = tokenEconomics.calculateProcessingPool({
                 transactionVolume: 1000,
                 networkUtilization: 0.5
             });

@@ -1,5 +1,5 @@
 export interface IFeeDistributionLogic {
-    calculateFee Distribution(epochId: number, activityMetrics: any): number;
+    calculateFeeDistribution(epochId: number, activityMetrics: any): number;
 }
 
 export interface ITokenMinting {

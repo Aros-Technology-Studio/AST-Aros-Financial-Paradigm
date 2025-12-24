@@ -13,7 +13,7 @@ export interface TransactionMetadata {
 }
 
 @Injectable()
-export class Fee DistributionFraudPreventionService {
+export class FeeDistributionFraudPreventionService {
     private readonly logger = new Logger(Fee DistributionFraudPreventionService.name);
 
     constructor(private readonly smartContractIntegration: SmartContractIntegration) { }

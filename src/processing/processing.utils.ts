@@ -72,6 +72,12 @@ export function validateRequest(tx: Transaction): boolean {
         return false;
     }
 
+    // RED LINE 4: Pre-verification
+    if (!tx.isExternalValidationPassed) {
+        console.error(`Validation Failed: TX ${tx.id} has not passed external validation.`);
+        return false;
+    }
+
     // TTL Check (example: 5 minute window for valid timestamps)
     const now = Date.now();
     const TX_TTL_MS = 5 * 60 * 1000;

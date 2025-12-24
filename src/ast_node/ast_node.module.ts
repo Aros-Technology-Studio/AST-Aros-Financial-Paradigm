@@ -4,7 +4,6 @@ import { AstNodeController } from './ast_node.controller';
 import { AstNodeService } from './ast_node.service';
 import { DteModule } from '../dte/dte.module';
 import { LedgerModule } from '../ledger/ledger.module';
-import { LedgerModule } from '../ledger/ledger.module';
 import { LedgerBatch } from '../ledger/entities/ledger_batch.entity';
 
 @Module({

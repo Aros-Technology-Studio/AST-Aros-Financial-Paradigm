@@ -15,7 +15,7 @@ import { DteModule } from './dte/dte.module';
 import { NodeSecurityModule } from './node_security/node_security.module';
 import { AstNodeModule } from './ast_node/ast_node.module';
 import { OversightModule } from './oversight/oversight.module';
-import { AlbInterfaceModule } from './bridge/alb_interface.module';
+import { ExternalProviderModule } from './bridge/external_provider.module';
 
 import { AppController } from './app.controller';
 
@@ -53,7 +53,7 @@ import { AppController } from './app.controller';
         NodeSecurityModule,
         AstNodeModule,
         OversightModule,
-        AlbInterfaceModule,
+        ExternalProviderModule,
     ],
     controllers: [AppController],
     providers: [],

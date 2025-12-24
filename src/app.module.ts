@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NodeChainModule } from './nodechain/nodechain.module';
@@ -17,6 +18,9 @@ import { AstNodeModule } from './ast_node/ast_node.module';
 import { OversightModule } from './oversight/oversight.module';
 import { ExternalProviderModule } from './bridge/external_provider.module';
 
+import { LifecycleService } from './common/lifecycle.service';
+import { HandshakeController } from './common/handshake.controller';
+import { SystemStatusGuard } from './common/system_status.guard';
 import { AppController } from './app.controller';
 
 @Module({
@@ -55,7 +59,13 @@ import { AppController } from './app.controller';
         OversightModule,
         ExternalProviderModule,
     ],
-    controllers: [AppController],
-    providers: [],
+    controllers: [AppController, HandshakeController],
+    providers: [
+        LifecycleService,
+        {
+            provide: APP_GUARD,
+            useClass: SystemStatusGuard,
+        },
+    ],
 })
 export class AppModule { }

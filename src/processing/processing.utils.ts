@@ -14,6 +14,7 @@ export interface Transaction {
     timestamp: number;
     payload?: any;
     publicKey?: string; // Added for verification
+    isExternalValidationPassed: boolean; // RED LINE 4: Pre-verification flag
 }
 
 /**

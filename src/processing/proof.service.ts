@@ -5,16 +5,15 @@ import * as crypto from 'crypto';
 export class ProofService {
     /**
      * Generates Proof of Claim (PoC) hash.
-     * PoC = Hash(TX_origin || KYC_ID_OPAQUE || Timestamp || Signatures)
-     * NOTE: kycId is an opaque handle provided by ALB. AST does not process PII.
+     * PoC = Hash(TX_origin || Timestamp || Signatures)
+     * RED LINE 4: No PII (KYC ID) in AST logic.
      */
     generatePoC(
         txOrigin: string,
-        kycId: string,
         timestamp: number,
         signatures: string[],
     ): string {
-        const data = `${txOrigin}:${kycId}:${timestamp}:${signatures.join(',')}`;
+        const data = `${txOrigin}:${timestamp}:${signatures.join(',')}`;
         return crypto.createHash('sha256').update(data).digest('hex');
     }
 
@@ -38,11 +37,10 @@ export class ProofService {
     verifyPoC(
         pocHash: string,
         txOrigin: string,
-        kycId: string,
         timestamp: number,
         signatures: string[],
     ): boolean {
-        const recalculated = this.generatePoC(txOrigin, kycId, timestamp, signatures);
+        const recalculated = this.generatePoC(txOrigin, timestamp, signatures);
         return recalculated === pocHash;
     }
 }

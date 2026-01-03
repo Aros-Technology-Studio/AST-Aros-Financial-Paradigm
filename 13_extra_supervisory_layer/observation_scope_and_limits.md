@@ -36,7 +36,6 @@ Any access attempt outside the allowed scope results in a hard denial via archit
 ---
 
 ## 4. Layer-Filtered Architecture
-```
 
 ```mermaid
 flowchart TB

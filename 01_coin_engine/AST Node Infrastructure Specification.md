@@ -85,11 +85,11 @@ graph TD;
 
 ## 7. Misbehavior Handling
 
-| Violation Type | Penalty |
-|----------------|---------|
-| Downtime > threshold | Temporary suspension |
-| Malicious tampering | Stake slashing & blacklist |
-| Collusion behavior | AI-auditor flag → governance vote |
+| Violation Type       | Penalty                           |
+| -------------------- | --------------------------------- |
+| Downtime > threshold | Temporary suspension              |
+| Malicious tampering  | Stake slashing & blacklist        |
+| Collusion behavior   | AI-auditor flag → governance vote |
 
 ---
 

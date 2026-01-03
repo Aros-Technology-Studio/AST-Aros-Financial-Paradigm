@@ -9,7 +9,6 @@ This document introduces **The All-Seeing Eye**, the passive meta-observation sy
 ## 2. Architectural Position
 
 **The All-Seeing Eye** is not part of any active execution domain. It is placed in a **separate observational layer**, external to governance, processing, and token logic.
-```
 
 ```mermaid
 graph TD
@@ -23,7 +22,6 @@ graph TD
   G --> EYE
   P --> EYE
   T --> EYE
-
 ```
 
 - It does not modify system state.

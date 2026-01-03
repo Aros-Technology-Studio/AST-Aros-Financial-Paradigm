@@ -55,11 +55,11 @@ Both processes are essential for:
 
 ## 3. Anti-Abuse Mechanisms
 
-| Scenario                     | Protection Mechanism                             |
-|------------------------------|--------------------------------------------------|
-| Excessive mint requests      | Rate-limiter per IP/wallet group                 |
-**| Reused mint/burn nonces      | Nonce replay detection, rejection with hash log
-**| Validator collusion attempt  | Randomized quorum rotation every 24h            |
+| Scenario                    | Protection Mechanism                            |
+| --------------------------- | ----------------------------------------------- |
+| Excessive mint requests     | Rate-limiter per IP/wallet group                |
+| Reused mint/burn nonces     | Nonce replay detection, rejection with hash log |
+| Validator collusion attempt | Randomized quorum rotation every 24h            |
 
 ---
 

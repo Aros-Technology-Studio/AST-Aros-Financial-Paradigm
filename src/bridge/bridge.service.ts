@@ -83,4 +83,20 @@ export class BridgeService {
     async getRequestStatus(externalRef: string) {
         return this.bridgeRepo.findOneBy({ externalReference: externalRef });
     }
+
+    /**
+     * Send a payout request to the Banking Block (Simulated)
+     */
+    async requestFiatPayout(amount: string, bankDetailsId: string): Promise<string> {
+        this.logger.log(`Sending Payout Request to Bank. Amount: ${amount}, Details: ${bankDetailsId}`);
+
+        // Mocking an external HTTP call
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const bankTxId = `BANK_TX_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                this.logger.log(`Bank accepted payout. Transaction ID: ${bankTxId}`);
+                resolve(bankTxId);
+            }, 500);
+        });
+    }
 }

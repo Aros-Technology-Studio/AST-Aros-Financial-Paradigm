@@ -4,6 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LedgerModule } from './ledger/ledger.module';
 import { TokenModule } from './token/token.module';
 import { BridgeModule } from './bridge/bridge.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { FeeDistributionModule } from './fee_distribution/fee_distribution.module';
 // Import other existing modules if necessary, but prioritize these two for now
 
 @Module({
@@ -30,6 +32,8 @@ import { BridgeModule } from './bridge/bridge.module';
         LedgerModule,
         TokenModule,
         BridgeModule,
+        ScheduleModule.forRoot(),
+        FeeDistributionModule,
     ],
 })
 export class AppModule { }

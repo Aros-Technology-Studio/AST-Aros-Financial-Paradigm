@@ -198,4 +198,39 @@ export class FeeDistributionService {
             await queryRunner.release();
         }
     }
+
+    /**
+     * Helper to automatically rotate epochs.
+     * Finds the current active epoch, finalizes it, and starts the next one.
+     * If no epoch exists, starts Epoch 1.
+     */
+    async triggerEpochCycle(): Promise<void> {
+        this.logger.log('Triggering Epoch Cycle...');
+
+        // Find current active epoch
+        const active = await this.epochRepo.findOne({
+            where: { status: 'ACTIVE' },
+            order: { epochNumber: 'DESC' }
+        });
+
+        let nextEpochNumber = 1;
+
+        if (active) {
+            this.logger.log(`Found active Epoch ${active.epochNumber}. Finalizing...`);
+            await this.finalizeEpoch(active.epochNumber);
+            nextEpochNumber = active.epochNumber + 1;
+        } else {
+            // Check if we have ANY finalized epochs to continue sequence
+            const last = await this.epochRepo.findOne({
+                where: {},
+                order: { epochNumber: 'DESC' }
+            });
+            if (last) {
+                nextEpochNumber = last.epochNumber + 1;
+            }
+        }
+
+        this.logger.log(`Starting new Epoch ${nextEpochNumber}...`);
+        await this.startNewEpoch(nextEpochNumber);
+    }
 }

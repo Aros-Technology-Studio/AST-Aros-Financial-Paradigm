@@ -5,6 +5,7 @@ import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
+import { SmartContractIntegration } from '../integration/smart_contract.integration';
 
 @Injectable()
 export class TokenService {
@@ -19,6 +20,7 @@ export class TokenService {
         private readonly dataSource: DataSource,
         @Inject(forwardRef(() => BridgeService))
         private readonly bridgeService: BridgeService,
+        private readonly smartContractService: SmartContractIntegration,
     ) { }
 
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
@@ -39,6 +41,9 @@ export class TokenService {
                 nonce: Date.now(),
                 metadata: { referenceId, operation: 'FIAT_DEPOSIT' }
             });
+
+            // [NEW] Record On-Chain Event
+            await this.smartContractService.recordReference(referenceId, 'MINT', { amount: amount, recipient: recipient });
 
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
             await queryRunner.commitTransaction();
@@ -76,6 +81,9 @@ export class TokenService {
                 nonce: Date.now(),
                 metadata: { bankDetailsId, operation: 'FIAT_WITHDRAWAL' }
             });
+
+            // [NEW] Record On-Chain Event
+            await this.smartContractService.recordReference(tx.hash, 'BURN', { amount: amount, sender: sender });
 
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'BURN');
             await queryRunner.commitTransaction();

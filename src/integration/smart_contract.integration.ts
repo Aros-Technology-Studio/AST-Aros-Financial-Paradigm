@@ -1,54 +1,73 @@
 
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import * as crypto from 'crypto';
+import { SmartContractEventEntity } from './entities/smart_contract_event.entity';
 
 /**
- * Mock Service to simulate interactions with the ArosCoinReserveManager smart contract.
- * In a real environment, this would use ethers.js or web3.js to call the actual contract.
+ * Service to simulate interactions with the ArosCoinReserveManager smart contract.
+ * Uses persistent storage to track "On-Chain" events.
  */
 @Injectable()
 export class SmartContractIntegration {
     private readonly logger = new Logger(SmartContractIntegration.name);
 
-    // Simulating the 'usedReferences' mapping in the contract
-    private usedReferences = new Set<string>();
+    constructor(
+        @InjectRepository(SmartContractEventEntity)
+        private readonly eventRepo: Repository<SmartContractEventEntity>,
+    ) { }
 
     /**
      * Checks if a reference ID has already been used in the smart contract.
-     * Corresponds to `isReferenceUsed(bytes32 referenceId)` in Solidity.
-     * @param refId Unique reference ID (usually a UUID or hash)
      */
     async isReferenceUsed(refId: string): Promise<boolean> {
-        // In reality: await contract.isReferenceUsed(hash(refId));
         const hash = this.hashReference(refId);
-        const isUsed = this.usedReferences.has(hash);
-        this.logger.debug(`[SmartContract] Checking reference ${refId} (hash: ${hash}): ${isUsed}`);
-        return isUsed;
+        const exists = await this.eventRepo.exist({ where: { transactionHash: hash } });
+        this.logger.debug(`[SmartContract] Checking reference ${refId} (hash: ${hash}): ${exists}`);
+        return exists;
     }
 
     /**
-     * Records a reference as used, simulating a mint/burn with reference.
-     * @param refId 
+     * Records a reference as used, simulating a transaction (Mint/Burn).
      */
-    async recordReference(refId: string): Promise<void> {
+    async recordReference(refId: string, type: 'MINT' | 'BURN', params: any): Promise<void> {
         const hash = this.hashReference(refId);
-        this.usedReferences.add(hash);
-        this.logger.log(`[SmartContract] Recorded reference ${refId} (hash: ${hash})`);
-    }
 
-    /**
-     * Simulates burning tokens with a reference validation.
-     * @param amount Amount to burn
-     * @param refId Unique reference
-     */
-    async burnWithReference(amount: number, refId: string): Promise<boolean> {
-        if (await this.isReferenceUsed(refId)) {
-            this.logger.error(`[SmartContract] Burn failed: Reference ${refId} already used.`);
-            return false;
+        try {
+            const event = this.eventRepo.create({
+                transactionHash: hash,
+                method: type, // 'MINT' or 'BURN' as method for simplicity
+                params: params,
+                status: 'SUCCESS'
+            });
+            await this.eventRepo.save(event);
+            this.logger.log(`[SmartContract] Recorded ${type} reference ${refId} (hash: ${hash})`);
+        } catch (error) {
+            // Unlikely collision if isReferenceUsed checked before, but handle generic db errors
+            this.logger.error(`Failed to record reference: ${error.message}`);
+            throw error;
         }
-        await this.recordReference(refId);
-        this.logger.log(`[SmartContract] Burned ${amount} tokens with reference ${refId}.`);
-        return true;
+    }
+
+    /**
+     * Simulates validating the Reserve.
+     * Calculates "On-Chain" supply (Minted - Burned) and returns it.
+     */
+    async validateReserve(): Promise<{ isValid: boolean, onChainSupply: number }> {
+        // Calculate Totals from Events
+        const mints = await this.eventRepo.find({ where: { method: 'MINT' } });
+        const burns = await this.eventRepo.find({ where: { method: 'BURN' } });
+
+        const totalMinted = mints.reduce((acc, ev) => acc + (parseFloat(ev.params['amount'] || 0)), 0);
+        const totalBurned = burns.reduce((acc, ev) => acc + (parseFloat(ev.params['amount'] || 0)), 0);
+
+        const onChainSupply = totalMinted - totalBurned;
+
+        this.logger.log(`[SmartContract] Reserve Validation: +${totalMinted} / -${totalBurned} = ${onChainSupply} Supply`);
+
+        // For now, always valid as we are the source of truth in this prototype
+        return { isValid: true, onChainSupply };
     }
 
     private hashReference(refId: string): string {

@@ -10,17 +10,18 @@ import { PoTEngineModule } from '../proof_of_transaction_engine/pot_engine.modul
 import { TokenModule } from '../token/token.module';
 import { NodeChainEngineModule } from '../nodechain_engine/nodechain_engine.module';
 import { FeeDistributionFraudPreventionService } from './fraud-prevention.service';
-import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { IntegrationModule } from '../integration/integration.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([EpochEntity, DistributionLogEntity, Transaction]),
         PoTEngineModule,
         TokenModule,
-        NodeChainEngineModule
+        NodeChainEngineModule,
+        IntegrationModule
     ],
     controllers: [FeeDistributionController],
-    providers: [FeeDistributionService, FeeDistributionFraudPreventionService, SmartContractIntegration, FeeDistributionScheduler],
+    providers: [FeeDistributionService, FeeDistributionFraudPreventionService, FeeDistributionScheduler],
     exports: [FeeDistributionService],
 })
 export class FeeDistributionModule { }

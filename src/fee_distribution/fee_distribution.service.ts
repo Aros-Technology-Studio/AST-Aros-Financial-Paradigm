@@ -50,7 +50,7 @@ export class FeeDistributionService {
             status: 'ACTIVE',
             totalFeesCollected: '0',
             totalDistributed: '0',
-            nodeCount: '0' // Will update at end
+            nodeCount: 0 // Will update at end
         });
 
         return this.epochRepo.save(newEpoch);
@@ -108,7 +108,7 @@ export class FeeDistributionService {
             }
 
             epoch.totalFeesCollected = totalFees.toString();
-            epoch.nodeCount = activeNodes.length.toString();
+            epoch.nodeCount = activeNodes.length;
             epoch.status = 'FINALIZED';
             await this.epochRepo.save(epoch);
 

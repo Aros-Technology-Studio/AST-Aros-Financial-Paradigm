@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LedgerBatch } from '../ledger/entities/ledger_batch.entity';
 import { sha3_512 } from 'js-sha3';
+import { TransactionType } from '../ledger/entities/transaction.entity';
 
 @Injectable()
 export class AstNodeService {
@@ -32,12 +33,6 @@ export class AstNodeService {
         // 2. Encode & Hash
         const encoded = this.dteService.encodeTransaction(rawTx);
         const txId = this.dteService.hashTransaction(encoded);
-
-        // 3. Persist to Ledger
-        // In a real node, this goes to Mempool first. Here we save as 'pending'.
-        import { TransactionType } from '../ledger/entities/transaction.entity';
-
-        // ... imports
 
         // 3. Persist to Ledger
         // In a real node, this goes to Mempool first. Here we save as 'pending' (but recordTransaction sets it to CONFIRMED for now per user implementation).

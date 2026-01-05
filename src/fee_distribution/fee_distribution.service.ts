@@ -230,17 +230,18 @@ export class FeeDistributionService {
             }
         }
 
-        this.logger.log(`Starting new Epoch ${nextEpochNumber    async getEpoch(epochNumber: number): Promise < EpochEntity | null > {
-            return this.epochRepo.findOne({ where: { epochNumber } });
-        }
-
-    async getCurrentEpoch(): Promise < EpochEntity | null > {
-            return this.epochRepo.findOne({
-                where: { status: 'ACTIVE' },
-                order: { epochNumber: 'DESC' }
-            });
-        }
-}...`);
+        this.logger.log(`Starting new Epoch ${nextEpochNumber}...`);
         await this.startNewEpoch(nextEpochNumber);
+    }
+
+    async getEpoch(epochNumber: number): Promise<EpochEntity | null> {
+        return this.epochRepo.findOne({ where: { epochNumber } });
+    }
+
+    async getCurrentEpoch(): Promise<EpochEntity | null> {
+        return this.epochRepo.findOne({
+            where: { status: 'ACTIVE' },
+            order: { epochNumber: 'DESC' }
+        });
     }
 }

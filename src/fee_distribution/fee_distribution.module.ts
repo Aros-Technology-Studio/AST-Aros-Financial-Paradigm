@@ -5,6 +5,7 @@ import { DistributionLogEntity } from './distribution_log.entity';
 import { Transaction } from '../ledger/entities/transaction.entity';
 import { FeeDistributionService } from './fee_distribution.service';
 import { FeeDistributionScheduler } from './fee_distribution.scheduler';
+import { FeeDistributionController } from './fee_distribution.controller';
 import { PoTEngineModule } from '../proof_of_transaction_engine/pot_engine.module'; // Adjust path if needed
 import { TokenModule } from '../token/token.module';
 import { NodeChainEngineModule } from '../nodechain_engine/nodechain_engine.module';
@@ -18,6 +19,7 @@ import { SmartContractIntegration } from '../integration/smart_contract.integrat
         TokenModule,
         NodeChainEngineModule
     ],
+    controllers: [FeeDistributionController],
     providers: [FeeDistributionService, FeeDistributionFraudPreventionService, SmartContractIntegration, FeeDistributionScheduler],
     exports: [FeeDistributionService],
 })

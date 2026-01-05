@@ -1,46 +1,54 @@
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { NodeType, ConnectedNode, ExecutionSnapshot, Vote } from './consensus.types';
 import { hashData } from '../processing/processing.utils';
 import { ShardingManager } from './sharding.manager';
 import { GossipSimulationService } from './gossip.simulation';
+import { NodeEntity } from './entities/node.entity';
+import { ExecutionSnapshotEntity } from './entities/execution_snapshot.entity';
 
 @Injectable()
-export class NodeChainService {
+export class NodeChainService implements OnModuleInit {
     private readonly logger = new Logger(NodeChainService.name);
 
-    // In-memory storage for prototype
-    private nodes: Map<string, ConnectedNode> = new Map();
-    private ledger: ExecutionSnapshot[] = [];
+    // Pending votes can remain in memory for the prototype (mempool concept)
     private pendingVotes: Map<string, Vote[]> = new Map(); // snapshotHash -> Votes[]
 
     constructor(
+        @InjectRepository(NodeEntity)
+        private readonly nodeRepo: Repository<NodeEntity>,
+        @InjectRepository(ExecutionSnapshotEntity)
+        private readonly snapshotRepo: Repository<ExecutionSnapshotEntity>,
         private readonly shardingManager: ShardingManager,
         private readonly gossipService: GossipSimulationService
-    ) {
-        // Initialize Genesis Snapshot
-        this.initializeGenesisSnapshot();
+    ) { }
+
+    async onModuleInit() {
+        await this.initializeGenesisSnapshot();
     }
 
     /**
      * Registers a new node to the network.
      */
-    registerNode(id: string, type: NodeType, ip: string): ConnectedNode {
-        if (this.nodes.has(id)) {
+    async registerNode(id: string, type: NodeType, ip: string): Promise<NodeEntity> {
+        const existing = await this.nodeRepo.findOne({ where: { id } });
+        if (existing) {
             this.logger.warn(`Node ${id} already registered.`);
-            return this.nodes.get(id);
+            return existing;
         }
 
-        const newNode: ConnectedNode = {
+        const newNode = this.nodeRepo.create({
             id,
             type,
             ip,
             joinedAt: Date.now(),
             isActive: true,
             metrics: { uptime: 100, batchesProposed: 0, batchesValidated: 0, missedVotes: 0 }
-        };
+        });
 
-        this.nodes.set(id, newNode);
+        await this.nodeRepo.save(newNode);
         this.logger.log(`Node registered: ${id} (${type})`);
         return newNode;
     }
@@ -48,15 +56,21 @@ export class NodeChainService {
     /**
      * Returns all currently connected nodes.
      */
-    getConnectedNodes(): ConnectedNode[] {
-        return Array.from(this.nodes.values());
+    async getConnectedNodes(): Promise<NodeEntity[]> {
+        return this.nodeRepo.find({ where: { isActive: true } });
     }
 
     /**
      * Creates the Genesis Snapshot.
      */
-    private initializeGenesisSnapshot() {
-        const genesis: ExecutionSnapshot = {
+    private async initializeGenesisSnapshot() {
+        const count = await this.snapshotRepo.count();
+        if (count > 0) {
+            this.logger.log('Ledger already initialized.');
+            return;
+        }
+
+        const genesis = this.snapshotRepo.create({
             sequenceId: 0,
             previousSnapshotHash: '0',
             timestamp: Date.now(),
@@ -65,56 +79,60 @@ export class NodeChainService {
             hash: hashData('GENESIS_SNAPSHOT'),
             votes: [],
             status: 'FINALIZED'
-        };
-        this.ledger.push(genesis);
-        this.logger.log('Genesis Snapshot created.');
+        });
+
+        await this.snapshotRepo.save(genesis);
+        this.logger.log('Genesis Snapshot created in DB.');
     }
 
     /**
      * Processes a proposed snapshot from a validator.
      * Simulates PoT validation and voting.
      */
-    async processProposedSnapshot(snapshot: ExecutionSnapshot): Promise<ExecutionSnapshot> {
+    async processProposedSnapshot(snapshot: ExecutionSnapshot): Promise<ExecutionSnapshotEntity> {
         this.logger.log(`Processing proposed snapshot #${snapshot.sequenceId} from ${snapshot.validatorId}`);
 
         // 1. Basic Validation
-        const lastSnapshot = this.ledger[this.ledger.length - 1];
+        // Fetch last snapshot from DB
+        const lastSnapshot = await this.snapshotRepo.findOne({
+            order: { sequenceId: 'DESC' }
+        });
+
+        if (!lastSnapshot) {
+            throw new Error('Genesis not found! System corrupted.');
+        }
+
         if (snapshot.sequenceId !== lastSnapshot.sequenceId + 1) {
-            throw new Error('Invalid snapshot sequence');
+            throw new Error(`Invalid snapshot sequence. Expected ${lastSnapshot.sequenceId + 1}, got ${snapshot.sequenceId}`);
         }
         if (snapshot.previousSnapshotHash !== lastSnapshot.hash) {
             throw new Error('Invalid previous hash');
         }
 
         // 2. Simulate Voting (Quorum)
-        // In a real system, we'd wait for async network votes. 
-        // Here we simulate connected validators voting 'true'.
-        const validators = Array.from(this.nodes.values()).filter(n => n.type === NodeType.VALIDATOR);
-        const requiredVotes = Math.ceil(validators.length * 0.67);
+        const validators = await this.nodeRepo.count({ where: { type: NodeType.VALIDATOR, isActive: true } });
 
-        // Auto-vote pass for simulation if we have validators, else just generic pass
-        if (validators.length > 0) {
-            // Collect simulated votes
-            // In a real flow, this would be asynchronous via gossip
-        }
+        // Logic for voting simulation would go here...
 
-        // 3. Mark finalized & Gossip
-        snapshot.status = 'FINALIZED';
-        this.ledger.push(snapshot);
+        // 3. Mark finalized & Persist
+        const newEntity = this.snapshotRepo.create({
+            ...snapshot,
+            status: 'FINALIZED'
+        });
 
-        // this.gossipService.broadcastSnapshotProposal(snapshot); // Update method name in gossip too
+        await this.snapshotRepo.save(newEntity);
 
-        this.logger.log(`Snapshot #${snapshot.sequenceId} FINALIZED. Ledger height: ${this.ledger.length}`);
+        this.logger.log(`Snapshot #${snapshot.sequenceId} FINALIZED. Ledger height: ${snapshot.sequenceId + 1}`);
 
-        return snapshot;
+        return newEntity;
     }
 
     /**
      * Submits a vote for a block.
      */
-    submitVote(vote: Vote) {
+    async submitVote(vote: Vote) {
         // Verify voter is a valid validator
-        const node = this.nodes.get(vote.voterId);
+        const node = await this.nodeRepo.findOne({ where: { id: vote.voterId } });
         if (!node || node.type !== NodeType.VALIDATOR) {
             throw new Error('Unauthorized voter');
         }
@@ -122,15 +140,15 @@ export class NodeChainService {
         let votes = this.pendingVotes.get(vote.snapshotHash) || [];
         votes.push(vote);
         this.pendingVotes.set(vote.snapshotHash, votes);
-
-        // Check if quorum reached (logic would be triggered here)
     }
 
-    getLedgerHeight(): number {
-        return this.ledger.length;
+    async getLedgerHeight(): Promise<number> {
+        return this.snapshotRepo.count();
     }
 
-    getLatestSnapshot(): ExecutionSnapshot {
-        return this.ledger[this.ledger.length - 1];
+    async getLatestSnapshot(): Promise<ExecutionSnapshotEntity> {
+        return this.snapshotRepo.findOne({
+            order: { sequenceId: 'DESC' }
+        });
     }
 }

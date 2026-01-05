@@ -1,47 +1,116 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { SupplySnapshot } from './entities/supply_snapshot.entity';
+import { LedgerService } from '../ledger/ledger.service';
+import { TransactionType } from '../ledger/entities/transaction.entity';
 
 @Injectable()
 export class TokenService {
-    /**
-     * returns the standard Exchange Rate.
-     * Enforces Thesis 3: No Speculation.
-     * The rate is strictly fixed 1:1. Any deviation is an architectural violation of Thesis 3.
-     */
-    getExchangeRate(): number {
-        return 1.0;
+    private readonly logger = new Logger(TokenService.name);
+    private readonly MINT_ADDRESS = 'SYSTEM_MINT_AUTHORITY_000000000000000000';
+    private readonly BURN_ADDRESS = 'SYSTEM_BURN_VAULT_00000000000000000000';
+
+    constructor(
+        @InjectRepository(SupplySnapshot)
+        private readonly supplyRepository: Repository<SupplySnapshot>,
+        private readonly ledgerService: LedgerService,
+        private readonly dataSource: DataSource,
+    ) { }
+
+    async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
+        if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            this.logger.log(`Initiating MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId})`);
+
+            const tx = await this.ledgerService.recordTransaction({
+                type: TransactionType.MINT,
+                sender: this.MINT_ADDRESS,
+                recipient: recipient,
+                amount: amount,
+                nonce: Date.now(),
+                metadata: { referenceId, operation: 'FIAT_DEPOSIT' }
+            });
+
+            await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
+            await queryRunner.commitTransaction();
+
+            return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            this.logger.error(`Mint failed: ${error.message}`);
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
     }
 
-    /**
-     * Calculates processing pool based on transaction volume and network load.
-     * TE = alpha * TV + beta * U + gamma
-     * // Strictly fixed 1:1 asset-backed distribution as per Thesis 3
-     * @param transactionVolume Total value of transactions
-     * @param utilization Network utilization
-     * @param params Recycling control parameters
-     */
-    calculateProcessingPool(
-        transactionVolume: number,
-        utilization: number,
-        params: { alpha: number; beta: number; gamma: number } = { alpha: 0.01, beta: 0.05, gamma: 0 },
-    ): number {
-        const { alpha, beta, gamma } = params;
-        // NOTE: Pool is strictly coupled to Transaction Volume (fee recycling), NOT new token emission.
-        return Math.max(0, alpha * transactionVolume + beta * utilization + gamma);
+    async burn(amount: string, sender: string, bankDetailsId: string): Promise<any> {
+        if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
+
+        const currentBalance = await this.ledgerService.getBalance(sender);
+        if (parseFloat(currentBalance) < parseFloat(amount)) {
+            throw new BadRequestException(`Insufficient funds. Balance: ${currentBalance}, Required: ${amount}`);
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            this.logger.log(`Initiating BURN: ${amount} AROS from ${sender}`);
+
+            const tx = await this.ledgerService.recordTransaction({
+                type: TransactionType.BURN,
+                sender: sender,
+                recipient: this.BURN_ADDRESS,
+                amount: amount,
+                nonce: Date.now(),
+                metadata: { bankDetailsId, operation: 'FIAT_WITHDRAWAL' }
+            });
+
+            await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'BURN');
+            await queryRunner.commitTransaction();
+
+            return { status: 'SUCCESS', txHash: tx.hash, message: 'Tokens burned. Fiat payout initiated via BB.' };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
     }
 
-    /**
-     * Calculates payment for a specific node based on NRI.
-     * Ti = (NRIi / TotalNRI) * TotalPaymentPool
-     * @param nodeNRI Reputation score of the node
-     * @param totalNRI Sum of all eligible node NRIs
-     * @param totalPaymentPool Total tokens to distribute
-     */
-    calculateNodePayment(
-        nodeNRI: number,
-        totalNRI: number,
-        totalPaymentPool: number,
-    ): number {
-        if (totalNRI === 0) return 0;
-        return (nodeNRI / totalNRI) * totalPaymentPool;
+    async getSupplyStats(): Promise<SupplySnapshot> {
+        return this.supplyRepository.findOne({ order: { createdAt: 'DESC' } });
+    }
+
+    private async updateSupplySnapshot(runner: any, txHash: string, amount: string, type: 'MINT' | 'BURN') {
+        const lastSnapshot = await runner.manager.findOne(SupplySnapshot, { order: { createdAt: 'DESC' } });
+
+        const prevSupply = lastSnapshot ? parseFloat(lastSnapshot.circulatingSupply) : 0;
+        const prevMinted = lastSnapshot ? parseFloat(lastSnapshot.totalMinted) : 0;
+        const prevBurned = lastSnapshot ? parseFloat(lastSnapshot.totalBurned) : 0;
+        const delta = parseFloat(amount);
+
+        const newSnapshot = new SupplySnapshot();
+        newSnapshot.triggerTransactionHash = txHash;
+
+        if (type === 'MINT') {
+            newSnapshot.circulatingSupply = (prevSupply + delta).toString();
+            newSnapshot.totalMinted = (prevMinted + delta).toString();
+            newSnapshot.totalBurned = prevBurned.toString();
+        } else {
+            newSnapshot.circulatingSupply = (prevSupply - delta).toString();
+            newSnapshot.totalMinted = prevMinted.toString();
+            newSnapshot.totalBurned = (prevBurned + delta).toString();
+        }
+
+        await runner.manager.save(SupplySnapshot, newSnapshot);
     }
 }

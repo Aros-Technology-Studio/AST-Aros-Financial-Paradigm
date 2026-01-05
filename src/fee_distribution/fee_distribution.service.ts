@@ -84,7 +84,7 @@ export class FeeDistributionService {
             // I will implement a quick public accessor in NodeChainService in the next step. 
             // For now, I assume `getNodes()` exists.
 
-            const activeNodes = this.nodeChainService.getConnectedNodes();
+            const activeNodes = await this.nodeChainService.getConnectedNodes();
 
             // 3. Calculate PoT Scores
             const nodeScores = new Map<string, number>();

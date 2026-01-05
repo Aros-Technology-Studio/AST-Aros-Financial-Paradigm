@@ -1,15 +1,17 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BridgeRequestEntity } from './bridge_request.entity';
-import { ExternalAssetEntity } from './external_asset.entity';
-import { JttEntity } from './jtt.entity';
-import { LegalBridgeService } from './legal_bridge.service';
+import { BridgeController } from './bridge.controller';
+import { BridgeService } from './bridge.service';
+import { BridgeRequest } from './entities/bridge_request.entity';
+import { TokenModule } from '../token/token.module'; // Import TokenModule to use TokenService
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([BridgeRequestEntity, ExternalAssetEntity, JttEntity]),
+        TypeOrmModule.forFeature([BridgeRequest]),
+        TokenModule, // Импортируем, чтобы BridgeService мог инжектировать TokenService
     ],
-    providers: [LegalBridgeService],
-    exports: [LegalBridgeService],
+    controllers: [BridgeController],
+    providers: [BridgeService],
+    exports: [BridgeService]
 })
 export class BridgeModule { }

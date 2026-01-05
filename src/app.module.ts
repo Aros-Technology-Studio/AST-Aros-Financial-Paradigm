@@ -28,6 +28,7 @@ import { TokenModule } from './token/token.module';
         }),
         LedgerModule,
         TokenModule,
+        BridgeModule,
     ],
 })
 export class AppModule { }

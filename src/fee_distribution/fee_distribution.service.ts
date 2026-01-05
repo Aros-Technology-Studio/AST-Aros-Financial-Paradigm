@@ -6,7 +6,7 @@ import { DistributionLogEntity } from './distribution_log.entity';
 import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
-import { Transaction } from '../ledger/entities/transaction.entity';
+import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
 
 @Injectable()
 export class FeeDistributionService {

@@ -3,7 +3,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NodeType, ConnectedNode, ExecutionSnapshot, Vote } from './consensus.types';
-import { hashData } from '../processing/processing.utils';
+import * as crypto from 'crypto';
 import { ShardingManager } from './sharding.manager';
 import { GossipSimulationService } from './gossip.simulation';
 import { NodeEntity } from './entities/node.entity';
@@ -76,7 +76,7 @@ export class NodeChainService implements OnModuleInit {
             timestamp: Date.now(),
             tasks: [],
             validatorId: 'GENESIS',
-            hash: hashData('GENESIS_SNAPSHOT'),
+            hash: crypto.createHash('sha256').update('GENESIS_SNAPSHOT').digest('hex'),
             votes: [],
             status: 'FINALIZED'
         });

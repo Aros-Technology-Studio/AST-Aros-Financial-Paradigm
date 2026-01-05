@@ -109,7 +109,10 @@ export class TokenService {
     }
 
     private async updateSupplySnapshot(runner: any, txHash: string, amount: string, type: 'MINT' | 'BURN') {
-        const lastSnapshot = await runner.manager.findOne(SupplySnapshot, { order: { createdAt: 'DESC' } });
+        const [lastSnapshot] = await runner.manager.find(SupplySnapshot, {
+            order: { createdAt: 'DESC' },
+            take: 1
+        });
 
         const prevSupply = lastSnapshot ? parseFloat(lastSnapshot.circulatingSupply) : 0;
         const prevMinted = lastSnapshot ? parseFloat(lastSnapshot.totalMinted) : 0;

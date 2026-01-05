@@ -11,7 +11,7 @@ export class EpochEntity {
     @Column({ nullable: true })
     endTime: Date;
 
-    @Column({ default: 'ACTIVE' })
+    @Column({ type: 'varchar', default: 'ACTIVE' })
     status: string;
 
     @Column('decimal', { precision: 18, scale: 8, default: '0' })

@@ -79,7 +79,7 @@ async function bootstrap() {
 
         logger.log('--- SIMULATION COMPLETED SUCCESSFULLY ---');
 
-    } catch (error) {
+    } catch (error: any) {
         logger.error(`SIMULATION FAILED: ${error.message}`);
         logger.error(error.stack);
     } finally {

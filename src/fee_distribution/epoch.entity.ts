@@ -20,6 +20,6 @@ export class EpochEntity {
     @Column({ default: '0' })
     totalDistributed: string;
 
-    @Column({ type: 'int', default: 0 })
-    nodeCount: number;
+    @Column({ default: '0' })
+    nodeCount: string;
 }

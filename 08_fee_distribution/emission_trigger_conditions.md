@@ -65,10 +65,6 @@ Certain transactions are **automatically disqualified** from triggering emission
 6. If all checks pass → mark TX as **“emission-capable”**
 
 ---
-```
-
----
-
 ```mermaid
 flowchart TD
 

@@ -98,14 +98,22 @@ This data is stored via emission_reporting_and_traceability.md.
 
 ## **Mermaid Diagram**
 
+```mermaid
 flowchart TD
-    A[New Epoch Starts] --> B[Track Fee Distribution Triggers]
-    B --> C [Check Quotas per Shard]
-    C --> D [Distribute Tokens by Role]
-    D --> E [Update Fee Distribution Counters]
-    E --> F {Cap Reached or Time Expired?}
-    F -- Yes --> G [End Epoch & Freeze Snapshot]
-    F -- No --> B
+
+A[Epoch Start] --> B[Monitor Fee Distribution Triggers]
+
+B --> C{Shard Quota Available?}
+
+C -- Yes --> D[Allocate Tokens by Role]
+C -- No --> F{Epoch Limit Reached or Time Expired?}
+
+D --> E[Update Distribution Counters]
+E --> F{Epoch Limit Reached or Time Expired?}
+
+F -- Yes --> G[Close Epoch and Freeze Snapshot]
+F -- No --> B
+```
 
 ---
 

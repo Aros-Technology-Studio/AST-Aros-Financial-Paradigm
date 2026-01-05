@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LedgerModule } from './ledger/ledger.module';
 import { TokenModule } from './token/token.module';
+import { BridgeModule } from './bridge/bridge.module';
 // Import other existing modules if necessary, but prioritize these two for now
 
 @Module({

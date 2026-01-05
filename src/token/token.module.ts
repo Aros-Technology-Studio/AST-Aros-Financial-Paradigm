@@ -1,16 +1,17 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { TokenService } from './token.service';
 import { TokenController } from './token.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { TokenEntity } from './token.entity';
-import { SupplySnapshot } from './supply_snapshot.entity';
-import { DistributionEventEntity } from './distribution_event.entity';
-import { TokenomicsService } from './tokenomics.service';
+import { SupplySnapshot } from './entities/supply_snapshot.entity';
+import { LedgerModule } from '../ledger/ledger.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([TokenEntity, SupplySnapshot, DistributionEventEntity])],
+    imports: [
+        TypeOrmModule.forFeature([SupplySnapshot]),
+        LedgerModule,
+    ],
     controllers: [TokenController],
-    providers: [TokenService, TokenomicsService],
-    exports: [TokenService, TokenomicsService]
+    providers: [TokenService],
+    exports: [TokenService],
 })
 export class TokenModule { }

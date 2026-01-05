@@ -35,14 +35,20 @@ export class AstNodeService {
 
         // 3. Persist to Ledger
         // In a real node, this goes to Mempool first. Here we save as 'pending'.
-        const savedTx = await this.ledgerService.createTransaction({
-            tx_id: txId,
+        import { TransactionType } from '../ledger/entities/transaction.entity';
+
+        // ... imports
+
+        // 3. Persist to Ledger
+        // In a real node, this goes to Mempool first. Here we save as 'pending' (but recordTransaction sets it to CONFIRMED for now per user implementation).
+        const savedTx = await this.ledgerService.recordTransaction({
             sender: rawTx.sender,
             recipient: rawTx.recipient,
             amount: rawTx.amount,
-            asset: rawTx.asset,
-            // In real DTE, these come from the encoded payload structure
-            status: 'pending',
+            currency: rawTx.asset || 'AROS',
+            type: TransactionType.TRANSFER,
+            nonce: Date.now(),
+            metadata: { originalTxId: txId },
         });
 
         this.logger.log(`Transaction ${txId} processed and saved to ledger.`);

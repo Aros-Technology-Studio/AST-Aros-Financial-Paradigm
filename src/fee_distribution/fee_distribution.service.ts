@@ -230,7 +230,17 @@ export class FeeDistributionService {
             }
         }
 
-        this.logger.log(`Starting new Epoch ${nextEpochNumber}...`);
+        this.logger.log(`Starting new Epoch ${nextEpochNumber    async getEpoch(epochNumber: number): Promise < EpochEntity | null > {
+            return this.epochRepo.findOne({ where: { epochNumber } });
+        }
+
+    async getCurrentEpoch(): Promise < EpochEntity | null > {
+            return this.epochRepo.findOne({
+                where: { status: 'ACTIVE' },
+                order: { epochNumber: 'DESC' }
+            });
+        }
+}...`);
         await this.startNewEpoch(nextEpochNumber);
     }
 }

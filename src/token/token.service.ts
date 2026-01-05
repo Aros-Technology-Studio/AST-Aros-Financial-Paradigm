@@ -1,9 +1,10 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../ledger/entities/transaction.entity';
+import { BridgeService } from '../bridge/bridge.service';
 
 @Injectable()
 export class TokenService {
@@ -16,6 +17,8 @@ export class TokenService {
         private readonly supplyRepository: Repository<SupplySnapshot>,
         private readonly ledgerService: LedgerService,
         private readonly dataSource: DataSource,
+        @Inject(forwardRef(() => BridgeService))
+        private readonly bridgeService: BridgeService,
     ) { }
 
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
@@ -77,7 +80,14 @@ export class TokenService {
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'BURN');
             await queryRunner.commitTransaction();
 
-            return { status: 'SUCCESS', txHash: tx.hash, message: 'Tokens burned. Fiat payout initiated via BB.' };
+            // Trigger Fiat Payout via Bridge (Asynchronous or Synchronous depending on policy)
+            // Ideally async so if bank fails, we don't necessarily rollback burn? 
+            // OR strict: if bank fails, we rollback burn.
+            // For now, let's treat it as a subsequent action. If Mock Bank fails, we might just log it (or throw).
+            // Let's await it to ensure user gets feedback.
+            const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
+
+            return { status: 'SUCCESS', txHash: tx.hash, message: 'Tokens burned. Fiat payout initiated via BB.', bankTxId };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

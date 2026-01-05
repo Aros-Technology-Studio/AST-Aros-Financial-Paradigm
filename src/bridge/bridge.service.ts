@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BridgeRequest, BridgeRequestStatus, BridgeRequestType } from './entities/bridge_request.entity';
@@ -14,6 +14,7 @@ export class BridgeService {
     constructor(
         @InjectRepository(BridgeRequest)
         private readonly bridgeRepo: Repository<BridgeRequest>,
+        @Inject(forwardRef(() => TokenService))
         private readonly tokenService: TokenService,
     ) { }
 

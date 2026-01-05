@@ -84,14 +84,12 @@ export class FeeDistributionService {
             // I will implement a quick public accessor in NodeChainService in the next step. 
             // For now, I assume `getNodes()` exists.
 
-            const nodesMap = (this.nodeChainService as any).nodes; // Direct access hack for prototype speed if getter missing
-            // Or better, let's just assume we will add `getAllConnectedNodes()` to NodeChainService.
+            const activeNodes = this.nodeChainService.getConnectedNodes();
 
             // 3. Calculate PoT Scores
             const nodeScores = new Map<string, number>();
-            const activeNodes = Array.from(nodesMap.values()); // Map<string, ConnectedNode>
 
-            for (const node of activeNodes as any[]) {
+            for (const node of activeNodes) {
                 const score = this.potService.calculateNodeScore({
                     txCount: node.metrics.batchesValidated, // Mapping batches to tx count proxy
                     totalFees: 0, // In this prototype, we don't track fees processed by specific node yet

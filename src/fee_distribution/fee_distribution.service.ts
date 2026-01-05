@@ -185,7 +185,7 @@ export class FeeDistributionService {
 
                 // Log distribution
                 const log = this.distributionLogRepo.create({
-                    epoch: epoch,
+                    epochNumber: epoch.epochNumber,
 
                     nodeId: nodeId,
                     amount: rewardStr,

@@ -43,7 +43,7 @@ export class NodeChainService implements OnModuleInit {
             id,
             type,
             ip,
-            joinedAt: Date.now(),
+            joinedAt: new Date(),
             isActive: true,
             metrics: { uptime: 100, batchesProposed: 0, batchesValidated: 0, missedVotes: 0 }
         });

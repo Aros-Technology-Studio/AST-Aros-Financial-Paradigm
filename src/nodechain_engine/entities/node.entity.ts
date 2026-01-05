@@ -3,7 +3,7 @@ import { NodeType } from '../consensus.types';
 
 @Entity('nodes')
 export class NodeEntity {
-    @PrimaryColumn()
+    @PrimaryColumn('varchar')
     id: string;
 
     @Column({ type: 'enum', enum: NodeType })
@@ -12,8 +12,8 @@ export class NodeEntity {
     @Column({ nullable: true })
     ip: string;
 
-    @CreateDateColumn({ type: 'bigint' })
-    joinedAt: number;
+    @CreateDateColumn()
+    joinedAt: Date;
 
     @Column({ default: true })
     isActive: boolean;

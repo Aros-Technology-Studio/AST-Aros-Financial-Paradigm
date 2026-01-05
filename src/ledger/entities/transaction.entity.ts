@@ -50,7 +50,7 @@ export class Transaction {
     @Column({ type: 'varchar', length: 10, default: 'AROS' })
     currency: string;
 
-    @Column({ type: 'int' })
+    @Column({ type: 'bigint' })
     nonce: number;
 
     @Column({ type: 'text', nullable: true })

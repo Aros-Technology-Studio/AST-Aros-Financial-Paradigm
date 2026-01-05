@@ -6,6 +6,7 @@ import { TokenModule } from './token/token.module';
 import { BridgeModule } from './bridge/bridge.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FeeDistributionModule } from './fee_distribution/fee_distribution.module';
+import { GovernanceModule } from './governance/governance.module';
 // Import other existing modules if necessary, but prioritize these two for now
 
 @Module({
@@ -34,6 +35,7 @@ import { FeeDistributionModule } from './fee_distribution/fee_distribution.modul
         BridgeModule,
         ScheduleModule.forRoot(),
         FeeDistributionModule,
+        GovernanceModule,
     ],
 })
 export class AppModule { }

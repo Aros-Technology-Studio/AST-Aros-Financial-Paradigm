@@ -38,7 +38,7 @@ async function bootstrap() {
     try {
         // Step 1: Register Validator
         logger.log('[1] Registering Validator Node...');
-        const validatorId = 'VALIDATOR_SIM_01';
+        const validatorId = '123e4567-e89b-12d3-a456-426614174000'; // Valid UUID
         await nodeChain.registerNode(validatorId, NodeType.VALIDATOR, '127.0.0.1');
 
         // Step 2: Fiat Deposit (Mint)

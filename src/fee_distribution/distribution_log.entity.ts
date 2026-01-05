@@ -6,9 +6,8 @@ export class DistributionLogEntity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => EpochEntity)
-    @JoinColumn({ name: 'epoch_number' })
-    epoch: EpochEntity;
+    @Column({ name: 'epoch_number', type: 'int' })
+    epochNumber: number;
 
     @Column()
     nodeId: string;

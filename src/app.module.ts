@@ -22,7 +22,7 @@ import { FeeDistributionModule } from './fee_distribution/fee_distribution.modul
                 port: configService.get<number>('DB_PORT', 5432),
                 username: configService.get<string>('DB_USERNAME', 'aros_user'),
                 password: configService.get<string>('DB_PASSWORD', 'aros_password'),
-                database: configService.get<string>('DB_NAME', 'aros_db'),
+                database: configService.get<string>('DB_DATABASE', 'aros_ast'),
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
                 synchronize: configService.get<string>('NODE_ENV') !== 'production',
                 logging: false,

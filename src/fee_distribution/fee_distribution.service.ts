@@ -8,6 +8,8 @@ import { TokenService } from '../token/token.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
 
+import { SmartContractIntegration } from '../integration/smart_contract.integration';
+
 @Injectable()
 export class FeeDistributionService {
     private readonly logger = new Logger(FeeDistributionService.name);
@@ -24,6 +26,7 @@ export class FeeDistributionService {
         private readonly potService: PoTService,
         private readonly tokenService: TokenService,
         private readonly nodeChainService: NodeChainService,
+        private readonly smartContractService: SmartContractIntegration,
         private readonly dataSource: DataSource, // For transactionality
     ) { }
 
@@ -104,6 +107,13 @@ export class FeeDistributionService {
 
             // 5. Distribute Rewards
             if (totalFees > 0) {
+                // [NEW] Validate Reserve before distribution
+                const { isValid, onChainSupply } = await this.smartContractService.validateReserve();
+                if (!isValid) {
+                    throw new Error(`Smart Contract Reserve Mismatch! On-Chain Supply: ${onChainSupply}`);
+                }
+                this.logger.log(`Smart Contract Reserve verified. Supply: ${onChainSupply}`);
+
                 await this.distributeRewards(epoch, totalFees, weights);
             }
 

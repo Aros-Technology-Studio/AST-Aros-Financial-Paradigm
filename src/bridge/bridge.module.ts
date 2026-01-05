@@ -1,14 +1,14 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BridgeController } from './bridge.controller';
 import { BridgeService } from './bridge.service';
 import { BridgeRequest } from './entities/bridge_request.entity';
-import { TokenModule } from '../token/token.module'; // Import TokenModule to use TokenService
+import { TokenModule } from '../token/token.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([BridgeRequest]),
-        TokenModule, // Импортируем, чтобы BridgeService мог инжектировать TokenService
+        forwardRef(() => TokenModule),
     ],
     controllers: [BridgeController],
     providers: [BridgeService],

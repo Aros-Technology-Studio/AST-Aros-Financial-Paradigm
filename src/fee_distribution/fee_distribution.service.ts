@@ -165,13 +165,13 @@ export class FeeDistributionService {
                     hash: `REWARD_${epoch.epochNumber}_${nodeId}`, // simplified hash
                     previousHash: 'SYSTEM',
                     blockHeight: '0',
-                    type: 'REWARD' as any, // Need to ensure Enum has REWARD or similar
+                    type: TransactionType.VALIDATOR_REWARD,
                     sender: this.FEE_POOL_ADDRESS,
                     recipient: nodeId,
                     amount: rewardStr,
                     fee: '0',
                     nonce: epoch.epochNumber,
-                    status: 'CONFIRMED',
+                    status: TransactionStatus.CONFIRMED,
                     metadata: { type: 'EPOCH_REWARD', epoch: epoch.epochNumber, weight }
                 });
 

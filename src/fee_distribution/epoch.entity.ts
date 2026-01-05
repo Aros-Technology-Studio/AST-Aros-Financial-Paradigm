@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeor
 
 @Entity('epochs')
 export class EpochEntity {
+    [x: string]: string;
     @PrimaryGeneratedColumn('increment')
     epochNumber: number;
 

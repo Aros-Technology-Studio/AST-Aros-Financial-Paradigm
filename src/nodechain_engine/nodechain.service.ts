@@ -46,6 +46,13 @@ export class NodeChainService {
     }
 
     /**
+     * Returns all currently connected nodes.
+     */
+    getConnectedNodes(): ConnectedNode[] {
+        return Array.from(this.nodes.values());
+    }
+
+    /**
      * Creates the Genesis Snapshot.
      */
     private initializeGenesisSnapshot() {

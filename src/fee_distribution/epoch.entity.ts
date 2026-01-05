@@ -1,9 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity('epochs')
 export class EpochEntity {
-    [x: string]: string;
-    @PrimaryGeneratedColumn('increment')
+    @PrimaryColumn()
     epochNumber: number;
 
     @CreateDateColumn()
@@ -12,6 +11,15 @@ export class EpochEntity {
     @Column({ nullable: true })
     endTime: Date;
 
-    @Column('boolean', { default: false })
-    isFinalized: boolean;
+    @Column({ default: 'ACTIVE' })
+    status: string;
+
+    @Column({ default: '0' })
+    totalFeesCollected: string;
+
+    @Column({ default: '0' })
+    totalDistributed: string;
+
+    @Column({ type: 'int', default: 0 })
+    nodeCount: number;
 }

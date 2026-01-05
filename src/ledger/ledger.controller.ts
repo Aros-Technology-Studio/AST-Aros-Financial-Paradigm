@@ -1,23 +1,29 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { LedgerService } from './ledger.service';
 import { Transaction } from './entities/transaction.entity';
 
-@Controller('ledger')
+@Controller('api/v1/ledger')
 export class LedgerController {
     constructor(private readonly ledgerService: LedgerService) { }
 
-    @Post('tx')
-    async createTransaction(@Body() body: Partial<Transaction>) {
-        return this.ledgerService.createTransaction(body);
+    @Post('record')
+    async recordTransaction(@Body() dto: Partial<Transaction>) {
+        return this.ledgerService.recordTransaction(dto);
     }
 
-    @Get('tx/:id')
-    async getTransaction(@Param('id') id: string) {
-        return this.ledgerService.getTransaction(id);
+    @Get('balance/:address')
+    async getBalance(@Param('address') address: string) {
+        const balance = await this.ledgerService.getBalance(address);
+        return { address, balance, currency: 'AROS', timestamp: new Date() };
     }
 
-    @Get('epoch/:id/summary')
-    async getEpochSummary(@Param('id') id: string) {
-        return this.ledgerService.getEpochSummary(id);
+    @Get('history/:address')
+    async getHistory(@Param('address') address: string, @Query('limit') limit: number) {
+        return this.ledgerService.getHistory(address, limit || 10);
+    }
+
+    @Get('tx/:hash')
+    async getTransaction(@Param('hash') hash: string) {
+        return this.ledgerService.findByHash(hash);
     }
 }

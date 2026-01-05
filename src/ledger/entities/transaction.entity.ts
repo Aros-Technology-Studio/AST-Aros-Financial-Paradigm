@@ -1,38 +1,73 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
+
+export enum TransactionType {
+    MINT = 'MINT',
+    BURN = 'BURN',
+    TRANSFER = 'TRANSFER',
+    FEE_DISTRIBUTION = 'FEE',
+    VALIDATOR_REWARD = 'REWARD'
+}
+
+export enum TransactionStatus {
+    PENDING = 'PENDING',
+    CONFIRMED = 'CONFIRMED',
+    FAILED = 'FAILED',
+    ROLLED_BACK = 'ROLLED_BACK'
+}
 
 @Entity('transactions')
+@Index(['hash'], { unique: true })
+@Index(['sender', 'nonce'], { unique: true })
+@Index(['blockHeight'])
 export class Transaction {
-    @PrimaryColumn()
-    tx_id: string; // SHA3-512 Hash
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
-    @Column()
-    sender: string; // AST Address
+    @Column({ type: 'varchar', length: 66, nullable: false })
+    hash: string;
 
-    @Column()
-    recipient: string; // AST Address
+    @Column({ type: 'varchar', length: 66, nullable: false })
+    previousHash: string;
 
-    @Column('decimal', { precision: 20, scale: 9 })
+    @Column({ type: 'bigint', nullable: false })
+    blockHeight: string;
+
+    @Column({ type: 'enum', enum: TransactionType })
+    type: TransactionType;
+
+    @Column({ type: 'varchar', length: 42, nullable: false })
+    sender: string;
+
+    @Column({ type: 'varchar', length: 42, nullable: false })
+    recipient: string;
+
+    @Column({ type: 'decimal', precision: 24, scale: 8, default: '0' })
     amount: string;
 
-    @Column()
-    asset: string; // "ARO" or other asset code
+    @Column({ type: 'decimal', precision: 18, scale: 8, default: '0' })
+    fee: string;
+
+    @Column({ type: 'varchar', length: 10, default: 'AROS' })
+    currency: string;
+
+    @Column({ type: 'int' })
+    nonce: number;
+
+    @Column({ type: 'text', nullable: true })
+    signature: string;
+
+    @Column({ type: 'jsonb', nullable: true })
+    metadata: any;
+
+    @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.PENDING })
+    status: TransactionStatus;
 
     @CreateDateColumn()
-    timestamp: Date;
+    createdAt: Date;
 
-    @Column('float', { default: 1.0 })
-    tx_weight: number;
+    @Column({ type: 'timestamp', nullable: true })
+    finalizedAt: Date;
 
-    @Column({ default: 'normal' })
-    priority: string;
-
-    @Column({ nullable: true })
-    prev_tx_ref: string; // For PoT linking
-
-    @Column({ nullable: true })
-    @Index()
-    epoch_id: string;
-
-    @Column({ default: 'pending' }) // pending, committed, rejected
-    status: string;
+    @Column({ type: 'text', nullable: true })
+    errorMessage: string;
 }

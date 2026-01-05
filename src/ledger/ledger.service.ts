@@ -1,49 +1,106 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Transaction } from './entities/transaction.entity';
-import { LedgerBatch } from './entities/ledger_batch.entity';
+import { Repository, DataSource } from 'typeorm';
+import { Transaction, TransactionStatus, TransactionType } from './entities/transaction.entity';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class LedgerService {
+    private readonly logger = new Logger(LedgerService.name);
+
     constructor(
         @InjectRepository(Transaction)
-        private readonly txRepo: Repository<Transaction>,
-        @InjectRepository(LedgerBatch)
-        private readonly batchRepo: Repository<LedgerBatch>,
+        private readonly txRepository: Repository<Transaction>,
+        private readonly dataSource: DataSource,
     ) { }
 
-    async createTransaction(data: Partial<Transaction>): Promise<Transaction> {
-        const tx = this.txRepo.create({
-            ...data,
-            status: 'pending',
-            timestamp: new Date()
-        });
-        return this.txRepo.save(tx);
+    async recordTransaction(dto: Partial<Transaction>): Promise<Transaction> {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            const lastTx = await queryRunner.manager
+                .getRepository(Transaction)
+                .createQueryBuilder('tx')
+                .setLock('pessimistic_write')
+                .orderBy('tx.createdAt', 'DESC')
+                .addOrderBy('tx.blockHeight', 'DESC')
+                .limit(1)
+                .getOne();
+
+            const previousHash = lastTx ? lastTx.hash : 'GENESIS_HASH_00000000000000000000000000000000';
+            const currentHeight = lastTx ? BigInt(lastTx.blockHeight) + 1n : 1n;
+
+            const newTx = new Transaction();
+            Object.assign(newTx, dto);
+
+            newTx.previousHash = previousHash;
+            newTx.blockHeight = currentHeight.toString();
+            newTx.status = TransactionStatus.CONFIRMED;
+            newTx.finalizedAt = new Date();
+            newTx.hash = this.calculateHash(newTx);
+
+            const savedTx = await queryRunner.manager.save(Transaction, newTx);
+            await queryRunner.commitTransaction();
+
+            this.logger.log(`Transaction recorded at height ${savedTx.blockHeight}: ${savedTx.hash}`);
+            return savedTx;
+
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            this.logger.error(`Failed to record transaction: ${error.message}`, error.stack);
+            throw new InternalServerErrorException('Ledger recording failed');
+        } finally {
+            await queryRunner.release();
+        }
     }
 
-    async getTransaction(tx_id: string): Promise<Transaction> {
-        const tx = await this.txRepo.findOne({ where: { tx_id } });
-        if (!tx) {
-            throw new NotFoundException(`Transaction ${tx_id} not found`);
-        }
+    async getBalance(address: string): Promise<string> {
+        const incoming = await this.txRepository
+            .createQueryBuilder('tx')
+            .select('SUM(CAST(tx.amount AS DECIMAL))', 'total')
+            .where('tx.recipient = :address', { address })
+            .andWhere('tx.status = :status', { status: TransactionStatus.CONFIRMED })
+            .getRawOne();
+
+        const outgoing = await this.txRepository
+            .createQueryBuilder('tx')
+            .select('SUM(CAST(tx.amount AS DECIMAL))', 'total')
+            .where('tx.sender = :address', { address })
+            .andWhere('tx.status = :status', { status: TransactionStatus.CONFIRMED })
+            .getRawOne();
+
+        const incomeVal = parseFloat(incoming.total || '0');
+        const outcomeVal = parseFloat(outgoing.total || '0');
+        return (incomeVal - outcomeVal).toFixed(8);
+    }
+
+    async getHistory(address: string, limit: number = 20): Promise<Transaction[]> {
+        return this.txRepository.find({
+            where: [{ sender: address }, { recipient: address }],
+            order: { createdAt: 'DESC' },
+            take: limit
+        });
+    }
+
+    async findByHash(hash: string): Promise<Transaction> {
+        const tx = await this.txRepository.findOneBy({ hash });
+        if (!tx) throw new BadRequestException('Transaction not found');
         return tx;
     }
 
-    async getEpochSummary(epoch_id: string): Promise<any> {
-        const txs = await this.txRepo.find({ where: { epoch_id } });
-        const batches = await this.batchRepo.find({ where: { epoch_id } });
-
-        // Aggregation logic placeholder
-        const totalVolume = txs.reduce((acc, tx) => acc + parseFloat(tx.amount), 0);
-
-        return {
-            epoch_id,
-            transaction_count: txs.length,
-            batch_count: batches.length,
-            total_volume: totalVolume,
-            transactions: txs.map(t => t.tx_id),
-            batches: batches.map(b => b.batch_id)
-        };
+    private calculateHash(tx: Transaction): string {
+        const payload = JSON.stringify({
+            prev: tx.previousHash,
+            h: tx.blockHeight,
+            s: tx.sender,
+            r: tx.recipient,
+            a: tx.amount,
+            n: tx.nonce,
+            sig: tx.signature,
+            ts: new Date().toISOString()
+        });
+        return crypto.createHash('sha256').update(payload).digest('hex');
     }
 }

@@ -2,7 +2,7 @@ import { Entity, PrimaryColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity('epochs')
 export class EpochEntity {
-    @PrimaryColumn()
+    @PrimaryColumn({ type: 'int' })
     epochNumber: number;
 
     @CreateDateColumn()
@@ -14,12 +14,12 @@ export class EpochEntity {
     @Column({ default: 'ACTIVE' })
     status: string;
 
-    @Column({ default: '0' })
+    @Column('decimal', { precision: 18, scale: 8, default: '0' })
     totalFeesCollected: string;
 
-    @Column({ default: '0' })
+    @Column('decimal', { precision: 18, scale: 8, default: '0' })
     totalDistributed: string;
 
-    @Column({ default: '0' })
-    nodeCount: string;
+    @Column('int', { default: 0 })
+    nodeCount: number;
 }

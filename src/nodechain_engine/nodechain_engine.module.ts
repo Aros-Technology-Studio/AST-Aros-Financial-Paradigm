@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { NodeChainService } from './nodechain.service';
 import { ShardingManager } from './sharding.manager';
 import { GossipSimulationService } from './gossip.simulation';
+import { NodeChainController } from './nodechain.controller';
 import { NodeEntity } from './entities/node.entity';
 import { ExecutionSnapshotEntity } from './entities/execution_snapshot.entity';
 

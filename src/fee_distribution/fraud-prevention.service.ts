@@ -1,6 +1,6 @@
 
 import { Injectable, Logger } from '@nestjs/common';
-import { hashData } from '../processing/processing.utils';
+import * as crypto from 'crypto';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 
 export interface TransactionMetadata {
@@ -29,7 +29,7 @@ export class FeeDistributionFraudPreventionService {
      */
     async scanTransaction(tx: TransactionMetadata): Promise<{ isFraud: boolean; reason?: string }> {
         // 1. Replay Attack Check
-        const txHash = hashData(tx.id + tx.from + tx.to + tx.amount + tx.timestamp);
+        const txHash = crypto.createHash('sha256').update(tx.id + tx.from + tx.to + tx.amount + tx.timestamp).digest('hex');
         if (this.processedTxHashes.has(txHash)) {
             this.logger.warn(`Fraud Detected: Replay attack for TX ${tx.id}`);
             return { isFraud: true, reason: 'Replay Detected' };

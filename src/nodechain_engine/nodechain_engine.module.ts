@@ -13,6 +13,7 @@ import { ExecutionSnapshotEntity } from './entities/execution_snapshot.entity';
         TypeOrmModule.forFeature([NodeEntity, ExecutionSnapshotEntity])
     ],
     providers: [NodeChainService, ShardingManager, GossipSimulationService],
+    controllers: [NodeChainController],
     exports: [NodeChainService],
 })
 export class NodeChainEngineModule { }

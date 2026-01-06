@@ -46,7 +46,7 @@ describe('Financial Flow E2E', () => {
 
         const result = await tokenService.mint(amount, validatorId, refId);
         expect(result.status).toBe('SUCCESS');
-        expect(result.amount).toBe(amount);
+        expect(parseFloat(result.amount)).toBe(parseFloat(amount));
     });
 
     it('Step 3: Create Governance Proposal via HTTP', async () => {

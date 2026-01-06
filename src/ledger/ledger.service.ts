@@ -84,6 +84,13 @@ export class LedgerService {
         });
     }
 
+    async getRecentTransactions(limit: number = 50): Promise<Transaction[]> {
+        return this.txRepository.find({
+            order: { createdAt: 'DESC' },
+            take: limit
+        });
+    }
+
     async findByHash(hash: string): Promise<Transaction> {
         const tx = await this.txRepository.findOneBy({ hash });
         if (!tx) throw new BadRequestException('Transaction not found');

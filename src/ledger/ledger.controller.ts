@@ -22,6 +22,11 @@ export class LedgerController {
         return this.ledgerService.getHistory(address, limit || 10);
     }
 
+    @Get('recent')
+    async getRecent(@Query('limit') limit: number) {
+        return this.ledgerService.getRecentTransactions(limit || 20);
+    }
+
     @Get('tx/:hash')
     async getTransaction(@Param('hash') hash: string) {
         return this.ledgerService.findByHash(hash);

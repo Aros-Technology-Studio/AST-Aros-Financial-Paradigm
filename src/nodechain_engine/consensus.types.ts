@@ -9,6 +9,7 @@ export enum NodeType {
     VALIDATOR = 'VALIDATOR',
     OBSERVER = 'OBSERVER',
     SHARD = 'SHARD',
+    MINER = "MINER",
 }
 
 /**

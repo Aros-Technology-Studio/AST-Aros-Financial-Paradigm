@@ -14,6 +14,9 @@ export class ProposalEntity {
     @Column()
     proposerId: string;
 
+    @Column({ nullable: true })
+    hash: string;
+
     @Column({ default: 'draft' })
     status: string;
 

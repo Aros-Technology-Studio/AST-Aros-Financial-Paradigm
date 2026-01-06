@@ -18,6 +18,8 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
     }));
 
+    app.enableCors(); // Enable CORS for Frontend
+
     const port = process.env.PORT || 8080;
     await app.listen(port);
     logger.log(`Application is running on: await app.getUrl()`);

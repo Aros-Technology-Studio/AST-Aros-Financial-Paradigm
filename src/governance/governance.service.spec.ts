@@ -62,7 +62,7 @@ describe('GovernanceService', () => {
 
         it('should throw if user is not a validator', async () => {
             mockNodeChainService.getConnectedNodes.mockResolvedValue([
-                { id: 'USER_1', type: NodeType.MINER }
+                { id: 'USER_1', type: NodeType.OBSERVER }
             ]);
 
             await expect(service.createProposal('Title', 'Desc', 'USER_1'))

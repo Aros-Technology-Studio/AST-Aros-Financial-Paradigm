@@ -1,6 +1,6 @@
 import React from 'react';
 import { Server, CheckCircle, XCircle } from 'lucide-react';
-import { Node } from '../hooks/useData';
+import type { Node } from '../hooks/useData';
 
 export const NodeList: React.FC<{ nodes: Node[] }> = ({ nodes }) => {
     return (

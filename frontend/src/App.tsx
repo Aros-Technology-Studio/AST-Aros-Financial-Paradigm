@@ -1,35 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import { useData } from './hooks/useData';
+import { Navbar } from './components/Navbar';
+import { Overview } from './components/Overview';
+import { NodeList } from './components/NodeList';
+import { LedgerFeed } from './components/LedgerFeed';
+import { GovernancePanel } from './components/GovernancePanel';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [view, setView] = useState('overview');
+  const { nodes, transactions, proposals, stats, loading } = useData();
+
+  if (loading) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
+      INITIALIZING AST SYSTEM...
+    </div>
+  );
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="page-container">
+      <Navbar currentView={view} setView={setView} />
+
+      <main>
+        {view === 'overview' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <Overview stats={stats} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px', marginTop: '10px' }}>
+              <LedgerFeed transactions={transactions.slice(0, 5)} />
+              <div className="glass-panel" style={{ padding: '20px' }}>
+                <h3 style={{ marginTop: 0 }}>Active Validators</h3>
+                <NodeList nodes={nodes.slice(0, 4)} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {view === 'validators' && <NodeList nodes={nodes} />}
+        {view === 'ledger' && <LedgerFeed transactions={transactions} />}
+        {view === 'governance' && <GovernancePanel proposals={proposals} />}
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;

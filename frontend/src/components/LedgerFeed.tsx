@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownLeft, Box } from 'lucide-react';
-import { Transaction } from '../hooks/useData';
+import type { Transaction } from '../hooks/useData';
 
 export const LedgerFeed: React.FC<{ transactions: Transaction[] }> = ({ transactions }) => {
     return (

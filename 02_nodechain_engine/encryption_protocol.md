@@ -74,7 +74,6 @@ sequenceDiagram
 
 ## **🔍 Example: Encrypted Payload Metadata**
 
-```
 {
   "fragments": 3,
   "nodes_used": ["node_314", "node_442", "node_127"],
@@ -86,14 +85,11 @@ sequenceDiagram
   ],
   "final_transaction_hash": "0xf94cd3..."
 }
-```
 
 ---
 
 ## **📁 Repository Location**
 
-```
 ast/
 └── 03_security_layer/
     └── encryption_protocol.md
-```

@@ -19,7 +19,8 @@
     "test": "jest",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
-    "test:e2e": "jest --config ./tests/jest-e2e.json"
+    "test:e2e": "jest --config ./tests/jest-e2e.json",
+    "test:nodechain": "jest tests/unit/nodechain/**/*.spec.ts",
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

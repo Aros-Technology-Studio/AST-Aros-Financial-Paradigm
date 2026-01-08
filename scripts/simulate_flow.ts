@@ -47,14 +47,18 @@ async function bootstrap() {
         await nodeChain.registerNode(validatorId, NodeType.VALIDATOR, '127.0.0.1');
 
         // Grant PROPOSAL_AUTHOR Role (Simulation Only)
-        await roleRepo.save({
+        const savedRole = await roleRepo.save({
             id: `ROLE_${validatorId}_PROPOSAL_AUTHOR`,
             userId: validatorId,
             role: GovernanceRole.PROPOSAL_AUTHOR,
             grantedBy: 'SYSTEM',
             isActive: true
         });
-        logger.log(`    Role PROPOSAL_AUTHOR granted to ${validatorId}`);
+        logger.log(`    Role PROPOSAL_AUTHOR granted to ${validatorId}. ID: ${savedRole.id}`);
+
+        // Verify Role exists
+        const checkRole = await roleRepo.findOne({ where: { userId: validatorId, role: GovernanceRole.PROPOSAL_AUTHOR } });
+        logger.log(`    Role Verification: ${checkRole ? 'FOUND' : 'NOT FOUND'}`);
 
         // Step 2: Fiat Deposit (Mint)
         logger.log('[2] Simulating Fiat Deposit...');

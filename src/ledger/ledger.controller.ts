@@ -1,14 +1,20 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Inject, forwardRef } from '@nestjs/common';
 import { LedgerService } from './ledger.service';
 import { Transaction } from './entities/transaction.entity';
+import { TxQueueService } from '../processing/tx_queue.service';
 
 @Controller('api/v1/ledger')
 export class LedgerController {
-    constructor(private readonly ledgerService: LedgerService) { }
+    constructor(
+        private readonly ledgerService: LedgerService,
+        @Inject(forwardRef(() => TxQueueService))
+        private readonly txQueue: TxQueueService
+    ) { }
 
     @Post('record')
     async recordTransaction(@Body() dto: Partial<Transaction>) {
-        return this.ledgerService.recordTransaction(dto);
+        // High-Load Async Processing
+        return this.txQueue.enqueueTransaction(dto);
     }
 
     @Get('balance/:address')

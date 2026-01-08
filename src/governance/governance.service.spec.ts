@@ -42,7 +42,7 @@ describe('GovernanceService', () => {
                 { provide: getRepositoryToken(ProposalEntity), useValue: mockProposalRepo },
                 { provide: getRepositoryToken(VoteEntity), useValue: mockVoteRepo },
                 { provide: NodeChainService, useValue: mockNodeChainService },
-                { provide: getRepositoryToken(GovernanceRoleEntity), useValue: mockVoteRepo },
+                { provide: getRepositoryToken(GovernanceRoleEntity), useValue: mockRoleRepo },
                 { provide: getRepositoryToken(GovernanceTokenBalanceEntity), useValue: { findOne: jest.fn().mockResolvedValue({ stakedBalance: '100' }) } },
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
@@ -77,7 +77,7 @@ describe('GovernanceService', () => {
                 { id: 'USER_1', type: NodeType.OBSERVER }
             ]);
 
-            mockVoteRepo.findOne.mockResolvedValue(null); // User has no role
+            mockRoleRepo.findOne.mockResolvedValue(null); // User has no role
 
             await expect(service.createProposal('Title', 'Desc', 'USER_1', ProposalImpactLevel.LOW))
                 .rejects.toThrow(BadRequestException);

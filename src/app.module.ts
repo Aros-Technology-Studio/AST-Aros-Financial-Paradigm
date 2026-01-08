@@ -17,6 +17,7 @@ import { ProcessingModule } from './processing/processing.module';
 import { SecurityDepositModule } from './security_deposit/security_deposit.module';
 
 import { ValueCirculationModule } from './value_circulation/value_circulation.module';
+import { IngestionModule } from './integration/ingestion/ingestion.module';
 
 @Module({
     imports: [

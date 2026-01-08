@@ -188,3 +188,5 @@ export class GovernanceService {
         return this.proposalRepo.find({ order: { createdAt: 'DESC' } });
     }
 }
+export { ProposalImpactLevel };
+

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TokenService } from './token.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
@@ -55,6 +56,12 @@ describe('TokenService', () => {
                 { provide: BridgeService, useValue: mockBridgeService },
                 { provide: SmartContractIntegration, useValue: mockSmartContractService },
                 { provide: DataSource, useValue: mockDataSource },
+                {
+                    provide: EventEmitter2,
+                    useValue: {
+                        emit: jest.fn(),
+                    },
+                },
             ],
         }).compile();
 

@@ -59,6 +59,7 @@ describe('GovernanceService', () => {
 
     describe('createProposal', () => {
         it('should create a proposal if user is a validator', async () => {
+            mockRoleRepo.findOne.mockResolvedValue({ isActive: true });
             mockNodeChainService.getConnectedNodes.mockResolvedValue([
                 { id: 'VAL_1', type: NodeType.VALIDATOR }
             ]);

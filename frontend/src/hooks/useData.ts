@@ -25,6 +25,11 @@ export interface Proposal {
     description: string;
     status: string;
     proposerId: string;
+    impactLevel: string;
+    actionType: string;
+    requiredQuorumPercent: number;
+    timelockWindow: number;
+    createdAt: string;
 }
 
 export interface Stats {

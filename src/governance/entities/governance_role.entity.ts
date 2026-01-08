@@ -9,7 +9,7 @@ export enum GovernanceRole {
     OBSERVER = 'OBSERVER'
 }
 
-@Entity('governance_roles')
+@Entity('governance_roles_v2')
 export class GovernanceRoleEntity {
     @PrimaryColumn()
     id: string; // "ROLE_USERID_ROLETYPE" composite key or just uuid? 

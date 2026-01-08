@@ -22,6 +22,7 @@ import { GovernanceService, ProposalImpactLevel } from '../src/governance/govern
 import { IngestionService } from '../src/integration/ingestion/ingestion.service';
 import { NodeType } from '../src/nodechain_engine/consensus.types';
 import { GovernanceRoleEntity, GovernanceRole } from '../src/governance/entities/governance_role.entity';
+import { GovernanceTokenBalanceEntity } from '../src/governance/entities/governance_token_balance.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Logger } from '@nestjs/common';
 
@@ -37,6 +38,7 @@ async function bootstrap() {
     const governance = app.get(GovernanceService);
     const ingestion = app.get(IngestionService);
     const roleRepo = app.get(getRepositoryToken(GovernanceRoleEntity));
+    const tokenBalanceRepo = app.get(getRepositoryToken(GovernanceTokenBalanceEntity));
 
     logger.log('--- STARTING SIMULATION ---');
 
@@ -71,13 +73,48 @@ async function bootstrap() {
         const mintResult = await bridge.handleFiatDepositWebhook(depositPayload, 'super_secret_bb_key_123');
         logger.log(`    Mint Success! TxHash: ${mintResult.txHash}`);
 
+        // Manually Stake Tokens (Simulation Only - Missing Service Method)
+        // Check if balance exists
+        let balanceEntry = await tokenBalanceRepo.findOne({ where: { userId: validatorId } });
+        if (!balanceEntry) {
+            balanceEntry = tokenBalanceRepo.create({
+                userId: validatorId,
+                stakedBalance: '1000', // Stake the full mint amount
+                lockedBalance: '0'
+            });
+        } else {
+            const current = parseFloat(balanceEntry.stakedBalance);
+            balanceEntry.stakedBalance = (current + 1000).toString();
+        }
+        await tokenBalanceRepo.save(balanceEntry);
+        logger.log(`    Staked 1000 AROS for ${validatorId}. Total Stake: ${balanceEntry.stakedBalance}`);
+
         // Step 3: Governance
         logger.log('[3] Governance: Creating Proposal...');
-        const proposal = await governance.createProposal('Increase Fees', 'Raise fees by 1%', validatorId, ProposalImpactLevel.MEDIUM);
-        logger.log(`    Proposal Created: ${proposal.id}`);
+
+        let proposal;
+        // Check for existing active proposal
+        const existingProposals = await governance.getProposals();
+        const active = existingProposals.find(p => p.proposerId === validatorId && p.status === 'ACTIVE');
+
+        if (active) {
+            logger.log(`    Found existing active proposal: ${active.id}. Skipping creation.`);
+            proposal = active;
+        } else {
+            proposal = await governance.createProposal('Increase Fees', 'Raise fees by 1%', validatorId, ProposalImpactLevel.MEDIUM);
+            logger.log(`    Proposal Created: ${proposal.id}`);
+        }
 
         logger.log('[3] Governance: Voting...');
-        await governance.castVote(proposal.id, validatorId, 'YES');
+        try {
+            await governance.castVote(proposal.id, validatorId, 'YES');
+        } catch (e: any) {
+            if (e.message.includes('Already voted')) {
+                logger.log('    Already voted. Skipping vote cast.');
+            } else {
+                throw e;
+            }
+        }
         const tally = await governance.tallyVotes(proposal.id);
         logger.log(`    Vote Tally: Yes=${tally.yes}, No=${tally.no}`);
 
@@ -103,12 +140,19 @@ async function bootstrap() {
 
         // Step 7: Security Slashing (Module 11 + 12)
         logger.log('[7] Simulating Malicious Proposal (AI Defense Test)...');
-        // Create a proposal that triggers the "FRAUD" keyword (assuming AI stub tracks this)
-        // If stub is random, this might be flaky, but let's assume "scam" works or we observe logs.
-        // Actually, our stub active agent returns random scores usually, let's check ActiveAgentService logic later if needed.
-        // But for flow, we create it.
-        const malProposal = await governance.createProposal('Free AROS for everyone', 'This is a scam to print money', validatorId, ProposalImpactLevel.CRITICAL);
-        logger.log(`    Malicious Proposal Created: ${malProposal.id}. Watching for slashing...`);
+
+        // We can only create another proposal if the first one is closed.
+        // For simulation, we'll try, but handle error if limit reached.
+        try {
+            const malProposal = await governance.createProposal('Free AROS for everyone', 'This is a scam to print money', validatorId, ProposalImpactLevel.CRITICAL);
+            logger.log(`    Malicious Proposal Created: ${malProposal.id}. Watching for slashing...`);
+        } catch (e: any) {
+            if (e.message.includes('limit')) {
+                logger.warn('    Skipping Malicious Proposal creation (Active Limit Reached). Malicious test requires clean state.');
+            } else {
+                throw e;
+            }
+        }
 
         // Wait for async events processing
         await new Promise(resolve => setTimeout(resolve, 2000));

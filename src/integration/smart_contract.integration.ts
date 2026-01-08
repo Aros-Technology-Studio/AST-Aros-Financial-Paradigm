@@ -16,6 +16,7 @@ export class SmartContractIntegration implements OnModuleInit {
     private readonly logger = new Logger(SmartContractIntegration.name);
     private contract: ethers.Contract | null = null;
     private wallet: ethers.Wallet | null = null;
+    private nonceTracker: number | null = null;
 
     constructor(
         @InjectRepository(SmartContractEventEntity)
@@ -24,10 +25,10 @@ export class SmartContractIntegration implements OnModuleInit {
     ) { }
 
     async onModuleInit() {
-        this.initializeContract();
+        await this.initializeContract();
     }
 
-    private initializeContract() {
+    private async initializeContract() {
         const rpcUrl = this.configService.get<string>('EVM_RPC_URL');
         const privateKey = this.configService.get<string>('EVM_PRIVATE_KEY');
         const contractAddress = this.configService.get<string>('EVM_CONTRACT_ADDRESS');
@@ -37,7 +38,9 @@ export class SmartContractIntegration implements OnModuleInit {
                 const provider = new ethers.JsonRpcProvider(rpcUrl);
                 this.wallet = new ethers.Wallet(privateKey, provider);
                 this.contract = new ethers.Contract(contractAddress, AROS_COIN_ABI, this.wallet);
-                this.logger.log(`[SmartContract] Connected to External Interface at ${contractAddress}`);
+                // Initialize Nonce Tracker
+                this.nonceTracker = await this.wallet.getNonce('latest'); // Start from latest mined
+                this.logger.log(`[SmartContract] Connected to External Interface at ${contractAddress}. Initial Nonce: ${this.nonceTracker}`);
             } catch (error) {
                 this.logger.error(`[SmartContract] Failed to initialize connection: ${error.message}`);
             }
@@ -91,10 +94,13 @@ export class SmartContractIntegration implements OnModuleInit {
                 this.logger.log(`[SmartContract] Sending ${type} tx for ${refId}...`);
 
                 let tx;
+                const nonce = this.nonceTracker!;
+                this.nonceTracker = nonce + 1; // Increment immediately
+
                 if (type === 'MINT') {
-                    tx = await this.contract.mint(targetAddress, amount, bytes32Hash);
+                    tx = await this.contract.mint(targetAddress, amount, bytes32Hash, { nonce });
                 } else {
-                    tx = await this.contract.burnWithReference(targetAddress, amount, bytes32Hash);
+                    tx = await this.contract.burnWithReference(targetAddress, amount, bytes32Hash, { nonce });
                 }
 
                 await tx.wait();

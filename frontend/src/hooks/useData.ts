@@ -15,7 +15,7 @@ export interface Transaction {
     sender: string;
     recipient: string;
     amount: string;
-    blockHeight: string;
+    ledgerHeight: string;
     createdAt: string;
 }
 

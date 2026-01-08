@@ -16,6 +16,8 @@ import { ProcessingModule } from './processing/processing.module';
 
 import { SecurityDepositModule } from './security_deposit/security_deposit.module';
 
+import { ValueCirculationModule } from './value_circulation/value_circulation.module';
+
 @Module({
     imports: [
         // ... (existing imports)
@@ -58,7 +60,8 @@ import { SecurityDepositModule } from './security_deposit/security_deposit.modul
         SupervisoryModule,
         AiAgentsModule,
         ProcessingModule,
-        SecurityDepositModule
+        SecurityDepositModule,
+        ValueCirculationModule
     ],
 })
 export class AppModule { }

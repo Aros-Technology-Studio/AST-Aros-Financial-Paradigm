@@ -40,14 +40,14 @@ describe('SlashingService', () => {
         proposalRepo.findOne.mockResolvedValue({ id: 'P1', proposerId: 'USER_1' });
 
         // Mock User Balance
-        const mockBalance = { userId: 'USER_1', stakedBalance: '500', reputationScore: 100 };
+        const mockBalance = { userId: 'USER_1', stakedBalance: '500', reputationScore: '100.00' };
         tokenRepo.findOne.mockResolvedValue(mockBalance);
 
         await service.handleFraudSignal(signal);
 
         expect(tokenRepo.save).toHaveBeenCalledWith(expect.objectContaining({
             stakedBalance: '400', // 500 - 100
-            reputationScore: 90 // 100 - 10
+            reputationScore: '90.00' // 100 - 10
         }));
     });
 });

@@ -59,7 +59,9 @@ export class SlashingService {
         balance.stakedBalance = newStake.toFixed(18); // assuming 18 decimals
 
         // Impact Reputation
-        balance.reputationScore = Math.max(0, balance.reputationScore - 10);
+        const currentRep = parseFloat(balance.reputationScore);
+        const newRep = Math.max(0, currentRep - 10);
+        balance.reputationScore = newRep.toFixed(2);
 
         await this.tokenRepo.save(balance);
 

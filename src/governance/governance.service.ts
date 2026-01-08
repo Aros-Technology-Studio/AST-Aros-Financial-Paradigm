@@ -1,5 +1,6 @@
 
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProposalEntity } from './proposal.entity';
@@ -17,6 +18,7 @@ export class GovernanceService {
         @InjectRepository(VoteEntity)
         private readonly voteRepo: Repository<VoteEntity>,
         private readonly nodeChainService: NodeChainService,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
 
     async createProposal(title: string, description: string, proposerId: string): Promise<ProposalEntity> {
@@ -94,7 +96,18 @@ export class GovernanceService {
         });
 
         this.logger.log(`Vote cast for proposal ${proposalId} by ${voterId}: ${choice}`);
-        return this.voteRepo.save(vote);
+        const savedVote = await this.voteRepo.save(vote);
+
+        // Emit event for The All-Seeing Eye
+        const tally = await this.tallyVotes(proposalId);
+        this.eventEmitter.emit('governance.vote.cast', {
+            proposalId,
+            voterId,
+            currentVotes: tally.total,
+            choice
+        });
+
+        return savedVote;
     }
 
     async getProposals(): Promise<ProposalEntity[]> {

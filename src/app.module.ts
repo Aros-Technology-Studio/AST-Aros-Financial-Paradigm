@@ -7,7 +7,8 @@ import { BridgeModule } from './bridge/bridge.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FeeDistributionModule } from './fee_distribution/fee_distribution.module';
 import { GovernanceModule } from './governance/governance.module';
-// Import other existing modules if necessary, but prioritize these two for now
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { SupervisoryModule } from './supervisory/supervisory.module';
 
 @Module({
     imports: [
@@ -36,6 +37,8 @@ import { GovernanceModule } from './governance/governance.module';
         ScheduleModule.forRoot(),
         FeeDistributionModule,
         GovernanceModule,
+        EventEmitterModule.forRoot(),
+        SupervisoryModule,
     ],
 })
 export class AppModule { }

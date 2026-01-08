@@ -1,4 +1,5 @@
 import { Injectable, Logger, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
@@ -21,6 +22,7 @@ export class TokenService {
         @Inject(forwardRef(() => BridgeService))
         private readonly bridgeService: BridgeService,
         private readonly smartContractService: SmartContractIntegration,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
 
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {

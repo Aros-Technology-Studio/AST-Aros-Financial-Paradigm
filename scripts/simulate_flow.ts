@@ -21,6 +21,8 @@ import { FeeDistributionService } from '../src/fee_distribution/fee_distribution
 import { GovernanceService, ProposalImpactLevel } from '../src/governance/governance.service';
 import { IngestionService } from '../src/integration/ingestion/ingestion.service';
 import { NodeType } from '../src/nodechain_engine/consensus.types';
+import { GovernanceRoleEntity, GovernanceRole } from '../src/governance/entities/governance_role.entity';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
@@ -34,6 +36,7 @@ async function bootstrap() {
     const fees = app.get(FeeDistributionService);
     const governance = app.get(GovernanceService);
     const ingestion = app.get(IngestionService);
+    const roleRepo = app.get(getRepositoryToken(GovernanceRoleEntity));
 
     logger.log('--- STARTING SIMULATION ---');
 
@@ -42,6 +45,16 @@ async function bootstrap() {
         logger.log('[1] Registering Validator Node...');
         const validatorId = '123e4567-e89b-12d3-a456-426614174000'; // Valid UUID
         await nodeChain.registerNode(validatorId, NodeType.VALIDATOR, '127.0.0.1');
+
+        // Grant PROPOSAL_AUTHOR Role (Simulation Only)
+        await roleRepo.save({
+            id: `ROLE_${validatorId}_PROPOSAL_AUTHOR`,
+            userId: validatorId,
+            role: GovernanceRole.PROPOSAL_AUTHOR,
+            grantedBy: 'SYSTEM',
+            isActive: true
+        });
+        logger.log(`    Role PROPOSAL_AUTHOR granted to ${validatorId}`);
 
         // Step 2: Fiat Deposit (Mint)
         logger.log('[2] Simulating Fiat Deposit...');

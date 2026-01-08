@@ -24,6 +24,10 @@ const mockVoteRepo = {
     find: jest.fn(),
 };
 
+const mockRoleRepo = {
+    findOne: jest.fn(),
+};
+
 const mockNodeChainService = {
     getConnectedNodes: jest.fn(),
 };
@@ -38,7 +42,7 @@ describe('GovernanceService', () => {
                 { provide: getRepositoryToken(ProposalEntity), useValue: mockProposalRepo },
                 { provide: getRepositoryToken(VoteEntity), useValue: mockVoteRepo },
                 { provide: NodeChainService, useValue: mockNodeChainService },
-                { provide: getRepositoryToken(GovernanceRoleEntity), useValue: { findOne: jest.fn().mockResolvedValue({ isActive: true }) } },
+                { provide: getRepositoryToken(GovernanceRoleEntity), useValue: mockVoteRepo },
                 { provide: getRepositoryToken(GovernanceTokenBalanceEntity), useValue: { findOne: jest.fn().mockResolvedValue({ stakedBalance: '100' }) } },
                 { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
@@ -46,6 +50,7 @@ describe('GovernanceService', () => {
 
         service = module.get<GovernanceService>(GovernanceService);
         jest.clearAllMocks();
+        mockRoleRepo.findOne.mockResolvedValue({ isActive: true }); // Default: Has role
     });
 
     it('should be defined', () => {
@@ -71,7 +76,7 @@ describe('GovernanceService', () => {
                 { id: 'USER_1', type: NodeType.OBSERVER }
             ]);
 
-            mockRoleRepo.findOne.mockResolvedValue(null); // User has no role
+            mockVoteRepo.findOne.mockResolvedValue(null); // User has no role
 
             await expect(service.createProposal('Title', 'Desc', 'USER_1', ProposalImpactLevel.LOW))
                 .rejects.toThrow(BadRequestException);

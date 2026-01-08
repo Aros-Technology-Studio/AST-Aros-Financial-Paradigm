@@ -5,6 +5,9 @@ import { ProposalEntity } from './proposal.entity';
 import { VoteEntity } from './vote.entity';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { NodeType } from '../nodechain_engine/consensus.types';
+import { GovernanceRoleEntity } from './entities/governance_role.entity';
+import { GovernanceTokenBalanceEntity } from './entities/governance_token_balance.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 const mockProposalRepo = {
@@ -35,6 +38,9 @@ describe('GovernanceService', () => {
                 { provide: getRepositoryToken(ProposalEntity), useValue: mockProposalRepo },
                 { provide: getRepositoryToken(VoteEntity), useValue: mockVoteRepo },
                 { provide: NodeChainService, useValue: mockNodeChainService },
+                { provide: getRepositoryToken(GovernanceRoleEntity), useValue: { findOne: jest.fn().mockResolvedValue({ isActive: true }) } },
+                { provide: getRepositoryToken(GovernanceTokenBalanceEntity), useValue: { findOne: jest.fn().mockResolvedValue({ stakedBalance: '100' }) } },
+                { provide: EventEmitter2, useValue: { emit: jest.fn() } },
             ],
         }).compile();
 

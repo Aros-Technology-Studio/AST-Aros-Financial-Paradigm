@@ -4,6 +4,7 @@ import { LedgerService } from './ledger.service';
 import { LedgerController } from './ledger.controller';
 import { Transaction } from './entities/transaction.entity';
 import { EncodingModule } from '../encoding/encoding.module';
+import { ProcessingModule } from '../processing/processing.module';
 
 @Module({
     imports: [

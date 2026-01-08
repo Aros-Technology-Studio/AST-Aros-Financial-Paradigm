@@ -9,6 +9,7 @@ import { FeeDistributionModule } from './fee_distribution/fee_distribution.modul
 import { GovernanceModule } from './governance/governance.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SupervisoryModule } from './supervisory/supervisory.module';
+import { AiAgentsModule } from './ai_agents/ai_agents.module';
 
 @Module({
     imports: [
@@ -39,6 +40,7 @@ import { SupervisoryModule } from './supervisory/supervisory.module';
         GovernanceModule,
         EventEmitterModule.forRoot(),
         SupervisoryModule,
+        AiAgentsModule
     ],
 })
 export class AppModule { }

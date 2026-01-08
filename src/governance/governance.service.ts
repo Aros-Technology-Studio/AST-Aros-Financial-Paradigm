@@ -56,7 +56,11 @@ export class GovernanceService {
             snapshotBatch: Date.now() // Ideally ledger height, using timestamp for prototype ease
         });
 
-        return this.proposalRepo.save(proposal);
+        const savedProposal = await this.proposalRepo.save(proposal);
+
+        this.eventEmitter.emit('governance.proposal.created', savedProposal);
+
+        return savedProposal;
     }
 
     // --- VOTING ---

@@ -46,7 +46,7 @@ describe('SlashingService', () => {
         await service.handleFraudSignal(signal);
 
         expect(tokenRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-            stakedBalance: '400', // 500 - 100
+            stakedBalance: '400.000000000000000000', // 500 - 100
             reputationScore: '90.00' // 100 - 10
         }));
     });

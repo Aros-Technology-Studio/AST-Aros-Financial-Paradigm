@@ -62,7 +62,8 @@ import { IngestionModule } from './integration/ingestion/ingestion.module';
         AiAgentsModule,
         ProcessingModule,
         SecurityDepositModule,
-        ValueCirculationModule
+        ValueCirculationModule,
+        IngestionModule
     ],
 })
 export class AppModule { }

@@ -47,6 +47,14 @@ export class LedgerService {
             await queryRunner.commitTransaction();
 
             this.logger.log(`Transaction recorded at height ${savedTx.ledgerHeight}: ${savedTx.hash}`);
+
+            this.eventEmitter.emit('ledger.transaction.recorded', {
+                hash: savedTx.hash,
+                ledgerHeight: savedTx.ledgerHeight,
+                sender: savedTx.sender,
+                nonce: savedTx.nonce
+            });
+
             return savedTx;
 
         } catch (error) {

@@ -33,6 +33,7 @@
     "cbor-x": "^1.6.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
+    "ethers": "^6.16.0",
     "ioredis": "^5.3.2",
     "js-sha3": "^0.9.3",
     "kafkajs": "^2.2.4",

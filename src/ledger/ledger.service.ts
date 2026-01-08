@@ -25,18 +25,18 @@ export class LedgerService {
                 .createQueryBuilder('tx')
                 .setLock('pessimistic_write')
                 .orderBy('tx.createdAt', 'DESC')
-                .addOrderBy('tx.blockHeight', 'DESC')
+                .addOrderBy('tx.ledgerHeight', 'DESC')
                 .limit(1)
                 .getOne();
 
             const previousHash = lastTx ? lastTx.hash : 'GENESIS_HASH_00000000000000000000000000000000';
-            const currentHeight = lastTx ? BigInt(lastTx.blockHeight) + 1n : 1n;
+            const currentHeight = lastTx ? BigInt(lastTx.ledgerHeight) + 1n : 1n;
 
             const newTx = new Transaction();
             Object.assign(newTx, dto);
 
             newTx.previousHash = previousHash;
-            newTx.blockHeight = currentHeight.toString();
+            newTx.ledgerHeight = currentHeight.toString();
             newTx.status = TransactionStatus.CONFIRMED;
             newTx.finalizedAt = new Date();
             newTx.hash = this.calculateHash(newTx);
@@ -44,7 +44,7 @@ export class LedgerService {
             const savedTx = await queryRunner.manager.save(Transaction, newTx);
             await queryRunner.commitTransaction();
 
-            this.logger.log(`Transaction recorded at height ${savedTx.blockHeight}: ${savedTx.hash}`);
+            this.logger.log(`Transaction recorded at height ${savedTx.ledgerHeight}: ${savedTx.hash}`);
             return savedTx;
 
         } catch (error) {
@@ -100,7 +100,7 @@ export class LedgerService {
     private calculateHash(tx: Transaction): string {
         const payload = JSON.stringify({
             prev: tx.previousHash,
-            h: tx.blockHeight,
+            h: tx.ledgerHeight,
             s: tx.sender,
             r: tx.recipient,
             a: tx.amount,

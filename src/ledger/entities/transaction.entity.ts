@@ -18,7 +18,7 @@ export enum TransactionStatus {
 @Entity('transactions')
 @Index(['hash'], { unique: true })
 @Index(['sender', 'nonce'], { unique: true })
-@Index(['blockHeight'])
+@Index(['ledgerHeight'])
 export class Transaction {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -30,7 +30,7 @@ export class Transaction {
     previousHash: string;
 
     @Column({ type: 'bigint', nullable: false })
-    blockHeight: string;
+    ledgerHeight: string;
 
     @Column({ type: 'enum', enum: TransactionType })
     type: TransactionType;

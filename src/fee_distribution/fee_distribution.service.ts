@@ -172,7 +172,7 @@ export class FeeDistributionService {
                 await this.transactionRepo.save({
                     hash: `REWARD_${epoch.epochNumber}_${nodeId}`, // simplified hash
                     previousHash: 'SYSTEM',
-                    blockHeight: '0',
+                    ledgerHeight: '0',
                     type: TransactionType.VALIDATOR_REWARD,
                     sender: this.FEE_POOL_ADDRESS,
                     recipient: nodeId,

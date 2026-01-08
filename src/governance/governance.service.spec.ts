@@ -71,6 +71,8 @@ describe('GovernanceService', () => {
                 { id: 'USER_1', type: NodeType.OBSERVER }
             ]);
 
+            mockRoleRepo.findOne.mockResolvedValue(null); // User has no role
+
             await expect(service.createProposal('Title', 'Desc', 'USER_1', ProposalImpactLevel.LOW))
                 .rejects.toThrow(BadRequestException);
         });
@@ -85,6 +87,7 @@ describe('GovernanceService', () => {
             mockVoteRepo.findOne.mockResolvedValue(null); // Not voted yet
             mockVoteRepo.create.mockReturnValue({ id: 'VOTE_1', choice: 'YES' });
             mockVoteRepo.save.mockResolvedValue({ id: 'VOTE_1', choice: 'YES' });
+            mockVoteRepo.find.mockResolvedValue([{ weight: 100, choice: 'YES' }]); // For tallyVotes call inside castVote
 
             const result = await service.castVote('PROP_1', 'VAL_1', 'YES');
             expect(result.choice).toBe('YES');

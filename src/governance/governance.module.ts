@@ -10,7 +10,12 @@ import { NodeChainEngineModule } from '../nodechain_engine/nodechain_engine.modu
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([ProposalEntity, VoteEntity]),
+        TypeOrmModule.forFeature([
+            ProposalEntity,
+            VoteEntity,
+            GovernanceRoleEntity,
+            GovernanceTokenBalanceEntity
+        ]),
         NodeChainEngineModule
     ],
     controllers: [GovernanceController],

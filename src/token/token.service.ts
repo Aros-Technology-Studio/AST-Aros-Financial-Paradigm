@@ -50,6 +50,14 @@ export class TokenService {
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
             await queryRunner.commitTransaction();
 
+            // Emit event for The All-Seeing Eye
+            this.eventEmitter.emit('token.mint', {
+                amount: amount,
+                recipient: recipient,
+                refId: referenceId,
+                txHash: tx.hash
+            });
+
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
             await queryRunner.rollbackTransaction();

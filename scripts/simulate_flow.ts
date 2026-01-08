@@ -18,7 +18,8 @@ import { NodeChainService } from '../src/nodechain_engine/nodechain.service';
 import { BridgeService } from '../src/bridge/bridge.service';
 import { TokenService } from '../src/token/token.service';
 import { FeeDistributionService } from '../src/fee_distribution/fee_distribution.service';
-import { GovernanceService } from '../src/governance/governance.service';
+import { GovernanceService, ProposalImpactLevel } from '../src/governance/governance.service';
+import { IngestionService } from '../src/integration/ingestion/ingestion.service';
 import { NodeType } from '../src/nodechain_engine/consensus.types';
 import { Logger } from '@nestjs/common';
 

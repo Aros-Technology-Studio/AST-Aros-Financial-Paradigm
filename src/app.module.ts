@@ -11,11 +11,24 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SupervisoryModule } from './supervisory/supervisory.module';
 import { AiAgentsModule } from './ai_agents/ai_agents.module';
 
+import { BullModule } from '@nestjs/bullmq';
+import { ProcessingModule } from './processing/processing.module';
+
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: '.env',
+        }),
+        BullModule.forRootAsync({
+            imports: [ConfigModule],
+            useFactory: (config: ConfigService) => ({
+                connection: {
+                    host: config.get('REDIS_HOST', 'localhost'),
+                    port: config.get('REDIS_PORT', 6379),
+                },
+            }),
+            inject: [ConfigService]
         }),
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
@@ -40,7 +53,8 @@ import { AiAgentsModule } from './ai_agents/ai_agents.module';
         GovernanceModule,
         EventEmitterModule.forRoot(),
         SupervisoryModule,
-        AiAgentsModule
+        AiAgentsModule,
+        ProcessingModule
     ],
 })
 export class AppModule { }

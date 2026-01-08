@@ -128,7 +128,7 @@ export class NodeChainService implements OnModuleInit {
     }
 
     /**
-     * Submits a vote for a block.
+     * Submits a vote for a snapshot.
      */
     async submitVote(vote: Vote) {
         // Verify voter is a valid validator

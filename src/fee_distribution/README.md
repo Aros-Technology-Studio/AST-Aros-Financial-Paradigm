@@ -1,6 +1,6 @@
 # Fee Distribution Layer (Module 08)
 
-This module handles the distribution of transaction fees to NodeChain validators based on the Proof-of-Transaction (PoT) consensus. Unlike traditional blockchains with inflationary block rewards, AST distributes collected fees to nodes based on their verified work.
+This module handles the distribution of transaction fees to NodeChain validators based on the Proof-of-Transaction (PoT) consensus. Unlike traditional systems with arbitrary rewards, AST distributes collected fees to nodes based on their verified work.
 
 ## Components
 

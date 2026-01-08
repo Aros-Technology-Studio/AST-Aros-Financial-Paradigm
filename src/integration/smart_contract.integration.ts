@@ -9,7 +9,7 @@ import { AROS_COIN_ABI } from './smart_contract.abi';
 
 /**
  * Service to interact with the External Reserve Interface (ArosCoinReserveManager).
- * Uses ethers.js for blockchain communication and persistent storage for local verification.
+ * Uses ethers.js for network communication and persistent storage for local verification.
  */
 @Injectable()
 export class SmartContractIntegration implements OnModuleInit {

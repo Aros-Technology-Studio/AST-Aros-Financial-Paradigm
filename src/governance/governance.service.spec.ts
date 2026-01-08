@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { GovernanceService } from './governance.service';
+import { GovernanceService, ProposalImpactLevel } from './governance.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ProposalEntity } from './proposal.entity';
 import { VoteEntity } from './vote.entity';
@@ -55,7 +55,7 @@ describe('GovernanceService', () => {
             mockProposalRepo.create.mockReturnValue({ id: 'PROP_1' });
             mockProposalRepo.save.mockResolvedValue({ id: 'PROP_1' });
 
-            const result = await service.createProposal('Title', 'Desc', 'VAL_1');
+            const result = await service.createProposal('Title', 'Desc', 'VAL_1', ProposalImpactLevel.LOW);
             expect(result).toEqual({ id: 'PROP_1' });
             expect(mockProposalRepo.save).toHaveBeenCalled();
         });
@@ -65,7 +65,7 @@ describe('GovernanceService', () => {
                 { id: 'USER_1', type: NodeType.OBSERVER }
             ]);
 
-            await expect(service.createProposal('Title', 'Desc', 'USER_1'))
+            await expect(service.createProposal('Title', 'Desc', 'USER_1', ProposalImpactLevel.LOW))
                 .rejects.toThrow(BadRequestException);
         });
     });

@@ -14,8 +14,11 @@ import { AiAgentsModule } from './ai_agents/ai_agents.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ProcessingModule } from './processing/processing.module';
 
+import { SecurityDepositModule } from './security_deposit/security_deposit.module';
+
 @Module({
     imports: [
+        // ... (existing imports)
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: '.env',
@@ -54,7 +57,8 @@ import { ProcessingModule } from './processing/processing.module';
         EventEmitterModule.forRoot(),
         SupervisoryModule,
         AiAgentsModule,
-        ProcessingModule
+        ProcessingModule,
+        SecurityDepositModule
     ],
 })
 export class AppModule { }

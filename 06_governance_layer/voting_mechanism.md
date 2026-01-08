@@ -10,7 +10,7 @@ This document describes the architecture, process, and validation logic of the v
 
 To vote on a proposal, a participant must:
 
-- Hold a non-expired governance token balance at snapshot block
+- Hold a non-expired governance token balance at snapshot
 - Not be flagged by the Compliance Oracle
 - Not have exceeded vote limits (per epoch, if set)
 - Be registered in the Voting Registry
@@ -95,12 +95,12 @@ Once the voting window closes, the system:
 ## 8. Security & Integrity
 
 - Each vote is hashed and stored:
-    
+
     ```solidity
     voteHash = keccak256(abi.encodePacked(user, proposalId, option, timestamp));
     
     ```
-    
+
 - All voting interactions are non-upgradable and audit-compliant
 - No off-chain vote collection is allowed
 - Voting history is exportable and can be verified externally

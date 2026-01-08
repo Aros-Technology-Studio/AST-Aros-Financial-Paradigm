@@ -43,7 +43,7 @@ To use tokens for governance actions (vote, propose, delegate), the user must:
 
 1. Lock them in the `GovernanceSecurity DepositContract`
 2. Maintain eligibility status from Compliance Oracle
-3. Wait for snapshot block to complete before activation
+3. Wait for snapshot to complete before activation
 
 ```solidity
 function stake(uint256 amount) external returns (bool);

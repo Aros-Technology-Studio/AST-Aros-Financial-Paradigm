@@ -37,7 +37,7 @@ Each proposal must follow a defined structure:
 | `impactLevel`      | Declared impact category: `low`, `medium`, `high`, `critical` |
 | `actionType`       | `parameter_change`, `role_assignment`, `fund_allocation`, etc. |
 | `attachedCode`     | Optional smart contract code or configuration JSON          |
-| `timelockWindow`   | Optional delay (in blocks) before execution                  |
+| `timelockWindow`   | Optional delay (in snapshots) before execution              |
 
 Proposals are stored and indexed by `ProposalRegistry`.
 

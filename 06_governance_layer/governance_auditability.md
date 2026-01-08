@@ -21,7 +21,7 @@ Auditability in AST is achieved through:
 | 🧾 Merkle Tree Snapshots   | Periodic state hashing for entire governance DB                        |
 | 🔍 IPFS References         | Optional proposal data stored off-chain with content hash verification |
 | 🕵️ Role Action Tracking    | Every role grant, vote, freeze, or veto has a hashed trace             |
-| ⏱ Timestamp Anchoring     | All actions are time-anchored via UTC block time and block number      |
+| ⏱ Timestamp Anchoring     | All actions are time-anchored via UTC snapshot time and sequence number |
 
 ---
 

@@ -5,6 +5,8 @@ import { Repository, DataSource } from 'typeorm';
 import { Transaction, TransactionStatus, TransactionType } from './entities/transaction.entity';
 import * as crypto from 'crypto';
 
+import { TxEncoderService } from '../encoding/tx_encoder.service';
+
 @Injectable()
 export class LedgerService {
     private readonly logger = new Logger(LedgerService.name);
@@ -14,6 +16,7 @@ export class LedgerService {
         private readonly txRepository: Repository<Transaction>,
         private readonly dataSource: DataSource,
         private readonly eventEmitter: EventEmitter2,
+        private readonly txEncoder: TxEncoderService,
     ) { }
 
     async recordTransaction(dto: Partial<Transaction>): Promise<Transaction> {
@@ -108,16 +111,8 @@ export class LedgerService {
     }
 
     private calculateHash(tx: Transaction): string {
-        const payload = JSON.stringify({
-            prev: tx.previousHash,
-            h: tx.ledgerHeight,
-            s: tx.sender,
-            r: tx.recipient,
-            a: tx.amount,
-            n: tx.nonce,
-            sig: tx.signature,
-            ts: new Date().toISOString()
-        });
-        return crypto.createHash('sha256').update(payload).digest('hex');
+        // Use Module 14: TX Encoding (Binary CBOR)
+        const buffer = this.txEncoder.hashTransaction(tx);
+        return crypto.createHash('sha256').update(buffer).digest('hex');
     }
 }

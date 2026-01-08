@@ -1,4 +1,5 @@
 import { Injectable, InternalServerErrorException, Logger, BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Transaction, TransactionStatus, TransactionType } from './entities/transaction.entity';
@@ -12,6 +13,7 @@ export class LedgerService {
         @InjectRepository(Transaction)
         private readonly txRepository: Repository<Transaction>,
         private readonly dataSource: DataSource,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
 
     async recordTransaction(dto: Partial<Transaction>): Promise<Transaction> {

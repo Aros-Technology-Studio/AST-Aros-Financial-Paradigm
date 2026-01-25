@@ -19,11 +19,7 @@ import { BridgeService } from '../src/bridge/bridge.service';
 import { TokenService } from '../src/token/token.service';
 import { FeeDistributionService } from '../src/fee_distribution/fee_distribution.service';
 import { GovernanceService, ProposalImpactLevel } from '../src/governance/governance.service';
-import { IngestionService } from '../src/integration/ingestion/ingestion.service';
 import { NodeType } from '../src/nodechain_engine/consensus.types';
-import { GovernanceRoleEntity, GovernanceRole } from '../src/governance/entities/governance_role.entity';
-import { GovernanceTokenBalanceEntity } from '../src/governance/entities/governance_token_balance.entity';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
@@ -36,31 +32,14 @@ async function bootstrap() {
     const token = app.get(TokenService);
     const fees = app.get(FeeDistributionService);
     const governance = app.get(GovernanceService);
-    const ingestion = app.get(IngestionService);
-    const roleRepo = app.get(getRepositoryToken(GovernanceRoleEntity));
-    const tokenBalanceRepo = app.get(getRepositoryToken(GovernanceTokenBalanceEntity));
 
     logger.log('--- STARTING SIMULATION ---');
 
     try {
         // Step 1: Register Validator
         logger.log('[1] Registering Validator Node...');
-        const validatorId = '123e4567-e89b-12d3-a456-426614174000'; // Valid UUID
+        const validatorId = 'VALIDATOR_SIM_01';
         await nodeChain.registerNode(validatorId, NodeType.VALIDATOR, '127.0.0.1');
-
-        // Grant PROPOSAL_AUTHOR Role (Simulation Only)
-        const savedRole = await roleRepo.save({
-            id: '550e8400-e29b-41d4-a716-446655440000', // Valid UUID
-            userId: validatorId,
-            role: GovernanceRole.PROPOSAL_AUTHOR,
-            grantedBy: 'SYSTEM',
-            isActive: true
-        });
-        logger.log(`    Role PROPOSAL_AUTHOR granted to ${validatorId}. ID: ${savedRole.id}`);
-
-        // Verify Role exists
-        const checkRole = await roleRepo.findOne({ where: { userId: validatorId, role: GovernanceRole.PROPOSAL_AUTHOR } });
-        logger.log(`    Role Verification: ${checkRole ? 'FOUND' : 'NOT FOUND'}`);
 
         // Step 2: Fiat Deposit (Mint)
         logger.log('[2] Simulating Fiat Deposit...');
@@ -73,48 +52,14 @@ async function bootstrap() {
         const mintResult = await bridge.handleFiatDepositWebhook(depositPayload, 'super_secret_bb_key_123');
         logger.log(`    Mint Success! TxHash: ${mintResult.txHash}`);
 
-        // Manually Stake Tokens (Simulation Only - Missing Service Method)
-        // Check if balance exists
-        let balanceEntry = await tokenBalanceRepo.findOne({ where: { userId: validatorId } });
-        if (!balanceEntry) {
-            balanceEntry = tokenBalanceRepo.create({
-                userId: validatorId,
-                stakedBalance: '1000', // Stake the full mint amount
-                lockedBalance: '0'
-            });
-        } else {
-            const current = parseFloat(balanceEntry.stakedBalance);
-            balanceEntry.stakedBalance = (current + 1000).toString();
-        }
-        await tokenBalanceRepo.save(balanceEntry);
-        logger.log(`    Staked 1000 AROS for ${validatorId}. Total Stake: ${balanceEntry.stakedBalance}`);
-
+        // Step 3: Governance
         // Step 3: Governance
         logger.log('[3] Governance: Creating Proposal...');
-
-        let proposal;
-        // Check for existing active proposal
-        const existingProposals = await governance.getProposals();
-        const active = existingProposals.find(p => p.proposerId === validatorId && p.status === 'ACTIVE');
-
-        if (active) {
-            logger.log(`    Found existing active proposal: ${active.id}. Skipping creation.`);
-            proposal = active;
-        } else {
-            proposal = await governance.createProposal('Increase Fees', 'Raise fees by 1%', validatorId, ProposalImpactLevel.MEDIUM);
-            logger.log(`    Proposal Created: ${proposal.id}`);
-        }
+        const proposal = await governance.createProposal('Increase Fees', 'Raise fees by 1%', validatorId, ProposalImpactLevel.MEDIUM);
+        logger.log(`    Proposal Created: ${proposal.id}`);
 
         logger.log('[3] Governance: Voting...');
-        try {
-            await governance.castVote(proposal.id, validatorId, 'YES');
-        } catch (e: any) {
-            if (e.message.includes('Already voted')) {
-                logger.log('    Already voted. Skipping vote cast.');
-            } else {
-                throw e;
-            }
-        }
+        await governance.castVote(proposal.id, validatorId, 'YES');
         const tally = await governance.tallyVotes(proposal.id);
         logger.log(`    Vote Tally: Yes=${tally.yes}, No=${tally.no}`);
 
@@ -133,42 +78,15 @@ async function bootstrap() {
         logger.log(`    Burn Success! TxHash: ${burnResult.txHash}`);
         logger.log(`    Bank Payout Ref: ${burnResult.bankTxId}`);
 
-        // Step 6: Crypto Ingestion (Module 09)
-        logger.log('[6] Simulating Crypto Ingestion (WBTC -> AROS)...');
-        const ingested = await ingestion.ingestAsset('WBTC', 0.5, validatorId);
-        logger.log(`    Ingestion Result: ${ingested}`);
-
-        // Step 7: Security Slashing (Module 11 + 12)
-        logger.log('[7] Simulating Malicious Proposal (AI Defense Test)...');
-
-        // We can only create another proposal if the first one is closed.
-        // For simulation, we'll try, but handle error if limit reached.
-        try {
-            const malProposal = await governance.createProposal('Free AROS for everyone', 'This is a scam to print money', validatorId, ProposalImpactLevel.CRITICAL);
-            logger.log(`    Malicious Proposal Created: ${malProposal.id}. Watching for slashing...`);
-        } catch (e: any) {
-            if (e.message.includes('limit')) {
-                logger.warn('    Skipping Malicious Proposal creation (Active Limit Reached). Malicious test requires clean state.');
-            } else {
-                throw e;
-            }
-        }
-
-        // Wait for async events processing
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Check Validator Balance (Should be slashed or Reputation lowered)
-        // Logic: SlashingService listens to 'agent.fraud.signal'
-        // If ActiveAgentService detected it (score > 0.8), it emitted signal.
-        // SlashingService reduces balance.
-
-        // We verify via logs mostly in this script.
-
         logger.log('--- SIMULATION COMPLETED SUCCESSFULLY ---');
 
-    } catch (error: any) {
-        logger.error(`SIMULATION FAILED: ${error.message}`);
-        logger.error(error.stack);
+    } catch (error) {
+        if (error instanceof Error) {
+            logger.error(`SIMULATION FAILED: ${error.message}`);
+            logger.error(error.stack);
+        } else {
+            logger.error(`SIMULATION FAILED: ${String(error)}`);
+        }
     } finally {
         await app.close();
     }

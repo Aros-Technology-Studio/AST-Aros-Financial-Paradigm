@@ -53,7 +53,6 @@ async function bootstrap() {
         logger.log(`    Mint Success! TxHash: ${mintResult.txHash}`);
 
         // Step 3: Governance
-        // Step 3: Governance
         logger.log('[3] Governance: Creating Proposal...');
         const proposal = await governance.createProposal('Increase Fees', 'Raise fees by 1%', validatorId, ProposalImpactLevel.MEDIUM);
         logger.log(`    Proposal Created: ${proposal.id}`);

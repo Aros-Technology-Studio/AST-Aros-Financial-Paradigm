@@ -52,8 +52,11 @@ async function bootstrap() {
         const mintResult = await bridge.handleFiatDepositWebhook(depositPayload, 'super_secret_bb_key_123');
         logger.log(`    Mint Success! TxHash: ${mintResult.txHash}`);
 
-        // Step 3: Governance
+        // Step 3: Governance & Price Check
         logger.log('[3] Governance: Creating Proposal...');
+        const priceBefore = (await app.get('TokenomicsService').getCurrentPrice()).toFixed(6);
+        logger.log(`    Current Price BEFORE activity: ${priceBefore}`);
+
         const proposal = await governance.createProposal('Increase Fees', 'Raise fees by 1%', validatorId, ProposalImpactLevel.MEDIUM);
         logger.log(`    Proposal Created: ${proposal.id}`);
 
@@ -64,18 +67,28 @@ async function bootstrap() {
 
         // Step 4: Fee Distribution (Epoch)
         logger.log('[4] Fee Distribution: Triggering Epoch...');
-        // Force epoch cycle. Logic will try to distribute fees if transactions exist. 
-        // Our simulated mint transaction might generate fees if fee logic applies, or we assume zero fees for this test but check that it runs.
         await fees.triggerEpochCycle();
         const currentEpoch = await fees.getCurrentEpoch();
         logger.log(`    New Active Epoch: ${currentEpoch?.epochNumber}`);
 
         // Step 5: Burn (Withdrawal)
+        const priceMid = (await app.get('TokenomicsService').getCurrentPrice()).toFixed(6);
+        logger.log(`    Price MIDDLE check: ${priceMid}`);
+
         logger.log('[5] Simulating Token Burn (Withdrawal)...');
         // Burn 500 tokens from validator
         const burnResult = await token.burn('500', validatorId, 'BANK_DETAILS_ABC');
+
+        const priceFinal = (await app.get('TokenomicsService').getCurrentPrice()).toFixed(6);
         logger.log(`    Burn Success! TxHash: ${burnResult.txHash}`);
         logger.log(`    Bank Payout Ref: ${burnResult.bankTxId}`);
+        logger.log(`    FINAL PRICE: ${priceFinal}`);
+
+        if (parseFloat(priceFinal) > parseFloat(priceBefore)) {
+            logger.log('*** VERIFICATION SUCCESS: Price Appreciated! ***');
+        } else {
+            logger.warn('*** VERIFICATION WARNING: Price did not appreciate. ***');
+        }
 
         logger.log('--- SIMULATION COMPLETED SUCCESSFULLY ---');
 

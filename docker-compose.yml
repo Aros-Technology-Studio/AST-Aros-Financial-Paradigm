@@ -20,6 +20,15 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:alpine
+    container_name: ast-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ast-network
+    restart: always
+
   app:
     build: .
     container_name: ast-node

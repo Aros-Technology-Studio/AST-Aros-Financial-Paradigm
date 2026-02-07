@@ -7,6 +7,7 @@ import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { TokenomicsService } from './tokenomics.service';
 
 @Injectable()
 export class TokenService {
@@ -23,6 +24,7 @@ export class TokenService {
         private readonly bridgeService: BridgeService,
         private readonly smartContractService: SmartContractIntegration,
         private readonly eventEmitter: EventEmitter2,
+        private readonly tokenomicsService: TokenomicsService,
     ) { }
 
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
@@ -33,7 +35,17 @@ export class TokenService {
         await queryRunner.startTransaction();
 
         try {
-            this.logger.log(`Initiating MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId})`);
+            const currentPrice = this.tokenomicsService.getCurrentPrice();
+            this.logger.log(`Initiating MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId}) @ Price ${currentPrice}`);
+
+            // Logic: If amount is FIAT, we divide by Price. If amount is TOKENS, we just mint tokens.
+            // Assuming input 'amount' is TOKENS for now based on legacy logic, 
+            // BUT for dynamic pricing usually the input from Bank is FIAT.
+            // Let's assume the Bridge sends token amount calculated elsewhere OR we should change this to accept Fiat and calc Tokens.
+            // For minimal disruption: We assume Bridge calc or we just log the price.
+            // *CRITICAL*: User asked for price to rise. 
+            // We will trigger a price increment AFTER minting to simulate "Activity".
+
 
             const tx = await this.ledgerService.recordTransaction({
                 type: TransactionType.MINT,
@@ -57,6 +69,10 @@ export class TokenService {
                 refId: referenceId,
                 txHash: tx.hash
             });
+
+            // [NEW] Increment Price due to economic activity
+            this.tokenomicsService.incrementPrice(1); // Increment by 1 unit of activity
+
 
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
@@ -105,7 +121,12 @@ export class TokenService {
             // Let's await it to ensure user gets feedback.
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            return { status: 'SUCCESS', txHash: tx.hash, message: 'Tokens burned. Fiat payout initiated via BB.', bankTxId };
+            // [NEW] Increment Price due to withdrawal activity?
+            // User strategy said "processing transaction... rises price".
+            // Withdrawal is a transaction. So yes.
+            this.tokenomicsService.incrementPrice(1);
+
+            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

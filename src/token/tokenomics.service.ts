@@ -18,6 +18,17 @@ export class TokenomicsService {
      * TE = alpha * TV + beta * U + gamma
      * // Strictly fixed 1:1 asset-backed distribution as per Thesis 3
      */
+    // Dynamic Price State (In-Memory for Prototype, should be DB-persisted)
+    private currentPrice = 1.0;
+
+    // Growth Factor: Price increases by this amount per transaction processed
+    private readonly GROWTH_FACTOR = 0.000001;
+
+    /**
+     * Calculates processing pool based on transaction volume and network load.
+     * TE = alpha * TV + beta * U + gamma
+     * // Strictly fixed 1:1 asset-backed distribution as per Thesis 3
+     */
     calculateProcessingPool(params: Omit<ProcessingParams, 'alpha' | 'beta' | 'gamma'>): number {
         const { transactionVolume, networkUtilization } = params;
         const config = this.processingConfig;
@@ -39,10 +50,20 @@ export class TokenomicsService {
     }
 
     /**
-     * STRICT ENFORCEMENT OF THESIS 3.
-     * The rate is fixed 1:1. Volatility is architecturally impossible.
+     * INCREMENT PRICE LOGIC
+     * Called after every successful transaction batch or significant event.
+     * Simulates "Capital Accumulation" by raising the floor price.
      */
-    getFixedRate(): number {
-        return 1.0;
+    incrementPrice(txCount: number = 1) {
+        const oldPrice = this.currentPrice;
+        this.currentPrice = oldPrice + (this.GROWTH_FACTOR * txCount);
+        this.logger.log(`Dynamic Price Update: ${oldPrice.toFixed(6)} -> ${this.currentPrice.toFixed(6)} (TXs: ${txCount})`);
+    }
+
+    /**
+     * Returns the current dynamic price.
+     */
+    getCurrentPrice(): number {
+        return this.currentPrice;
     }
 }

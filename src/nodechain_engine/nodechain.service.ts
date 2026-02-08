@@ -78,6 +78,8 @@ export class NodeChainService implements OnModuleInit {
             validatorId: 'GENESIS',
             hash: crypto.createHash('sha256').update('GENESIS_SNAPSHOT').digest('hex'),
             votes: [],
+            totalVerifiedVolume: 0,
+            cumulativePotValue: 0,
             status: 'FINALIZED'
         });
 
@@ -114,9 +116,16 @@ export class NodeChainService implements OnModuleInit {
 
         // Logic for voting simulation would go here...
 
+        // [NEW] Calculate Batch Volume
+        // Assuming tasks have an 'amount' or 'value' field. If not, we count count as 1 or 0 for now.
+        // In a real implementation, we'd sum up the 'amount' from the tasks.
+        const batchVolume = snapshot.tasks.reduce((sum, task) => sum + (Number(task.amount) || 0), 0);
+
         // 3. Mark finalized & Persist
         const newEntity = this.snapshotRepo.create({
             ...snapshot,
+            totalVerifiedVolume: batchVolume,
+            cumulativePotValue: Number(lastSnapshot.cumulativePotValue || 0) + batchVolume,
             status: 'FINALIZED'
         });
 

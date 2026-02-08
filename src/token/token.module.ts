@@ -15,7 +15,6 @@ import { PoTEngineModule } from '../proof_of_transaction_engine/pot_engine.modul
         LedgerModule,
         PoTEngineModule,
         forwardRef(() => BridgeModule),
-        forwardRef(() => BridgeModule),
         IntegrationModule
     ],
     controllers: [TokenController],

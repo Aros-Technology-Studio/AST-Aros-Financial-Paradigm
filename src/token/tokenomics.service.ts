@@ -1,10 +1,15 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ProcessingParams } from './tokenomics.interfaces';
+import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
 @Injectable()
 export class TokenomicsService {
     private readonly logger = new Logger(TokenomicsService.name);
+
+    constructor(
+        private readonly processReserve: ProcessReserveLedgerService
+    ) { }
 
     // Default tuning parameters (can be updated by Governance)
     private processingConfig = {
@@ -50,14 +55,27 @@ export class TokenomicsService {
     }
 
     /**
-     * INCREMENT PRICE LOGIC
-     * Called after every successful transaction batch or significant event.
-     * Simulates "Capital Accumulation" by raising the floor price.
+     * UPDATED PRICE LOGIC (ArosCoin Evolution)
+     * Price is no longer arbitrary. It is derived from the Process Reserve.
+     * Price = ReserveValue / Circulation (simplified) OR
+     * Price = Base * ReserveIndex
      */
-    incrementPrice(txCount: number = 1) {
-        const oldPrice = this.currentPrice;
-        this.currentPrice = oldPrice + (this.GROWTH_FACTOR * txCount);
-        this.logger.log(`Dynamic Price Update: ${oldPrice.toFixed(6)} -> ${this.currentPrice.toFixed(6)} (TXs: ${txCount})`);
+    updateInternalValuation() {
+        const reserveState = this.processReserve.getReserveState();
+
+        // Thesis: Price grows as the "Reserve of Processed Work" grows.
+        // We use a logarithmic scale to prevent runaway inflation, ensuring stability.
+        // Base Price (1.0) + (ReserveIndex - 1.0) * Multiplier
+
+        // Example: Index 1.0 -> Price 1.0
+        // Index 1.1 -> Price 1.1 (if Multiplier is 1)
+
+        const newPrice = 1.0 * reserveState.reserveIndex;
+
+        if (newPrice !== this.currentPrice) {
+            this.logger.log(`Dynamic Price Update: ${this.currentPrice.toFixed(6)} -> ${newPrice.toFixed(6)} (Reserve Index: ${reserveState.reserveIndex.toFixed(6)})`);
+            this.currentPrice = newPrice;
+        }
     }
 
     /**

@@ -18,6 +18,7 @@ import { SecurityDepositModule } from './security_deposit/security_deposit.modul
 
 import { ValueCirculationModule } from './value_circulation/value_circulation.module';
 import { IngestionModule } from './integration/ingestion/ingestion.module';
+import { ReleaseDaemonModule } from './supervisory/release_daemon.module';
 
 @Module({
     imports: [
@@ -63,7 +64,8 @@ import { IngestionModule } from './integration/ingestion/ingestion.module';
         ProcessingModule,
         SecurityDepositModule,
         ValueCirculationModule,
-        IngestionModule
+        IngestionModule,
+        ReleaseDaemonModule
     ],
 })
 export class AppModule { }

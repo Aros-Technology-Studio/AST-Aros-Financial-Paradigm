@@ -24,15 +24,22 @@ export class CirculationService {
      * This fulfills the "Value Circulation" monitoring requirement.
      */
     @OnEvent('ledger.transaction.recorded')
-    handleTransaction(payload: any) {
-        // payload: { hash, ledgerHeight, sender, nonce, amount? }
-        // Note: LedgerService emitted payload doesn't strictly include 'amount' in the current emit in Step 1582. 
-        // I might need to update LedgerService to emit amount, or fetch it.
-        // For prototype, let's assume it IS emitted or we just track count.
+    async handleTransaction(payload: any) {
+        // payload: { hash, ledgerHeight, sender, nonce, amount }
+        const amount = parseFloat(payload.amount || '0');
 
         this.circulationStats.txCount24h++;
-        // update basic metrics
-        this.logger.debug(`Circulation Updated: ${this.circulationStats.txCount24h} txs today.`);
+        this.circulationStats.totalVolume24h += amount;
+
+        // Calculate Velocity = Volume / Supply
+        const supplyStats = await this.tokenService.getSupplyStats();
+        const circulatingSupply = supplyStats ? parseFloat(supplyStats.circulatingSupply) : 1; // Avoid div by zero
+
+        if (circulatingSupply > 0) {
+            this.circulationStats.velocityScore = this.circulationStats.totalVolume24h / circulatingSupply;
+        }
+
+        this.logger.debug(`[VelocityTracker] Vol: ${this.circulationStats.totalVolume24h.toFixed(2)} | Velocity: ${this.circulationStats.velocityScore.toFixed(4)} | Supply: ${circulatingSupply}`);
     }
 
     public getCirculationMetrics() {

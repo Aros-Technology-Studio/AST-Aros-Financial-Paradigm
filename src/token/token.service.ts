@@ -8,6 +8,7 @@ import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 import { TokenomicsService } from './tokenomics.service';
+import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
 @Injectable()
 export class TokenService {
@@ -25,6 +26,7 @@ export class TokenService {
         private readonly smartContractService: SmartContractIntegration,
         private readonly eventEmitter: EventEmitter2,
         private readonly tokenomicsService: TokenomicsService,
+        private readonly processReserve: ProcessReserveLedgerService,
     ) { }
 
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
@@ -71,7 +73,10 @@ export class TokenService {
             });
 
             // [NEW] Increment Price due to economic activity
-            this.tokenomicsService.incrementPrice(1); // Increment by 1 unit of activity
+            // REPLACED: this.tokenomicsService.incrementPrice(1);
+            // NOW: Record volume and update based on Reserve
+            this.processReserve.recordTransactionVolume(parseFloat(amount));
+            this.tokenomicsService.updateInternalValuation();
 
 
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
@@ -124,7 +129,8 @@ export class TokenService {
             // [NEW] Increment Price due to withdrawal activity?
             // User strategy said "processing transaction... rises price".
             // Withdrawal is a transaction. So yes.
-            this.tokenomicsService.incrementPrice(1);
+            this.processReserve.recordTransactionVolume(parseFloat(amount));
+            this.tokenomicsService.updateInternalValuation();
 
             return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
         } catch (error) {

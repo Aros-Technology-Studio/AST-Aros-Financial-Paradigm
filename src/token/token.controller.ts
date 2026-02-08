@@ -1,8 +1,10 @@
-import { Controller, Post, Body, Get, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { TokenService } from './token.service';
 
 @Controller('api/v1/token')
 export class TokenController {
+    private readonly logger = new Logger(TokenController.name);
+
     constructor(private readonly tokenService: TokenService) { }
 
     @Post('settlement/clearing')

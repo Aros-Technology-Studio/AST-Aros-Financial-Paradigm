@@ -55,7 +55,8 @@ export class LedgerService {
                 hash: savedTx.hash,
                 ledgerHeight: savedTx.ledgerHeight,
                 sender: savedTx.sender,
-                nonce: savedTx.nonce
+                nonce: savedTx.nonce,
+                amount: savedTx.amount
             });
 
             return savedTx;

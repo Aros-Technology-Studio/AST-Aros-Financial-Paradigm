@@ -1,9 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { TokenService } from '../token/token.service';
 
 @Injectable()
 export class CirculationService {
-    private readonly logger = new Logger(CirculationService.name);
+    private readonly logger = new Logger('ArosCoinVelocityTracker');
+
+    constructor(
+        @Inject(forwardRef(() => TokenService))
+        private readonly tokenService: TokenService
+    ) { }
 
     // In-memory stats for "Velocity of Money" tracking
     private circulationStats = {

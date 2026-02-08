@@ -7,11 +7,14 @@ import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerModule } from '../ledger/ledger.module';
 import { BridgeModule } from '../bridge/bridge.module';
 import { IntegrationModule } from '../integration/integration.module';
+import { PoTEngineModule } from '../proof_of_transaction_engine/pot_engine.module'; // Import PoTEngineModule
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([SupplySnapshot]),
         LedgerModule,
+        PoTEngineModule,
+        forwardRef(() => BridgeModule),
         forwardRef(() => BridgeModule),
         IntegrationModule
     ],

@@ -35,6 +35,8 @@ export class LegalBridgeService {
         // Logic to verify JTT validity against the jurisdiction's registry
         this.logger.debug(`Validating usage of JTT ${jttTokenId} in ${jurisdiction}`);
 
+        // TODO [GAP]: Actual Compliance Oracle integration is missing.
+        // Currently, jurisdiction is structured but not cryptographically validated here.
         // Simulation: always returns true for valid-looking IDs
         if (!jttTokenId) return false;
 

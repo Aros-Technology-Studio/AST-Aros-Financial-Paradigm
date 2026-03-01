@@ -66,6 +66,7 @@ export class AnomalyDetectionService implements OnModuleInit {
                 description: 'Negative nonce detected',
                 hash: payload.hash
             }, 'EXE-102');
+            // TODO [GAP]: No automated rollback guardrail is triggered here. Only passive logging.
         }
     }
 }

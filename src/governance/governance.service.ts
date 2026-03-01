@@ -70,6 +70,7 @@ export class GovernanceService {
         if (proposal.status !== ProposalStatus.ACTIVE) throw new BadRequestException('Proposal is not active');
 
         // 1. RBAC Check: Must be VOTER
+        // TODO [GAP]: GovernanceRoleEntity exists but is not wired to enforce strict RBAC here.
         // (In strict mode, we check logic, but let's assume if you have Tokens you are a VOTER)
         // Check Token Balance
         const balance = await this.tokenRepo.findOne({ where: { userId: voterId } });

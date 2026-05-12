@@ -8,6 +8,7 @@ import { ShardingManager } from './sharding.manager';
 import { GossipSimulationService } from './gossip.simulation';
 import { NodeEntity } from './entities/node.entity';
 import { ExecutionSnapshotEntity } from './entities/execution_snapshot.entity';
+import { QuorumEngine, WeightedVote } from './quorum.engine';
 
 @Injectable()
 export class NodeChainService implements OnModuleInit {
@@ -22,7 +23,8 @@ export class NodeChainService implements OnModuleInit {
         @InjectRepository(ExecutionSnapshotEntity)
         private readonly snapshotRepo: Repository<ExecutionSnapshotEntity>,
         private readonly shardingManager: ShardingManager,
-        private readonly gossipService: GossipSimulationService
+        private readonly gossipService: GossipSimulationService,
+        private readonly quorumEngine: QuorumEngine,
     ) { }
 
     async onModuleInit() {
@@ -32,7 +34,7 @@ export class NodeChainService implements OnModuleInit {
     /**
      * Registers a new node to the network.
      */
-    async registerNode(id: string, type: NodeType, ip: string): Promise<NodeEntity> {
+    async registerNode(id: string, type: NodeType, ip: string, nodeWeight = 1.0): Promise<NodeEntity> {
         const existing = await this.nodeRepo.findOne({ where: { id } });
         if (existing) {
             this.logger.warn(`Node ${id} already registered.`);
@@ -43,13 +45,14 @@ export class NodeChainService implements OnModuleInit {
             id,
             type,
             ip,
+            nodeWeight,
             joinedAt: new Date(),
             isActive: true,
             metrics: { uptime: 100, batchesProposed: 0, batchesValidated: 0, missedVotes: 0 }
         });
 
         await this.nodeRepo.save(newNode);
-        this.logger.log(`Node registered: ${id} (${type})`);
+        this.logger.log(`Node registered: ${id} (${type}) weight=${nodeWeight}`);
         return newNode;
     }
 
@@ -89,13 +92,12 @@ export class NodeChainService implements OnModuleInit {
 
     /**
      * Processes a proposed snapshot from a validator.
-     * Simulates PoT validation and voting.
+     * Performs real BFT quorum validation before finalization.
      */
     async processProposedSnapshot(snapshot: ExecutionSnapshot): Promise<ExecutionSnapshotEntity> {
         this.logger.log(`Processing proposed snapshot #${snapshot.sequenceId} from ${snapshot.validatorId}`);
 
-        // 1. Basic Validation
-        // Fetch last snapshot from DB
+        // 1. Basic chain validation
         const lastSnapshot = await this.snapshotRepo.findOne({
             order: { sequenceId: 'DESC' }
         });
@@ -111,17 +113,76 @@ export class NodeChainService implements OnModuleInit {
             throw new Error('Invalid previous hash');
         }
 
-        // 2. Simulate Voting (Quorum)
-        const validators = await this.nodeRepo.count({ where: { type: NodeType.VALIDATOR, isActive: true } });
+        // 2. Real BFT Quorum evaluation
+        const activeValidators = await this.nodeRepo.find({
+            where: { type: NodeType.VALIDATOR, isActive: true }
+        });
 
-        // Logic for voting simulation would go here...
+        const totalValidatorCount = activeValidators.length;
+        const totalValidatorWeight = activeValidators.reduce(
+            (sum, n) => sum + (Number(n.nodeWeight) || 1),
+            0,
+        );
 
-        // [NEW] Calculate Batch Volume
-        // Assuming tasks have an 'amount' or 'value' field. If not, we count count as 1 or 0 for now.
-        // In a real implementation, we'd sum up the 'amount' from the tasks.
+        // Build node weight lookup for fast access
+        const weightMap = new Map<string, number>(
+            activeValidators.map(n => [n.id, Number(n.nodeWeight) || 1])
+        );
+
+        // Merge votes: in-memory pending votes + votes already in the snapshot
+        const pendingForHash = this.pendingVotes.get(snapshot.hash) ?? [];
+        const allRawVotes: Vote[] = [...snapshot.votes, ...pendingForHash];
+
+        // Deduplicate by voterId (last vote from each node wins)
+        const voteMap = new Map<string, Vote>();
+        for (const v of allRawVotes) {
+            voteMap.set(v.voterId, v);
+        }
+
+        // Build WeightedVote list using authoritative DB weights (not self-reported)
+        const weightedVotes: WeightedVote[] = [];
+        for (const [voterId, vote] of voteMap.entries()) {
+            const weight = weightMap.get(voterId);
+            if (weight !== undefined) {
+                // Only count votes from recognised active validators
+                weightedVotes.push({ voterId, approved: vote.approved, nodeWeight: weight });
+            }
+        }
+
+        const quorumResult = this.quorumEngine.evaluate(
+            weightedVotes,
+            totalValidatorCount,
+            totalValidatorWeight,
+        );
+
+        this.logger.log(
+            `Quorum result for snapshot #${snapshot.sequenceId}: ` +
+            `approved=${quorumResult.approvedCount}/${quorumResult.countThreshold} (count), ` +
+            `weight=${quorumResult.approvedWeight.toFixed(4)}/${quorumResult.weightThreshold.toFixed(4)} (weight), ` +
+            `reached=${quorumResult.reached}`,
+        );
+
+        if (!quorumResult.reached) {
+            const rejected = this.snapshotRepo.create({
+                ...snapshot,
+                totalVerifiedVolume: 0,
+                cumulativePotValue: Number(lastSnapshot.cumulativePotValue || 0),
+                status: 'REJECTED',
+            });
+            await this.snapshotRepo.save(rejected);
+            throw new Error(
+                `Quorum not reached for snapshot #${snapshot.sequenceId}. ` +
+                `Need ${quorumResult.countThreshold} approvals (got ${quorumResult.approvedCount}) ` +
+                `and weight ${quorumResult.weightThreshold.toFixed(4)} (got ${quorumResult.approvedWeight.toFixed(4)}).`,
+            );
+        }
+
+        // Clear consumed pending votes
+        this.pendingVotes.delete(snapshot.hash);
+
+        // 3. Calculate Batch Volume and persist as FINALIZED
         const batchVolume = snapshot.tasks.reduce((sum, task) => sum + (Number(task.amount) || 0), 0);
 
-        // 3. Mark finalized & Persist
         const newEntity = this.snapshotRepo.create({
             ...snapshot,
             totalVerifiedVolume: batchVolume,

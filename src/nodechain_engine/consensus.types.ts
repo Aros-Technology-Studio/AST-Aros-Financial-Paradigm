@@ -21,6 +21,7 @@ export interface Vote {
     signature: string;
     timestamp: number;
     approved: boolean;
+    nodeWeight: number; // Weight of the voting node, used in weighted quorum calculation
 }
 
 /**

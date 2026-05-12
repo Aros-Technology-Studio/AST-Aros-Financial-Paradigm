@@ -4,6 +4,11 @@ on:
     workflows: ["AST CI"]
     types: [completed]
 
+permissions:
+  contents: write
+  issues: write
+  actions: read
+
 jobs:
   auto-fix:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
@@ -43,7 +48,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILED_JOBS: ${{ steps.ci-logs.outputs.failed_jobs }}
         run: |
-          claude --print "
+          claude --dangerously-skip-permissions -p "
           Репозиторий: AST-Aros-Financial-Paradigm
           CI упал в следующих jobs: $FAILED_JOBS
 

@@ -8,6 +8,17 @@ import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 import { DataSource } from 'typeorm';
 import { BadRequestException } from '@nestjs/common';
+import { TokenomicsService } from './tokenomics.service';
+import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
+
+const mockTokenomicsService = {
+    getCurrentPrice: jest.fn().mockReturnValue(1.0),
+    updateInternalValuation: jest.fn(),
+};
+
+const mockProcessReserveService = {
+    recordTransactionVolume: jest.fn(),
+};
 
 const mockSupplyRepo = {
     find: jest.fn(),
@@ -62,6 +73,8 @@ describe('TokenService', () => {
                         emit: jest.fn(),
                     },
                 },
+                { provide: TokenomicsService, useValue: mockTokenomicsService },
+                { provide: ProcessReserveLedgerService, useValue: mockProcessReserveService },
             ],
         }).compile();
 

@@ -7,13 +7,14 @@ import { GossipSimulationService } from './gossip.simulation';
 import { NodeChainController } from './nodechain.controller';
 import { NodeEntity } from './entities/node.entity';
 import { ExecutionSnapshotEntity } from './entities/execution_snapshot.entity';
+import { QuorumEngine } from './quorum.engine';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([NodeEntity, ExecutionSnapshotEntity])
     ],
-    providers: [NodeChainService, ShardingManager, GossipSimulationService],
+    providers: [NodeChainService, ShardingManager, GossipSimulationService, QuorumEngine],
     controllers: [NodeChainController],
-    exports: [NodeChainService],
+    exports: [NodeChainService, QuorumEngine],
 })
 export class NodeChainEngineModule { }

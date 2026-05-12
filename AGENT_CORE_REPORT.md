@@ -1,53 +1,59 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
+**Branch:** `claude/inspiring-cannon-2qKMh`  
 **Date:** 2026-05-12  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+**Task:** Audit ArosCoin emission logic against the canonical model; align all code and documentation
 
 ---
 
 ## 1. Directory Audit
 
-### 01_coin_engine — Status: Documentation only (no source code)
+### 01_coin_engine — Status: Documentation only (NOT deprecated)
 
-| File | Pre-patch content | Action taken |
-|------|------------------|--------------|
-| `coin_emission_model.md` | Described `E = F / N` (fee ÷ nodes) — diverged from canonical 1:1 | **Rewritten** to canonical model |
-| `aro_emission_protocol.md` | `EMISSION_AMOUNT = Σ(load × index × ratio)` — diverged | **Rewritten** to canonical formulas |
-| `payment_distribution.md` | 60/15/15/5/5 multi-actor split — diverged from canonical 75/25 | **Rewritten** to 75/25 |
-| `burn_and_mint_rules.md` | Correct general burn-on-withdrawal policy; no 1:1 mention | Left as-is (non-contradictory) |
-| `README.md` | Architecture overview; no formula conflicts | Left as-is |
+| File | Status | Notes |
+|------|--------|-------|
+| `coin_emission_model.md` | ✅ Canonical | 1:1 emission formula, AFC reserve index, example verified |
+| `aro_emission_protocol.md` | ✅ Canonical | Emission = TX Amount, 75/25 split documented |
+| `payment_distribution.md` | ✅ Canonical | 75% nodes / 25% AFC reserve split confirmed |
+| `burn_and_mint_rules.md` | ✅ Consistent | Burn-on-completion policy, no contradictions |
+| `README.md` | ✅ Consistent | Architecture overview, no formula conflicts |
 
-**Module 01 is NOT deprecated** — it is pure documentation. The canonical source code lives in `src/token/`.
+Module 01 is pure documentation. The canonical source implementation lives in `src/token/`.
 
 ### 10_proof_of_transaction_engine — Status: Documentation only
 
-Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
-Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here.
+Spec files for PoT validation, slashing, signature model, and incentive distribution.  
+Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic in this directory.
 
-### src/token/ — Status: Canonical code confirmed correct
+### src/token/ — Status: ✅ Canonical — code confirmed correct
 
 | File | Verified state |
-|------|---------------|
-| `emission.interfaces.ts` | ✅ Defines `EmissionResult`, `EmissionConfig`, `AfcReserveState` |
-| `emission.service.ts` | ✅ Full canonical 1:1 lifecycle implemented |
-| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved |
-| `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve.getReserveState().reserveIndex`; `updateInternalValuation()` is a deprecated no-op |
+|------|----------------|
+| `emission.interfaces.ts` | ✅ Defines `EmissionResult`, `EmissionConfig`, `AfcReserveState` exactly matching canonical model |
+| `emission.service.ts` | ✅ Full canonical 1:1 lifecycle — mint, fee split 75/25, AFC reserve update, burn |
+| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved for FIAT deposits only |
+| `tokenomics.service.ts` | ✅ `getCurrentPrice()` reads reserve index; `updateInternalValuation()` is deprecated no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
 
-### src/fee_distribution/ — Status: Canonical code confirmed correct
+### src/fee_distribution/ — Status: ✅ Canonical — confirmed correct
 
 | File | Verified state |
-|------|---------------|
-| `fee_distribution.service.ts` → `distributeRewards()` | ✅ Applies 75/25 split: 75% node pool, 25% AFC reserve per epoch |
+|------|----------------|
+| `fee_distribution.service.ts` → `distributeRewards()` | ✅ Canonical 75/25 split applied to epoch-collected fees |
 
-### src/proof_of_transaction_engine/ — Status: Correct, unchanged
+### src/proof_of_transaction_engine/ — Status: ✅ Correct, unchanged
 
 | File | Notes |
 |------|-------|
-| `process_reserve.service.ts` | General process volume ledger; `reserveIndex` via `log1p` — used by legacy tokenomics |
-| `pot.service.ts` | PoT scoring and weight normalization — correct and untouched |
+| `pot.service.ts` | PoT scoring (`S_i = α·|TX_i| + β·F_i − δ·P_i`) and weight normalization — correct |
+| `process_reserve.service.ts` | Legacy logarithmic volume ledger; `reserveIndex` via `log1p` — used only by legacy tokenomics path |
+
+### src/integration/ingestion/ — Status: ⚠️ Stub not wired
+
+| File | Notes |
+|------|-------|
+| `ingestion.service.ts` | `ingestAsset()` has the mint call commented out: `// this.tokenService.mint(senderAddress, mintedAros)` |
 
 ---
 
@@ -55,13 +61,16 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 
 | Rule | Canonical | Code state |
 |------|-----------|------------|
-| Emission = TX Amount | 1:1 | ✅ `emission = transactionAmount` in `EmissionService.calculate()` |
-| Fee = TX Amount × rate | default 0.5% | ✅ `commission = transactionAmount * rate` |
+| Emission = TX Amount | 1:1 | ✅ `emissionAmount = transactionAmount` in `EmissionService.calculate()` |
+| Commission = TX Amount × rate | default 0.5% | ✅ `commission = transactionAmount * 0.005` |
 | Fee split: 75% nodes | Yes | ✅ `nodeShare = commission * 0.75` |
 | Fee split: 25% AFC reserve | Yes | ✅ `afcShare = commission * 0.25` |
-| ARO burn after TX | Yes | ✅ `BURN` ledger record for `emissionAmount` in same atomic TX |
+| ARO burn after TX completion | Yes | ✅ `BURN` ledger record for `emissionAmount` in same atomic QueryRunner |
 | AFC reserve grows → price rises | Yes | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` |
-| Epoch fees also 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` |
+| Epoch fees also split 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` applies same ratios |
+| Net circulating supply change = 0 per TX cycle | Yes | ✅ `SupplySnapshot`: `totalMinted += emission`, `totalBurned += emission`, `circulatingSupply` unchanged |
+
+All rules verified. **No divergence found.** The canonical model is fully implemented.
 
 ---
 
@@ -73,25 +82,27 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 processTransactionEmission(txAmount, recipient, refId, rate?)
   │
   ├─ calculate():
-  │    emissionAmount = txAmount          // 1:1
-  │    commission     = txAmount × rate   // 0.5% default
-  │    nodeShare      = commission × 0.75
-  │    afcShare       = commission × 0.25
+  │    emissionAmount = txAmount              // 1:1 emission
+  │    commission     = txAmount × rate       // 0.5% default
+  │    nodeShare      = commission × 0.75     // 75% → nodes
+  │    afcShare       = commission × 0.25     // 25% → AFC reserve
   │
   ├─ Ledger MINT:            emissionAmount → recipient
-  ├─ Ledger FEE_DISTRIBUTION: nodeShare → SYSTEM_NODE_POOL
-  ├─ Ledger FEE_DISTRIBUTION: afcShare  → SYSTEM_AFC_RESERVE
+  ├─ Ledger FEE_DISTRIBUTION: nodeShare → SYSTEM_NODE_POOL_00000000000000000000
+  ├─ Ledger FEE_DISTRIBUTION: afcShare  → SYSTEM_AFC_RESERVE_000000000000000000
   ├─ updateAfcReserve(afcShare):
-  │    reserveIndex = 1.0 + sqrt(totalReserve) / 10_000
-  └─ Ledger BURN:            emissionAmount → SYSTEM_BURN_VAULT
+  │    totalReserve  += afcShare
+  │    reserveIndex   = 1.0 + sqrt(totalReserve) / 10_000
+  └─ Ledger BURN:            emissionAmount → SYSTEM_BURN_VAULT_00000000000000000000
 ```
 
-All four ledger operations execute atomically within a single `QueryRunner` transaction.
+All four ledger operations execute atomically within a single `QueryRunner` transaction.  
+On any failure the entire TX rolls back — no partial state.
 
 ### System Addresses
 
-| Constant | Address |
-|----------|---------|
+| Constant | Value |
+|----------|-------|
 | `SYSTEM_EMISSION_AUTHORITY` | `SYSTEM_EMISSION_AUTHORITY_00000000000` |
 | `SYSTEM_NODE_POOL` | `SYSTEM_NODE_POOL_00000000000000000000` |
 | `SYSTEM_AFC_RESERVE` | `SYSTEM_AFC_RESERVE_000000000000000000` |
@@ -105,41 +116,43 @@ All four ledger operations execute atomically within a single `QueryRunner` tran
 TX Amount      = 10,000 ARO
 Emission       = 10,000 ARO  (1:1 mint → recipient)
 Commission     = 10,000 × 0.005 = 50 ARO
-  Node pool    = 50 × 0.75  = 37.50 ARO  (split by PoT weight)
-  AFC reserve  = 50 × 0.25  = 12.50 ARO  (locked in reserve)
+  Node pool    = 50 × 0.75  = 37.50 ARO  (split by PoT weight per active node)
+  AFC reserve  = 50 × 0.25  = 12.50 ARO  (locked in reserve contract)
 Burn           = 10,000 ARO  (ARO destroyed after TX completes)
-Net circulating change = 0   (mint and burn cancel out)
+Net circulating change = 0   (mint and burn cancel out in same TX)
 
-After 12.50 AFC accumulated:
-  reserveIndex = 1.0 + sqrt(12.50) / 10_000 = 1.0000353...
-  → every subsequent emission is priced higher
+AFC state after this TX:
+  totalReserve  = 12.50 ARO
+  reserveIndex  = 1.0 + sqrt(12.50) / 10_000 = 1.00003535...
+  → every subsequent emission costs marginally more
 ```
 
 ---
 
-## 5. Invariants
+## 5. Invariants Confirmed
 
-1. `emissionAmount == transactionAmount` (enforced in `calculate()`, throws on violation)
-2. `nodeShare + afcShare == commission` (exact split, no rounding loss beyond float precision)
-3. `totalMinted == totalBurned` per canonical TX cycle in `SupplySnapshot` (net zero supply)
-4. `reserveIndex` is monotonically non-decreasing (only increases, never decreases)
-5. All four ledger steps succeed or all roll back (atomic QueryRunner transaction)
+1. `emissionAmount == transactionAmount` — enforced in `calculate()`, throws `BadRequestException` on `amount <= 0`
+2. `nodeShare + afcShare == commission` — exact split, no rounding gaps beyond float64 precision
+3. `totalMinted == totalBurned` per canonical TX cycle in `SupplySnapshot` — net zero supply
+4. `reserveIndex` is monotonically non-decreasing — only increases via `sqrt(totalReserve) / 10_000`
+5. All four ledger steps succeed or all roll back — guaranteed by single `QueryRunner` atomic transaction
 
 ---
 
-## 6. Documentation Changes Made in This Pass
+## 6. Open Issues (non-blocking)
 
-| File | Change |
-|------|--------|
-| `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas, AFC reserve index, example |
-| `01_coin_engine/aro_emission_protocol.md` | Replaced complex load-index formula with canonical 1:1 + 75/25 + burn flow |
-| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split; added validator weight formula |
+| # | Issue | Severity | Location |
+|---|-------|----------|----------|
+| 1 | `AfcReserveState` is in-memory only — lost on process restart | Medium | `emission.service.ts:34` |
+| 2 | `IngestionService.ingestAsset()` has mint call commented out — not wired to canonical flow | Low | `ingestion.service.ts:27` |
+| 3 | Epoch-level AFC reserve (`FeeDistributionService`) does not call `EmissionService.updateAfcReserve()` — two separate in-memory indexes | Low | `fee_distribution.service.ts:167` |
+| 4 | No dedicated unit tests for `EmissionService.calculate()` — only covered indirectly via `TokenService` mocks | Low | `token.service.spec.ts` |
 
 ---
 
 ## 7. Recommendations
 
-- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
-- **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
-- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
-- **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+- **Persist `AfcReserveState`** — add an `AfcReserveEntity` (or a row in `SystemState`) with a periodic snapshot; restore on startup from latest row.
+- **Wire ingestion pipeline** — replace the commented-out `mint()` call in `IngestionService` with `tokenService.mintForTransaction()` to enforce the canonical flow for crypto ingestion.
+- **Unify AFC reserve tracking** — after `FeeDistributionService` records the epoch AFC reserve contribution, call `EmissionService.updateAfcReserve(afcAmount)` to keep the in-memory `reserveIndex` consistent.
+- **Add unit tests for `EmissionService`** — cover `calculate()` with dust amounts, max rate, and the exact $10,000 reference vector from the canonical spec.

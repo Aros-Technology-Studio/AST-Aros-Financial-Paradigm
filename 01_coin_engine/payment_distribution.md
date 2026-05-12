@@ -2,90 +2,92 @@
 
 ## Purpose
 
-This document outlines how payments (generated from transaction fees and token-related operations) are distributed among actors participating in the decentralized infrastructure of AST.
-
-Payments are distributed to:
-- **Active processing nodes (Validators)**,
-- **Observation/standby nodes**,
-- **System reserves & sustainability pools**,
-- **Optional contributor classes** (AI auditor agents, Watchers, etc.).
+This document outlines how fees (generated from transaction commission) are distributed among actors participating in the decentralized infrastructure of AST under the canonical 75/25 split.
 
 ---
 
 ## 1. Payment Sources
 
-| Source                       | Description                                        |
-|------------------------------|----------------------------------------------------|
-| `txn_processing_fee`         | Fee attached to every transaction (in ARO)         |
-| `mint/burn fee`              | Operational fee from token creation/removal        |
-| `penalty reallocation`       | Tokens confiscated from misbehaving actors         |
-| `governance proposal bounty` | Payments for accepted community proposals           |
+| Source               | Description                                                  |
+|----------------------|--------------------------------------------------------------|
+| `commission`         | Transaction Amount × commission rate (default 0.5%)         |
+| `epoch_fees`         | Aggregate of `tx.fee` fields across all epoch transactions   |
+| `penalty_reallocation` | Tokens confiscated from slashed nodes via governance vote  |
 
 ---
 
-## 2. Distribution Breakdown (Default Policy)
+## 2. Canonical Distribution Split
 
-| Actor Type           | % of Total Payment Pool | Description                             |
-|----------------------|------------------------|-----------------------------------------|
-| Validators (Nodes)   | 60%                    | Equal or weighted by performance        |
-| Observation Nodes    | 15%                    | Standby nodes ready for rotation        |
-| Reserve Pool         | 15%                    | Stored in smart contract for stability  |
-| Governance Agents    | 5%                     | Watchers, AI-auditors, etc.             |
-| Community Bounty     | 5%                     | For community involvement & proposals   |
+| Recipient             | % of Commission/Fees | Address                                   |
+|-----------------------|---------------------|-------------------------------------------|
+| **Node Pool**         | **75%**             | `SYSTEM_NODE_POOL_00000000000000000000`   |
+| **AFC Reserve**       | **25%**             | `SYSTEM_AFC_RESERVE_000000000000000000`   |
 
-All percentages are configurable via Governance Voting Module (GVM).
+The node pool is then sub-distributed to individual validators by PoT-normalized weight (see §3).
 
----
-
-## 3. Validator-Level Distribution
-
-Each **active validator node** receives payment based on:
-- Verified uptime,
-- Processing accuracy rate,
-- Stake weight (optional hybrid mode).
-
-### Formula (example):
-
-payment_per_node = (txn_fees * 60%) * node_weight
-
-Where `node_weight` is determined by:
-
-node_weight = (uptime_score * trust_factor) / total_node_scores
+> **Historical note**: Earlier documentation showed a 60/15/15/5/5 multi-actor split. The canonical protocol adopted by PR #72 consolidates this into the 75/25 model. Governance bounties and ecosystem grants are funded separately from the AFC reserve, not from the per-TX commission split.
 
 ---
 
-## 4. Reserve Pool Logic
+## 3. Validator-Level Distribution (Node Pool)
 
-- Funds stored in `ReserveSmartVault`.
+Each active validator node receives a share of the **75% node pool** proportional to its PoT weight:
+
+```
+payment_per_node = nodePool × node_weight
+
+node_weight = potScore(node) / Σ potScore(all_nodes)
+
+potScore = f(txCount, validations, penaltyScore)
+```
+
+PoT weight is normalized so that `Σ node_weight = 1.0` across all active nodes.
+
+---
+
+## 4. AFC Reserve Logic
+
+- Funds accumulate in `SYSTEM_AFC_RESERVE_000000000000000000`.
+- Drive the emission price index: `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000`.
 - Used for:
+  - Ecosystem grants (via governance vote),
   - Emergency compensation (slashing fallback),
-  - Ecosystem grants,
   - Node bootstrap funding.
 
 ---
 
-## 5. Anti-Abuse Checks
+## 5. Epoch-Level vs. Per-Transaction Distribution
 
-| Threat                     | Defense Mechanism                         |
-|----------------------------|-------------------------------------------|
-| Payment spamming            | Minimum work unit requirement             |
-| Validator cartelization    | Max cap per validator (adjustable)        |
-| Fake observation nodes     | Continuous heartbeat + rotation mechanism |
-| Proposal self-funding loop | Hard quorum threshold + 3rd-party audit   |
+| Trigger              | Split Applied | Implementation                          |
+|----------------------|---------------|-----------------------------------------|
+| Per canonical TX     | 75/25         | `EmissionService.processTransactionEmission()` |
+| Per epoch finalization | 75/25       | `FeeDistributionService.distributeRewards()`   |
+
+Both layers apply the same canonical ratios.
 
 ---
 
-## 6. Governance Hooks
+## 6. Anti-Abuse Checks
+
+| Threat                      | Defense Mechanism                          |
+|-----------------------------|--------------------------------------------|
+| Payment spamming            | Minimum work unit requirement              |
+| Validator cartelization     | Max cap per validator (adjustable via gov) |
+| Fake observation nodes      | Continuous heartbeat + rotation mechanism  |
+| Self-funded governance loop | Hard quorum threshold + 3rd-party audit    |
+
+---
+
+## 7. Governance Hooks
 
 - **The All-Seeing Eye** tracks distribution anomalies.
-- Distribution ratios can be adjusted via periodic votes (GVM).
+- Commission rate adjustable via periodic governance votes (GVM), within protocol-defined bounds.
 - Emergency override allows payment freezing in attack cases.
 
 ---
 
-## 7. Summary
+## 8. Summary
 
-This model ensures that participation in AST’s infrastructure is **fairly incentivized, performance-oriented, and protected from manipulation**. Flexibility via governance allows long-term adaptability while securing critical economic equilibrium.
-
+The canonical 75/25 split ensures that node operators are fairly compensated (75%) while the AFC reserve steadily accumulates value (25%), backing the rising emission price index and long-term ecosystem sustainability.
 
 ⸻

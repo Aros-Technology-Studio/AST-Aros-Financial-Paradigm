@@ -1,5 +1,5 @@
 
-import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ProcessingParams } from './tokenomics.interfaces';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 

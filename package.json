@@ -19,7 +19,11 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:e2e": "jest --config ./tests/jest-e2e.json",
-    "test:nodechain": "jest tests/unit/nodechain/**/*.spec.ts"
+    "test:nodechain": "jest tests/unit/nodechain/**/*.spec.ts",
+    "fix:ci": "ts-node scripts/fix-ci.ts",
+    "fix:ci:dry": "ts-node scripts/fix-ci.ts --dry-run",
+    "audit:full": "ts-node scripts/nightly-audit.ts",
+    "agents:status": "ts-node scripts/agents-status.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.4",

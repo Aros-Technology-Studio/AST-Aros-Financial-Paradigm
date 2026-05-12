@@ -1,0 +1,367 @@
+name: Nightly Full Audit
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # every day at 00:00 UTC
+  workflow_dispatch:        # allow manual trigger
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+jobs:
+  full-audit:
+    runs-on: ubuntu-latest
+    env:
+      REPORT_FILE: NIGHTLY_AUDIT_REPORT.md
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "AST Nightly Audit Bot"
+          git config user.email "audit@aros-paradigm.io"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ─── 1. TODO / STUB / MOCK scan ──────────────────────────────────────
+      - name: Scan for TODO, stubs, mock comments
+        id: todo_scan
+        run: |
+          echo "Scanning all 14 modules for TODOs, stubs, mocks..."
+
+          MODULES=(
+            "01_coin_engine"
+            "02_nodechain_engine"
+            "03_token_management_layer"
+            "04_aros_value_circulation"
+            "05_bridge_layer"
+            "06_governance_layer"
+            "07_processing_layer"
+            "08_fee_distribution"
+            "09_crypto_ingestion_pipeline"
+            "10_proof_of_transaction_engine"
+            "11_node_security_and_payments"
+            "12_nodechain_ai_agents"
+            "13_extra_supervisory_layer"
+            "14_decentralized_tx_encoding"
+            "src"
+          )
+
+          TODO_COUNT=0
+          STUB_COUNT=0
+          MOCK_COUNT=0
+          TODO_DETAILS=""
+
+          for MOD in "${MODULES[@]}"; do
+            if [ -d "$MOD" ]; then
+              T=$(grep -rn "TODO\|FIXME\|HACK\|XXX" "$MOD" --include="*.ts" --include="*.js" 2>/dev/null | wc -l)
+              S=$(grep -rn "stub\|placeholder\|not implemented\|NOT_IMPLEMENTED" "$MOD" --include="*.ts" --include="*.js" -i 2>/dev/null | wc -l)
+              M=$(grep -rn "mock\|fake\|dummy" "$MOD" --include="*.ts" --include="*.js" -i 2>/dev/null | grep -v "jest\|spec\|test\|Mock(" | wc -l)
+
+              TODO_COUNT=$((TODO_COUNT + T))
+              STUB_COUNT=$((STUB_COUNT + S))
+              MOCK_COUNT=$((MOCK_COUNT + M))
+
+              TODO_DETAILS="${TODO_DETAILS}\n| ${MOD} | ${T} | ${S} | ${M} |"
+            fi
+          done
+
+          echo "TODO_COUNT=$TODO_COUNT" >> $GITHUB_ENV
+          echo "STUB_COUNT=$STUB_COUNT" >> $GITHUB_ENV
+          echo "MOCK_COUNT=$MOCK_COUNT" >> $GITHUB_ENV
+          printf "%b" "$TODO_DETAILS" > todo_details.txt
+
+          CRITICAL=$((TODO_COUNT > 20 || STUB_COUNT > 5 || MOCK_COUNT > 10))
+          echo "TODO_CRITICAL=$CRITICAL" >> $GITHUB_ENV
+          echo "todo_count=$TODO_COUNT" >> $GITHUB_OUTPUT
+          echo "stub_count=$STUB_COUNT" >> $GITHUB_OUTPUT
+
+      # ─── 2. Full test suite ──────────────────────────────────────────────
+      - name: Run full test suite
+        id: tests
+        run: |
+          npm test 2>&1 | tee test_output.txt || true
+
+          PASS=$(grep -c "✓\|PASS\|passed" test_output.txt 2>/dev/null || echo 0)
+          FAIL=$(grep -c "✗\|FAIL\|failed" test_output.txt 2>/dev/null || echo 0)
+          SUITES=$(grep -c "PASS\|FAIL" test_output.txt 2>/dev/null || echo 0)
+
+          echo "TEST_PASS=$PASS" >> $GITHUB_ENV
+          echo "TEST_FAIL=$FAIL" >> $GITHUB_ENV
+          echo "TEST_SUITES=$SUITES" >> $GITHUB_ENV
+          echo "test_fail=$FAIL" >> $GITHUB_OUTPUT
+
+          [ "$FAIL" -gt 0 ] && echo "TESTS_CRITICAL=1" >> $GITHUB_ENV || echo "TESTS_CRITICAL=0" >> $GITHUB_ENV
+
+      # ─── 3. TypeScript type check ────────────────────────────────────────
+      - name: TypeScript type check
+        id: typescript
+        run: |
+          npx tsc --noEmit 2>&1 | tee tsc_output.txt || true
+          TSC_ERRORS=$(grep -c "error TS" tsc_output.txt 2>/dev/null || echo 0)
+          echo "TSC_ERRORS=$TSC_ERRORS" >> $GITHUB_ENV
+          echo "tsc_errors=$TSC_ERRORS" >> $GITHUB_OUTPUT
+          [ "$TSC_ERRORS" -gt 0 ] && echo "TSC_CRITICAL=1" >> $GITHUB_ENV || echo "TSC_CRITICAL=0" >> $GITHUB_ENV
+
+      # ─── 4. Security audit ───────────────────────────────────────────────
+      - name: npm security audit
+        id: security
+        run: |
+          npm audit --json > npm_audit.json 2>/dev/null || true
+          npm audit 2>&1 | tee npm_audit_text.txt || true
+
+          CRITICAL_VULNS=$(cat npm_audit.json | node -e "
+            let d=''; process.stdin.on('data',c=>d+=c);
+            process.stdin.on('end',()=>{
+              try{
+                const r=JSON.parse(d);
+                console.log(r.metadata?.vulnerabilities?.critical || 0);
+              }catch(e){console.log(0);}
+            });
+          " 2>/dev/null || echo 0)
+
+          HIGH_VULNS=$(cat npm_audit.json | node -e "
+            let d=''; process.stdin.on('data',c=>d+=c);
+            process.stdin.on('end',()=>{
+              try{
+                const r=JSON.parse(d);
+                console.log(r.metadata?.vulnerabilities?.high || 0);
+              }catch(e){console.log(0);}
+            });
+          " 2>/dev/null || echo 0)
+
+          echo "SEC_CRITICAL=$CRITICAL_VULNS" >> $GITHUB_ENV
+          echo "SEC_HIGH=$HIGH_VULNS" >> $GITHUB_ENV
+          echo "sec_critical=$CRITICAL_VULNS" >> $GITHUB_OUTPUT
+          [ "$CRITICAL_VULNS" -gt 0 ] && echo "SEC_IS_CRITICAL=1" >> $GITHUB_ENV || echo "SEC_IS_CRITICAL=0" >> $GITHUB_ENV
+
+      # ─── 5. Module coverage check ────────────────────────────────────────
+      - name: Check module completeness (14 modules)
+        id: modules
+        run: |
+          EXPECTED_MODULES=(
+            "01_coin_engine"
+            "02_nodechain_engine"
+            "03_token_management_layer"
+            "04_aros_value_circulation"
+            "05_bridge_layer"
+            "06_governance_layer"
+            "07_processing_layer"
+            "08_fee_distribution"
+            "09_crypto_ingestion_pipeline"
+            "10_proof_of_transaction_engine"
+            "11_node_security_and_payments"
+            "12_nodechain_ai_agents"
+            "13_extra_supervisory_layer"
+            "14_decentralized_tx_encoding"
+          )
+
+          MISSING=""
+          PRESENT=0
+          for M in "${EXPECTED_MODULES[@]}"; do
+            if [ -d "$M" ]; then
+              PRESENT=$((PRESENT + 1))
+            else
+              MISSING="${MISSING} ${M}"
+            fi
+          done
+
+          echo "MODULES_PRESENT=$PRESENT" >> $GITHUB_ENV
+          echo "MODULES_MISSING=$MISSING" >> $GITHUB_ENV
+          echo "modules_present=$PRESENT" >> $GITHUB_OUTPUT
+
+      # ─── 6. Generate report ──────────────────────────────────────────────
+      - name: Generate NIGHTLY_AUDIT_REPORT.md
+        run: |
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          COMMIT=$(git rev-parse --short HEAD)
+
+          # Determine overall health
+          CRITICAL_TOTAL=$((TSC_CRITICAL + TESTS_CRITICAL + SEC_IS_CRITICAL + TODO_CRITICAL))
+          if [ "$CRITICAL_TOTAL" -eq 0 ]; then
+            HEALTH="✅ HEALTHY"
+            BADGE_COLOR="green"
+          elif [ "$CRITICAL_TOTAL" -le 1 ]; then
+            HEALTH="⚠️ WARNING"
+            BADGE_COLOR="yellow"
+          else
+            HEALTH="❌ CRITICAL"
+            BADGE_COLOR="red"
+          fi
+
+          cat > $REPORT_FILE << REPORT_EOF
+          # Nightly Audit Report — AST-Aros-Financial-Paradigm
+
+          **Date:** ${DATE}
+          **Commit:** \`${COMMIT}\`
+          **Overall Health:** ${HEALTH}
+          **Critical Issues:** ${CRITICAL_TOTAL}
+
+          ---
+
+          ## Module Coverage
+
+          | Metric | Value |
+          |--------|-------|
+          | Modules present | **${MODULES_PRESENT} / 14** |
+          | Missing modules | ${MODULES_MISSING:- none} |
+
+          ---
+
+          ## Code Quality
+
+          ### TODO / Stub / Mock Scan (production code)
+
+          | Module | TODOs | Stubs | Mocks |
+          |--------|-------|-------|-------|
+          $(cat todo_details.txt 2>/dev/null || echo '| N/A | - | - | - |')
+
+          **Totals:** TODOs: **${TODO_COUNT}** | Stubs: **${STUB_COUNT}** | Production mocks: **${MOCK_COUNT}**
+
+          Status: $([ "$TODO_CRITICAL" -eq 1 ] && echo "⚠️ Above threshold — review recommended" || echo "✅ Within acceptable limits")
+
+          ---
+
+          ## Test Suite
+
+          | Metric | Value |
+          |--------|-------|
+          | Test suites | ${TEST_SUITES} |
+          | Tests passed | ✅ ${TEST_PASS} |
+          | Tests failed | $([ "$TEST_FAIL" -gt 0 ] && echo "❌ ${TEST_FAIL}" || echo "✅ 0") |
+
+          <details>
+          <summary>Test output (last 50 lines)</summary>
+
+          \`\`\`
+          $(tail -50 test_output.txt 2>/dev/null || echo 'No output')
+          \`\`\`
+          </details>
+
+          ---
+
+          ## TypeScript
+
+          | Metric | Value |
+          |--------|-------|
+          | Type errors | $([ "$TSC_ERRORS" -gt 0 ] && echo "❌ ${TSC_ERRORS}" || echo "✅ 0") |
+
+          <details>
+          <summary>TypeScript errors</summary>
+
+          \`\`\`
+          $(cat tsc_output.txt 2>/dev/null | head -40 || echo 'No errors')
+          \`\`\`
+          </details>
+
+          ---
+
+          ## Security
+
+          | Severity | Count |
+          |----------|-------|
+          | Critical | $([ "$SEC_CRITICAL" -gt 0 ] && echo "🔴 ${SEC_CRITICAL}" || echo "✅ 0") |
+          | High | $([ "$SEC_HIGH" -gt 0 ] && echo "🟠 ${SEC_HIGH}" || echo "✅ 0") |
+
+          <details>
+          <summary>npm audit output</summary>
+
+          \`\`\`
+          $(cat npm_audit_text.txt 2>/dev/null | tail -30 || echo 'No audit output')
+          \`\`\`
+          </details>
+
+          ---
+
+          ## Summary
+
+          $([ "$CRITICAL_TOTAL" -eq 0 ] && echo "All systems nominal. No critical issues found." || echo "**Action required:** ${CRITICAL_TOTAL} critical area(s) need attention.")
+
+          $([ "$TEST_FAIL" -gt 0 ] && echo "- ❌ Fix ${TEST_FAIL} failing test(s)" || echo "")
+          $([ "$TSC_ERRORS" -gt 0 ] && echo "- ❌ Fix ${TSC_ERRORS} TypeScript error(s)" || echo "")
+          $([ "$SEC_CRITICAL" -gt 0 ] && echo "- 🔴 Address ${SEC_CRITICAL} critical security vulnerability(ies)" || echo "")
+          $([ "$TODO_COUNT" -gt 20 ] && echo "- ⚠️ ${TODO_COUNT} TODOs in production code — consider triaging" || echo "")
+
+          ---
+          *Auto-generated by Nightly Audit workflow · $(date -u '+%Y-%m-%d')*
+          REPORT_EOF
+
+          echo "Report generated:"
+          head -20 $REPORT_FILE
+
+      - name: Commit audit report
+        run: |
+          git add $REPORT_FILE
+          if git diff --staged --quiet; then
+            echo "Report unchanged."
+          else
+            git commit -m "chore: nightly audit report $(date -u '+%Y-%m-%d')
+
+            Tests: ${TEST_PASS} passed / ${TEST_FAIL} failed
+            TypeScript: ${TSC_ERRORS} errors
+            Security: ${SEC_CRITICAL} critical / ${SEC_HIGH} high
+            TODOs: ${TODO_COUNT}"
+            git push origin HEAD:main || git push origin HEAD:main
+          fi
+
+      - name: Create issue for critical findings
+        if: ${{ env.CRITICAL_TOTAL != '0' || env.TESTS_CRITICAL == '1' || env.TSC_CRITICAL == '1' || env.SEC_IS_CRITICAL == '1' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CRITICAL_TOTAL: ${{ env.CRITICAL_TOTAL }}
+        run: |
+          DATE=$(date -u '+%Y-%m-%d')
+          COMMIT=$(git rev-parse --short HEAD)
+
+          ISSUE_BODY="## Nightly Audit — Critical Findings
+
+          **Date:** ${DATE}
+          **Commit:** \`${COMMIT}\`
+
+          ### Issues Found
+
+          | Area | Status |
+          |------|--------|
+          | Tests | $([ "$TESTS_CRITICAL" -eq 1 ] && echo "❌ ${TEST_FAIL} failing" || echo "✅ OK") |
+          | TypeScript | $([ "$TSC_CRITICAL" -eq 1 ] && echo "❌ ${TSC_ERRORS} errors" || echo "✅ OK") |
+          | Security | $([ "$SEC_IS_CRITICAL" -eq 1 ] && echo "🔴 ${SEC_CRITICAL} critical CVEs" || echo "✅ OK") |
+          | Code Quality | $([ "$TODO_CRITICAL" -eq 1 ] && echo "⚠️ Excessive TODOs/stubs" || echo "✅ OK") |
+
+          See full report: \`NIGHTLY_AUDIT_REPORT.md\`
+
+          ---
+          *Auto-generated by Nightly Audit — requires attention*"
+
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "Nightly Audit Alert: critical issues found on ${DATE}" \
+            --body "$ISSUE_BODY" \
+            --label "audit,needs-human,auto-generated" \
+            || echo "Issue creation failed (labels may not exist). Report is in NIGHTLY_AUDIT_REPORT.md"
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-audit-${{ github.run_number }}
+          path: |
+            NIGHTLY_AUDIT_REPORT.md
+            test_output.txt
+            tsc_output.txt
+            npm_audit.json
+            npm_audit_text.txt
+          retention-days: 30

@@ -5,7 +5,14 @@ import { NodeEntity } from './entities/node.entity';
 import { ExecutionSnapshotEntity } from './entities/execution_snapshot.entity';
 import { ShardingManager } from './sharding.manager';
 import { GossipSimulationService } from './gossip.simulation';
+import { QuorumEngine } from './quorum.engine';
 import { NodeType } from './consensus.types';
+
+const mockQuorumEngine = {
+    evaluate: jest.fn().mockReturnValue({ reached: true, approvedCount: 1, countThreshold: 1, approvedWeight: 1.0, weightThreshold: 0.67 }),
+    computeCountThreshold: jest.fn().mockReturnValue(1),
+    computeWeightThreshold: jest.fn().mockReturnValue(0.67),
+};
 
 const mockNodeRepo = {
     create: jest.fn(),
@@ -36,6 +43,7 @@ describe('NodeChainService', () => {
                 { provide: getRepositoryToken(ExecutionSnapshotEntity), useValue: mockSnapshotRepo },
                 { provide: ShardingManager, useValue: mockShardingManager },
                 { provide: GossipSimulationService, useValue: mockGossipService },
+                { provide: QuorumEngine, useValue: mockQuorumEngine },
             ],
         }).compile();
 

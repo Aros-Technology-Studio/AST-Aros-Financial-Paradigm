@@ -87,10 +87,14 @@ describe('NodeChainService', () => {
                 previousSnapshotHash: 'GENESIS_HASH',
                 validatorId: 'VAL_1',
                 tasks: [],
-                hash: 'NEW_HASH'
+                hash: 'NEW_HASH',
+                votes: [{ voterId: 'VAL_1', approved: true }],
             };
 
-            mockNodeRepo.count.mockResolvedValue(1); // 1 validator
+            // nodeRepo.find() returns active validators for BFT quorum check
+            mockNodeRepo.find.mockResolvedValue([
+                { id: 'VAL_1', nodeWeight: 1.0, type: NodeType.VALIDATOR, isActive: true },
+            ]);
             mockSnapshotRepo.create.mockReturnValue({ ...proposedSnapshot, status: 'FINALIZED' });
             mockSnapshotRepo.save.mockResolvedValue({ ...proposedSnapshot, status: 'FINALIZED' });
 

@@ -165,3 +165,38 @@ AFC reserve grows by 12.50 →
 - Wire `mintForTransaction()` into the bridge/ingestion pipeline to replace `mint()` for all new transactions
 - Update `payment_distribution.md` and `coin_emission_model.md` in `01_coin_engine/` to reflect canonical 75/25 split
 - Add unit tests for `EmissionService.calculate()` covering edge cases (dust amounts, high rates)
+
+---
+
+## 8. Verification Pass — Branch `claude/inspiring-cannon-X9ywE` (2026-05-12)
+
+Second audit pass confirming canonical implementation is intact and closing remaining gaps.
+
+### Code audit result: CONFIRMED CANONICAL
+
+| Component | File | Status |
+|-----------|------|--------|
+| EmissionService | `src/token/emission.service.ts` | ✅ Canonical — 1:1 mint, 75/25 split, burn on completion, AFC index |
+| EmissionResult interface | `src/token/emission.interfaces.ts` | ✅ Correct |
+| TokenService (canonical entry) | `src/token/token.service.ts` → `mintForTransaction()` | ✅ Delegates to EmissionService |
+| TokenModule | `src/token/token.module.ts` | ✅ EmissionService registered & exported |
+| FeeDistributionService | `src/fee_distribution/fee_distribution.service.ts` | ✅ 75/25 epoch split confirmed |
+| TokenomicsService | `src/token/tokenomics.service.ts` | ✅ Price delegates to AFC reserve index |
+
+### Gaps closed in this pass
+
+| Gap | Fix applied |
+|-----|-------------|
+| `EmissionService` not mocked in `token.service.spec.ts` → DI failure | Added `mockEmissionService` and canonical `mintForTransaction` unit tests |
+| Canonical endpoint missing from HTTP API | Added `POST /api/v1/token/emit`, `GET /api/v1/token/emission/price`, `GET /api/v1/token/emission/reserve` to `token.controller.ts` |
+| `AROS_Coin_TokenSpec.json` fee split was 75/20/5 (AST treasury + Audit Pool) | Updated to canonical 75% `nodePool` / 25% `afcReserve`; added `emissionModel` block |
+
+### Canonical endpoint summary (post-patch)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/v1/token/emit` | Canonical 1:1 emission — mint ARO, split fee, burn ARO |
+| `GET` | `/api/v1/token/emission/price` | Current AFC-driven emission price index |
+| `GET` | `/api/v1/token/emission/reserve` | Full AFC reserve state snapshot |
+| `POST` | `/api/v1/token/mint` | Legacy fiat-deposit mint (preserved for backward compat) |
+| `POST` | `/api/v1/token/burn` | Legacy fiat-withdrawal burn |

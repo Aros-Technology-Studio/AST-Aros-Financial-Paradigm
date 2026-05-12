@@ -9,11 +9,24 @@ import { SmartContractIntegration } from '../integration/smart_contract.integrat
 import { DataSource } from 'typeorm';
 import { BadRequestException } from '@nestjs/common';
 import { TokenomicsService } from './tokenomics.service';
+import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
 const mockTokenomicsService = {
     getCurrentPrice: jest.fn().mockReturnValue(1.0),
     updateInternalValuation: jest.fn(),
+};
+
+const mockEmissionService = {
+    processTransactionEmission: jest.fn().mockResolvedValue({
+        transactionAmount: 100,
+        emissionAmount: 100,
+        commission: 0.5,
+        nodeShare: 0.375,
+        afcReserveShare: 0.125,
+        commissionRate: 0.005,
+    }),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockProcessReserveService = {
@@ -74,6 +87,7 @@ describe('TokenService', () => {
                     },
                 },
                 { provide: TokenomicsService, useValue: mockTokenomicsService },
+                { provide: EmissionService, useValue: mockEmissionService },
                 { provide: ProcessReserveLedgerService, useValue: mockProcessReserveService },
             ],
         }).compile();
@@ -114,6 +128,22 @@ describe('TokenService', () => {
                 .rejects.toThrow('Ledger Error');
 
             expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        });
+    });
+
+    describe('mintForTransaction (canonical 1:1)', () => {
+        it('should delegate to EmissionService and emit event', async () => {
+            const result = await service.mintForTransaction(10000, 'RECIPIENT_1', 'TX_REF_001');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10000, 'RECIPIENT_1', 'TX_REF_001', undefined,
+            );
+            expect(result.emissionAmount).toBe(result.transactionAmount);
+        });
+
+        it('should throw on non-positive amount', async () => {
+            await expect(service.mintForTransaction(0, 'REC', 'REF'))
+                .rejects.toThrow(BadRequestException);
         });
     });
 

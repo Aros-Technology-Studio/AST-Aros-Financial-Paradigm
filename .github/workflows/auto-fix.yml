@@ -1,227 +1,75 @@
-name: Self-Healing CI (Auto-Fix)
-
+name: Auto-Fix CI
 on:
   workflow_run:
     workflows: ["AST CI"]
     types: [completed]
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-
-env:
-  MAX_ATTEMPTS: 3
-
 jobs:
   auto-fix:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
 
-      - name: Configure git
-        run: |
-          git config user.name "AST Auto-Fix Bot"
-          git config user.email "autofix@aros-paradigm.io"
-
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
 
-      - name: Fetch failed CI logs
-        id: fetch_logs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          RUN_ID="${{ github.event.workflow_run.id }}"
-          echo "Fetching logs for run: $RUN_ID"
+      - name: Get failed CI logs
+        id: ci-logs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
+            });
+            const failed = jobs.data.jobs
+              .filter(j => j.conclusion === 'failure')
+              .map(j => j.name + ': ' + j.steps
+                .filter(s => s.conclusion === 'failure')
+                .map(s => s.name).join(', '))
+              .join('\n');
+            core.setOutput('failed_jobs', failed);
 
-          # Get jobs for failed run
-          gh api repos/${{ github.repository }}/actions/runs/${RUN_ID}/jobs \
-            --jq '.jobs[] | select(.conclusion == "failure") | {name: .name, steps: [.steps[] | select(.conclusion == "failure") | {name: .name, number: .number}]}' \
-            > failed_jobs.json
-
-          echo "Failed jobs:"
-          cat failed_jobs.json
-
-          # Download logs
-          gh api repos/${{ github.repository }}/actions/runs/${RUN_ID}/logs \
-            > ci_logs.zip 2>/dev/null || true
-
-          if [ -f ci_logs.zip ]; then
-            unzip -o ci_logs.zip -d ci_logs/ 2>/dev/null || true
-            find ci_logs/ -name "*.txt" -exec cat {} \; > full_ci_log.txt 2>/dev/null || true
-          fi
-
-          # Also capture job annotations (errors)
-          gh api repos/${{ github.repository }}/actions/runs/${RUN_ID}/jobs \
-            --jq '.jobs[] | select(.conclusion == "failure") | .name' \
-            > failed_job_names.txt
-
-          echo "Log collection complete."
-          echo "log_available=true" >> $GITHUB_OUTPUT
-
-      - name: Determine fix attempt number
-        id: attempt
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Count recent auto-fix commits on this branch in last 24 hours
-          BRANCH="${{ github.event.workflow_run.head_branch }}"
-          COUNT=$(git log --oneline --since="24 hours ago" --grep="^auto-fix:" | wc -l)
-          echo "Previous auto-fix attempts in last 24h: $COUNT"
-          echo "attempt_count=$COUNT" >> $GITHUB_OUTPUT
-          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-
-      - name: Run auto-fix script
-        id: fix
-        if: ${{ steps.attempt.outputs.attempt_count < env.MAX_ATTEMPTS }}
+      - name: Run Claude Auto-Fix
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILED_JOBS: ${{ steps.ci-logs.outputs.failed_jobs }}
         run: |
-          echo "Attempt ${{ steps.attempt.outputs.attempt_count }} / ${{ env.MAX_ATTEMPTS }}"
+          claude --print "
+          Репозиторий: AST-Aros-Financial-Paradigm
+          CI упал в следующих jobs: $FAILED_JOBS
 
-          # Build the error context from logs
-          ERROR_SUMMARY=""
+          Твои действия:
+          1. Прочитай все файлы связанные с упавшими jobs
+          2. Найди точную причину ошибки
+          3. Исправь код
+          4. Запусти npm run build && npm test локально
+          5. Если всё зелёное - закоммить:
+             git config user.email 'agent@aros.finance'
+             git config user.name 'AGENT-FIXER'
+             git add -A
+             git commit -m 'auto-fix: $FAILED_JOBS'
+             git push
+          6. Если не можешь исправить - напиши ESCALATE: [причина]
+          "
 
-          # Check for TypeScript errors
-          if grep -q "error TS" full_ci_log.txt 2>/dev/null; then
-            TS_ERRORS=$(grep "error TS" full_ci_log.txt | head -20)
-            ERROR_SUMMARY="TypeScript errors detected:\n${TS_ERRORS}"
-          fi
-
-          # Check for test failures
-          if grep -q "FAIL\|● " full_ci_log.txt 2>/dev/null; then
-            TEST_ERRORS=$(grep -A 5 "● " full_ci_log.txt | head -40)
-            ERROR_SUMMARY="${ERROR_SUMMARY}\nTest failures:\n${TEST_ERRORS}"
-          fi
-
-          # Check for missing module errors
-          if grep -q "Cannot find module" full_ci_log.txt 2>/dev/null; then
-            MODULE_ERRORS=$(grep "Cannot find module" full_ci_log.txt | head -10)
-            ERROR_SUMMARY="${ERROR_SUMMARY}\nMissing modules:\n${MODULE_ERRORS}"
-          fi
-
-          # Check for build errors
-          if grep -q "Build failed\|npm ERR!" full_ci_log.txt 2>/dev/null; then
-            BUILD_ERRORS=$(grep -A 3 "npm ERR!" full_ci_log.txt | head -20)
-            ERROR_SUMMARY="${ERROR_SUMMARY}\nBuild errors:\n${BUILD_ERRORS}"
-          fi
-
-          echo "Error summary:"
-          echo -e "$ERROR_SUMMARY"
-
-          # Run fix-ci script
-          npx ts-node scripts/fix-ci.ts \
-            --log-file full_ci_log.txt \
-            --error-summary "$ERROR_SUMMARY" \
-            --run-id "${{ github.event.workflow_run.id }}" \
-            --attempt "${{ steps.attempt.outputs.attempt_count }}" \
-            2>&1 | tee fix_output.txt
-
-          FIX_EXIT=$?
-          echo "fix_applied=$([ $FIX_EXIT -eq 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
-
-      - name: Commit and push fix
-        if: ${{ steps.fix.outputs.fix_applied == 'true' }}
-        run: |
-          BRANCH="${{ steps.attempt.outputs.branch }}"
-
-          # Stage all changed files
-          git add -A
-
-          # Check if there are changes to commit
-          if git diff --staged --quiet; then
-            echo "No changes to commit — fix script made no file modifications."
-            exit 0
-          fi
-
-          FIX_DESC=$(cat fix_output.txt | grep "^FIX_DESCRIPTION:" | sed 's/^FIX_DESCRIPTION://' | head -1)
-          [ -z "$FIX_DESC" ] && FIX_DESC="automated repair of CI failure"
-
-          git commit -m "auto-fix: ${FIX_DESC}
-
-          CI run: ${{ github.event.workflow_run.id }}
-          Attempt: ${{ steps.attempt.outputs.attempt_count }}
-          Triggered by: failed workflow '${{ github.event.workflow_run.name }}'"
-
-          git push origin HEAD:"${BRANCH}" || git push origin HEAD:"${BRANCH}" --force-with-lease
-
-          echo "Fix committed and pushed."
-
-      - name: Create escalation issue (after max attempts)
-        if: ${{ steps.attempt.outputs.attempt_count >= env.MAX_ATTEMPTS || steps.fix.outputs.fix_applied == 'false' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH="${{ steps.attempt.outputs.branch }}"
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}"
-
-          LOG_EXCERPT=""
-          if [ -f full_ci_log.txt ]; then
-            LOG_EXCERPT=$(tail -100 full_ci_log.txt | head -80)
-          fi
-
-          ISSUE_BODY="## CI Auto-Fix Escalation
-
-          **Branch:** \`${BRANCH}\`
-          **Failed CI Run:** [View Run](${RUN_URL})
-          **Auto-fix attempts:** ${{ steps.attempt.outputs.attempt_count }} / ${{ env.MAX_ATTEMPTS }}
-          **Date:** $(date -u '+%Y-%m-%d %H:%M UTC')
-
-          ### Summary
-          The self-healing CI system was unable to automatically fix the failing pipeline
-          after ${{ env.MAX_ATTEMPTS }} attempts. Manual intervention is required.
-
-          ### Failed Jobs
-          \`\`\`
-          $(cat failed_job_names.txt 2>/dev/null || echo 'Unable to retrieve job names')
-          \`\`\`
-
-          ### CI Log Excerpt (last 80 lines)
-          \`\`\`
-          ${LOG_EXCERPT}
-          \`\`\`
-
-          ### Fix Attempts Log
-          \`\`\`
-          $(cat fix_output.txt 2>/dev/null || echo 'No fix output available')
-          \`\`\`
-
-          ---
-          *Auto-generated by Self-Healing CI system*"
-
-          gh issue create \
-            --repo "${{ github.repository }}" \
-            --title "needs-human: CI auto-fix failed on \`${BRANCH}\` after ${{ env.MAX_ATTEMPTS }} attempts" \
-            --body "$ISSUE_BODY" \
-            --label "needs-human,ci-failure,auto-generated" \
-            || echo "Could not create issue (label may not exist). Logging report to artifacts."
-
-          echo "$ISSUE_BODY" > ESCALATION_REPORT.md
-
-      - name: Upload logs as artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Create Issue if escalation needed
+        if: failure()
+        uses: actions/github-script@v7
         with:
-          name: auto-fix-logs-${{ github.run_number }}
-          path: |
-            full_ci_log.txt
-            fix_output.txt
-            failed_jobs.json
-            ESCALATION_REPORT.md
-          retention-days: 7
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Auto-Fix Failed - Human Required',
+              body: `CI падал 3+ раза. Агент не смог исправить автоматически.\n\nFailed jobs: ${process.env.FAILED_JOBS}\n\nНужно ручное вмешательство.`,
+              labels: ['needs-human', 'auto-fix-failed']
+            });

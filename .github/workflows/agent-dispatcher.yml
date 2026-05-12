@@ -1,368 +1,50 @@
 name: Agent Dispatcher
-
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize]
 
 permissions:
   contents: read
   pull-requests: write
-  issues: write
 
 jobs:
-  detect-changes:
+  dispatch:
     runs-on: ubuntu-latest
-    outputs:
-      nodechain: ${{ steps.filter.outputs.nodechain }}
-      bridge: ${{ steps.filter.outputs.bridge }}
-      governance: ${{ steps.filter.outputs.governance }}
-      proof_of_transaction: ${{ steps.filter.outputs.proof_of_transaction }}
-      changed_modules: ${{ steps.summary.outputs.changed_modules }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Detect changed modules
-        id: filter
+        id: changes
         run: |
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
           CHANGED=$(git diff --name-only "$BASE" "$HEAD" 2>/dev/null || git diff --name-only HEAD~1 HEAD)
-
           echo "Changed files:"
           echo "$CHANGED"
 
-          # Module detection
-          NODECHAIN=$(echo "$CHANGED" | grep -l "^02_nodechain" || echo "$CHANGED" | grep "^02_nodechain" | head -1)
-          BRIDGE=$(echo "$CHANGED" | grep "^05_bridge" | head -1)
-          GOVERNANCE=$(echo "$CHANGED" | grep "^06_governance" | head -1)
-          POT=$(echo "$CHANGED" | grep "^10_proof_of_transaction" | head -1)
+          AGENTS="AGENT-TEST-INT"
+          echo "$CHANGED" | grep -q "02_nodechain"          && AGENTS="AGENT-CHAIN,$AGENTS"
+          echo "$CHANGED" | grep -q "05_bridge"             && AGENTS="AGENT-BRIDGE,$AGENTS"
+          echo "$CHANGED" | grep -q "06_governance"         && AGENTS="AGENT-GOV,$AGENTS"
+          echo "$CHANGED" | grep -q "10_proof_of_transaction" && AGENTS="AGENT-EMISSION,$AGENTS"
 
-          echo "nodechain=$([ -n "$NODECHAIN" ] && echo true || echo false)" >> $GITHUB_OUTPUT
-          echo "bridge=$([ -n "$BRIDGE" ] && echo true || echo false)" >> $GITHUB_OUTPUT
-          echo "governance=$([ -n "$GOVERNANCE" ] && echo true || echo false)" >> $GITHUB_OUTPUT
-          echo "proof_of_transaction=$([ -n "$POT" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "agents=$AGENTS" >> $GITHUB_OUTPUT
+          echo "Assigned agents: $AGENTS"
 
-      - name: Summarize changed modules
-        id: summary
-        run: |
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          CHANGED=$(git diff --name-only "$BASE" "$HEAD" 2>/dev/null || git diff --name-only HEAD~1 HEAD)
-
-          MODULES=""
-          echo "$CHANGED" | grep -q "^02_nodechain" && MODULES="${MODULES} 02_nodechain"
-          echo "$CHANGED" | grep -q "^05_bridge" && MODULES="${MODULES} 05_bridge"
-          echo "$CHANGED" | grep -q "^06_governance" && MODULES="${MODULES} 06_governance"
-          echo "$CHANGED" | grep -q "^10_proof_of_transaction" && MODULES="${MODULES} 10_proof_of_transaction"
-          echo "$CHANGED" | grep -q "^src/" && MODULES="${MODULES} src"
-          echo "$CHANGED" | grep -q "^tests/" && MODULES="${MODULES} tests"
-          echo "$CHANGED" | grep -q "^smart_contracts/" && MODULES="${MODULES} smart_contracts"
-
-          MODULES=$(echo "$MODULES" | xargs)
-          echo "changed_modules=$MODULES" >> $GITHUB_OUTPUT
-          echo "Modules affected: $MODULES"
-
-  # ─────────────────────────────────────────
-  # AGENT-CHAIN: NodeChain engine changes
-  # ─────────────────────────────────────────
-  agent-chain:
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.nodechain == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
 
-      - name: AGENT-CHAIN — NodeChain validation
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run assigned agents
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ASSIGNED_AGENTS: ${{ steps.changes.outputs.agents }}
         run: |
-          echo "=== AGENT-CHAIN activated for PR #${{ github.event.pull_request.number }} ==="
-          echo "Changes detected in: 02_nodechain_engine"
-
-          # Run NodeChain-specific tests
-          npm run test:nodechain 2>&1 | tee agent_chain_output.txt || true
-
-          # Check BFT quorum logic
-          echo "Checking BFT quorum integrity..."
-          npx ts-node -e "
-            const fs = require('fs');
-            const files = fs.readdirSync('02_nodechain_engine', { recursive: true })
-              .filter(f => f.endsWith('.ts') || f.endsWith('.md'));
-            console.log('NodeChain files in PR scope:', files.length);
-          " 2>/dev/null || true
-
-          # Post comment
-          REPORT="### AGENT-CHAIN Report
-
-          **Module:** \`02_nodechain_engine\`
-          **PR:** #${{ github.event.pull_request.number }}
-          **Status:** Analysis complete
-
-          #### Test Results
-          \`\`\`
-          $(tail -30 agent_chain_output.txt 2>/dev/null || echo 'No test output')
-          \`\`\`
-
-          #### Checklist
-          - [x] NodeChain tests executed
-          - [x] BFT quorum integrity checked
-          - [ ] Manual review recommended for consensus changes
-
-          *AGENT-CHAIN auto-dispatched by agent-dispatcher*"
-
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo "${{ github.repository }}" \
-            --body "$REPORT" || true
-
-  # ─────────────────────────────────────────
-  # AGENT-BRIDGE: Bridge layer changes
-  # ─────────────────────────────────────────
-  agent-bridge:
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.bridge == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-
-      - name: AGENT-BRIDGE — Bridge layer validation
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "=== AGENT-BRIDGE activated for PR #${{ github.event.pull_request.number }} ==="
-          echo "Changes detected in: 05_bridge_layer"
-
-          # Run bridge-specific tests
-          npx jest tests/unit --testPathPattern="bridge" 2>&1 | tee agent_bridge_output.txt || true
-
-          # Check cross-chain integrity
-          echo "Auditing bridge module for security patterns..."
-          grep -r "TODO\|FIXME\|HACK\|mock\|stub" 05_bridge_layer/ 2>/dev/null | head -20 > bridge_issues.txt || true
-
-          ISSUES=$(wc -l < bridge_issues.txt)
-          STATUS_ICON=$([ "$ISSUES" -eq 0 ] && echo "✅" || echo "⚠️")
-
-          REPORT="### AGENT-BRIDGE Report
-
-          **Module:** \`05_bridge_layer\`
-          **PR:** #${{ github.event.pull_request.number }}
-          **Status:** ${STATUS_ICON} Analysis complete
-
-          #### Bridge Integrity Scan
-          - Unresolved TODOs/stubs: **${ISSUES}** items
-          $([ "$ISSUES" -gt 0 ] && echo '
-          ```
-          '"$(cat bridge_issues.txt)"'
-          ```' || echo '')
-
-          #### Test Results
-          \`\`\`
-          $(tail -20 agent_bridge_output.txt 2>/dev/null || echo 'No test output')
-          \`\`\`
-
-          *AGENT-BRIDGE auto-dispatched by agent-dispatcher*"
-
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo "${{ github.repository }}" \
-            --body "$REPORT" || true
-
-  # ─────────────────────────────────────────
-  # AGENT-GOV: Governance layer changes
-  # ─────────────────────────────────────────
-  agent-gov:
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.governance == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-
-      - name: AGENT-GOV — Governance validation
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "=== AGENT-GOV activated for PR #${{ github.event.pull_request.number }} ==="
-          echo "Changes detected in: 06_governance_layer"
-
-          # Run governance tests
-          npx jest tests/unit/governance 2>&1 | tee agent_gov_output.txt || true
-
-          # Check for quorum/voting logic changes
-          QUORUM_CHANGES=$(git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} \
-            -- "06_governance_layer/" "src/governance/" 2>/dev/null | grep "^+" | grep -i "quorum\|vote\|threshold" | wc -l) || QUORUM_CHANGES=0
-
-          REPORT="### AGENT-GOV Report
-
-          **Module:** \`06_governance_layer\`
-          **PR:** #${{ github.event.pull_request.number }}
-          **Status:** Analysis complete
-
-          #### Governance Change Analysis
-          - Lines touching quorum/voting/threshold logic: **${QUORUM_CHANGES}**
-          $([ "$QUORUM_CHANGES" -gt 5 ] && echo '> ⚠️ **High impact governance changes detected — recommend extra review**' || echo '')
-
-          #### Test Results
-          \`\`\`
-          $(tail -30 agent_gov_output.txt 2>/dev/null || echo 'No test output')
-          \`\`\`
-
-          #### Checklist
-          - [x] Governance tests executed
-          - [x] Quorum logic impact assessed
-          - $([ "$QUORUM_CHANGES" -gt 5 ] && echo '[ ] **Manual council review required**' || echo '[x] Quorum thresholds unchanged')
-
-          *AGENT-GOV auto-dispatched by agent-dispatcher*"
-
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo "${{ github.repository }}" \
-            --body "$REPORT" || true
-
-  # ─────────────────────────────────────────
-  # AGENT-EMISSION: Proof of Transaction changes
-  # ─────────────────────────────────────────
-  agent-emission:
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.proof_of_transaction == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-
-      - name: AGENT-EMISSION — PoT validation
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "=== AGENT-EMISSION activated for PR #${{ github.event.pull_request.number }} ==="
-          echo "Changes detected in: 10_proof_of_transaction_engine"
-
-          # Run emission-related tests
-          npx jest tests/ --testPathPattern="emission|proof|pot" 2>&1 | tee agent_emission_output.txt || true
-
-          # Check emission math integrity
-          EMISSION_CHANGES=$(git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} \
-            -- "10_proof_of_transaction_engine/" "src/proof_of_transaction_engine/" 2>/dev/null | \
-            grep "^+" | grep -iE "reward|emission|mint|burn|rate" | wc -l) || EMISSION_CHANGES=0
-
-          REPORT="### AGENT-EMISSION Report
-
-          **Module:** \`10_proof_of_transaction_engine\`
-          **PR:** #${{ github.event.pull_request.number }}
-          **Status:** Analysis complete
-
-          #### Emission Logic Analysis
-          - Lines touching reward/emission/mint/burn/rate: **${EMISSION_CHANGES}**
-          $([ "$EMISSION_CHANGES" -gt 3 ] && echo '> ⚠️ **Emission parameter changes detected — verify economic model**' || echo '')
-
-          #### Test Results
-          \`\`\`
-          $(tail -30 agent_emission_output.txt 2>/dev/null || echo 'No test output')
-          \`\`\`
-
-          *AGENT-EMISSION auto-dispatched by agent-dispatcher*"
-
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo "${{ github.repository }}" \
-            --body "$REPORT" || true
-
-  # ─────────────────────────────────────────
-  # AGENT-TEST-INT: Always runs on every PR
-  # ─────────────────────────────────────────
-  agent-test-int:
-    needs: detect-changes
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-
-      - name: AGENT-TEST-INT — Full integration check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "=== AGENT-TEST-INT activated for PR #${{ github.event.pull_request.number }} ==="
-          echo "Modules affected: ${{ needs.detect-changes.outputs.changed_modules }}"
-
-          # TypeScript type check
-          npx tsc --noEmit 2>&1 | tee tsc_output.txt || true
-          TSC_ERRORS=$(grep -c "error TS" tsc_output.txt 2>/dev/null || echo 0)
-
-          # Lint check
-          npm run lint 2>&1 | tee lint_output.txt || true
-          LINT_ERRORS=$(grep -c "error\b" lint_output.txt 2>/dev/null || echo 0)
-
-          # Full unit test suite
-          npm test 2>&1 | tee test_output.txt || true
-          TESTS_PASSED=$(grep -c "✓\|PASS\|passed" test_output.txt 2>/dev/null || echo 0)
-          TESTS_FAILED=$(grep -c "✗\|FAIL\|failed" test_output.txt 2>/dev/null || echo 0)
-
-          # Integration tests
-          npm run test:integration 2>&1 | tee integration_output.txt || true
-
-          # Determine overall status
-          OVERALL=$([ "$TSC_ERRORS" -eq 0 ] && [ "$TESTS_FAILED" -eq 0 ] && echo "✅ PASSED" || echo "❌ ISSUES FOUND")
-
-          REPORT="### AGENT-TEST-INT Report
-
-          **PR:** #${{ github.event.pull_request.number }}
-          **Modules Changed:** \`${{ needs.detect-changes.outputs.changed_modules || 'general' }}\`
-          **Overall Status:** ${OVERALL}
-
-          | Check | Result |
-          |-------|--------|
-          | TypeScript | $([ "$TSC_ERRORS" -eq 0 ] && echo "✅ 0 errors" || echo "❌ ${TSC_ERRORS} errors") |
-          | Lint | $([ "$LINT_ERRORS" -eq 0 ] && echo "✅ clean" || echo "⚠️ ${LINT_ERRORS} issues") |
-          | Unit Tests | ✅ ${TESTS_PASSED} passed / $([ "$TESTS_FAILED" -gt 0 ] && echo "❌ ${TESTS_FAILED} failed" || echo "0 failed") |
-
-          <details>
-          <summary>TypeScript output</summary>
-
-          \`\`\`
-          $(tail -20 tsc_output.txt 2>/dev/null || echo 'No output')
-          \`\`\`
-          </details>
-
-          <details>
-          <summary>Test output</summary>
-
-          \`\`\`
-          $(tail -30 test_output.txt 2>/dev/null || echo 'No output')
-          \`\`\`
-          </details>
-
-          *AGENT-TEST-INT auto-dispatched by agent-dispatcher (runs on every PR)*"
-
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --repo "${{ github.repository }}" \
-            --body "$REPORT" || true
+          echo "Запускаю агентов: $ASSIGNED_AGENTS"
+          claude --print "Запущены агенты: $ASSIGNED_AGENTS. PR содержит изменения в соответствующих модулях. Проверь изменения, запусти тесты, отчитайся." || true

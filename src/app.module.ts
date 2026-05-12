@@ -47,7 +47,7 @@ import { ReleaseDaemonModule } from './supervisory/release_daemon.module';
                 password: configService.get<string>('DB_PASSWORD', 'aros_password'),
                 database: configService.get<string>('DB_DATABASE', 'aros_ast'),
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
-                synchronize: configService.get<string>('NODE_ENV') !== 'production',
+                synchronize: process.env.NODE_ENV === 'development',
                 logging: false,
             }),
             inject: [ConfigService],

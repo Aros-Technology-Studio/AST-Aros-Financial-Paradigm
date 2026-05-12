@@ -8,7 +8,9 @@ import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 import { TokenomicsService } from './tokenomics.service';
+import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
+import { EmissionResult } from './emission.interfaces';
 
 @Injectable()
 export class TokenService {
@@ -26,8 +28,53 @@ export class TokenService {
         private readonly smartContractService: SmartContractIntegration,
         private readonly eventEmitter: EventEmitter2,
         private readonly tokenomicsService: TokenomicsService,
+        private readonly emissionService: EmissionService,
         private readonly processReserve: ProcessReserveLedgerService,
     ) { }
+
+    /**
+     * Canonical 1:1 emission entry point.
+     * Call this whenever a transaction is processed — not the legacy mint().
+     *
+     * Flow:
+     *   Emit = txAmount (1:1)
+     *   Fee  = txAmount × rate → 75% nodes + 25% AFC reserve
+     *   Burn the emitted ARO after completion
+     *   AFC reserve grows → emission price rises
+     */
+    async mintForTransaction(
+        transactionAmount: number,
+        recipient: string,
+        referenceId: string,
+        commissionRate?: number,
+    ): Promise<EmissionResult> {
+        if (transactionAmount <= 0) {
+            throw new BadRequestException('Transaction amount must be positive');
+        }
+
+        this.logger.log(
+            `[Canonical Emission] TX=${referenceId} amount=${transactionAmount} recipient=${recipient}`,
+        );
+
+        const result = await this.emissionService.processTransactionEmission(
+            transactionAmount,
+            recipient,
+            referenceId,
+            commissionRate,
+        );
+
+        this.eventEmitter.emit('token.emission.canonical', {
+            referenceId,
+            transactionAmount,
+            emissionAmount:  result.emissionAmount,
+            commission:      result.commission,
+            nodeShare:       result.nodeShare,
+            afcReserveShare: result.afcReserveShare,
+            emissionPrice:   this.emissionService.getCurrentEmissionPrice(),
+        });
+
+        return result;
+    }
 
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');

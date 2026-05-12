@@ -18,6 +18,9 @@ export class NodeEntity {
     @Column({ default: true })
     isActive: boolean;
 
+    @Column({ type: 'decimal', precision: 10, scale: 4, default: 1.0 })
+    nodeWeight: number;
+
     @Column({ type: 'jsonb', default: {} })
     metrics: {
         uptime: number;

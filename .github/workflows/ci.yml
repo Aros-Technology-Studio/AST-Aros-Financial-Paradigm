@@ -30,6 +30,6 @@ jobs:
 
     - name: Compile Contracts
       run: |
-        cd contracts
+        cd smart_contracts
         npm install
         npx hardhat compile

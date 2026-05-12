@@ -142,62 +142,79 @@ export class FeeDistributionService {
         return parseFloat(sum || '0');
     }
 
+    private readonly AFC_RESERVE_ADDRESS = 'SYSTEM_AFC_RESERVE_000000000000000000';
+
+    // Canonical split ratios (75% nodes / 25% AFC reserve)
+    private readonly NODE_SHARE_RATIO = 0.75;
+    private readonly AFC_SHARE_RATIO  = 0.25;
+
     private async distributeRewards(epoch: EpochEntity, totalFees: number, weights: Map<string, number>) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
+            // Canonical 75/25 split of collected fees
+            const nodePool   = totalFees * this.NODE_SHARE_RATIO;
+            const afcReserve = totalFees * this.AFC_SHARE_RATIO;
+
+            this.logger.log(
+                `Epoch ${epoch.epochNumber}: total fees=${totalFees} ` +
+                `→ node pool=${nodePool.toFixed(8)} (75%) | AFC reserve=${afcReserve.toFixed(8)} (25%)`,
+            );
+
+            // Record AFC reserve contribution
+            await this.transactionRepo.save({
+                hash:         `AFC_RESERVE_${epoch.epochNumber}`,
+                previousHash: 'SYSTEM',
+                ledgerHeight: '0',
+                type:         TransactionType.FEE_DISTRIBUTION,
+                sender:       this.FEE_POOL_ADDRESS,
+                recipient:    this.AFC_RESERVE_ADDRESS,
+                amount:       afcReserve.toFixed(8),
+                fee:          '0',
+                nonce:        epoch.epochNumber * 10000,
+                status:       TransactionStatus.CONFIRMED,
+                metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
+            });
+
             let distributedSum = 0;
 
             for (const [nodeId, weight] of weights.entries()) {
                 if (weight <= 0) continue;
 
-                const rewardAmount = totalFees * weight;
-                if (rewardAmount < 0.00000001) continue; // Dust filter
+                const rewardAmount = nodePool * weight;
+                if (rewardAmount < 0.00000001) continue; // dust filter
 
                 const rewardStr = rewardAmount.toFixed(8);
 
-                // Transfer from Fee Pool to Node ID (assuming NodeID is a valid wallet address here)
-                // In reality, Node entity might have a separate 'walletAddress' field. 
-                // We'll assume nodeId IS the wallet address for simplicity.
-
-                // We use TokenService to execute the specific ledger transaction
-                // NOTE: TokenService's transfer logic usually requires signing, but for SYSTEM distribution
-                // we might need a special system internal transfer method. 
-                // Existing TokenService `mint` or `burn` exists. `transfer` logic is usually in Ledger or handled via signed tx.
-                // We will implement a `systemTransfer` in TokenService or use `recordTransaction` directly here.
-
-                // Let's use transactionRepo directly within the transaction to create the REWARD tx.
                 await this.transactionRepo.save({
-                    hash: `REWARD_${epoch.epochNumber}_${nodeId}`, // simplified hash
+                    hash:         `REWARD_${epoch.epochNumber}_${nodeId}`,
                     previousHash: 'SYSTEM',
                     ledgerHeight: '0',
-                    type: TransactionType.VALIDATOR_REWARD,
-                    sender: this.FEE_POOL_ADDRESS,
-                    recipient: nodeId,
-                    amount: rewardStr,
-                    fee: '0',
-                    nonce: epoch.epochNumber,
-                    status: TransactionStatus.CONFIRMED,
-                    metadata: { type: 'EPOCH_REWARD', epoch: epoch.epochNumber, weight }
+                    type:         TransactionType.VALIDATOR_REWARD,
+                    sender:       this.FEE_POOL_ADDRESS,
+                    recipient:    nodeId,
+                    amount:       rewardStr,
+                    fee:          '0',
+                    nonce:        epoch.epochNumber,
+                    status:       TransactionStatus.CONFIRMED,
+                    metadata:     { type: 'EPOCH_REWARD', epoch: epoch.epochNumber, weight },
                 });
 
-                // Log distribution
                 const log = this.distributionLogRepo.create({
-                    epochNumber: epoch.epochNumber,
-
-                    nodeId: nodeId,
-                    amount: rewardStr,
-                    weight: weight,
-                    calculationData: { totalFees, nodeWeight: weight }
+                    epochNumber:     epoch.epochNumber,
+                    nodeId:          nodeId,
+                    amount:          rewardStr,
+                    weight:          weight,
+                    calculationData: { totalFees, nodePool, nodeWeight: weight },
                 });
                 await queryRunner.manager.save(log);
 
                 distributedSum += rewardAmount;
             }
 
-            epoch.totalDistributed = distributedSum.toFixed(8);
+            epoch.totalDistributed = (distributedSum + afcReserve).toFixed(8);
             await queryRunner.manager.save(epoch);
 
             await queryRunner.commitTransaction();

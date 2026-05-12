@@ -8,109 +8,130 @@
 
 ## Что создано
 
-### 1. `.github/workflows/auto-fix.yml` — Auto-Fix CI
+### 1. `.github/workflows/auto-fix.yml` — Self-Healing CI (Auto-Fix)
 
-**Назначение:** Автоматическое исправление кода при падении CI.
+**Назначение:** Автоматически исправляет упавший CI без участия человека.
 
-**Триггер:** Завершение workflow `AST CI` с результатом `failure`.
+**Триггер:** `workflow_run` на workflow `"AST CI"` → `completed` (только при `failure`).
 
 **Логика:**
-1. Получает список упавших jobs через GitHub API.
-2. Запускает `claude --print` с контекстом ошибок.
-3. Claude читает связанные файлы, находит причину, исправляет код, запускает `npm run build && npm test`, коммитит и пушит.
-4. Если Claude не может исправить — пишет `ESCALATE: [причина]`, workflow завершается с ошибкой.
-5. При эскалации автоматически создаётся GitHub Issue с метками `needs-human` и `auto-fix-failed`.
+1. Скачивает полные логи прогона через GitHub API (`gh api`) и извлекает zip-архив.
+2. Парсит ошибки по категориям: TypeScript (`error TS`), провалившиеся тесты, missing modules, build errors.
+3. Запускает `scripts/fix-ci.ts` с полным контекстом ошибок.
+4. Если скрипт успешен — коммитит исправления с описанием из `FIX_DESCRIPTION:` в stdout.
+5. Считает попытки auto-fix за последние 24 часа (лимит: `MAX_ATTEMPTS=3`).
+6. При превышении попыток или неудаче создаёт GitHub Issue с лейблами `needs-human,ci-failure,auto-generated`.
+7. Все логи загружаются как artifacts (retention: 7 дней).
 
-**Агент-исполнитель:** `AGENT-FIXER` (git identity: `agent@aros.finance`)
+**Агент-исполнитель:** `AST Auto-Fix Bot` (git identity: `autofix@aros-paradigm.io`)
+
+**Конфигурация:**
+```yaml
+env:
+  MAX_ATTEMPTS: 3
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+```
 
 ---
 
 ### 2. `.github/workflows/agent-dispatcher.yml` — Agent Dispatcher
 
-**Назначение:** Маршрутизация агентов по изменённым модулям в PR.
+**Назначение:** При открытии/обновлении PR определяет затронутые модули AFC и запускает специализированных агентов как отдельные параллельные jobs.
 
-**Триггер:** Открытие или обновление Pull Request.
+**Триггер:** `pull_request` → `[opened, synchronize, reopened]`
 
-**Логика:**
-1. Получает список изменённых файлов через GitHub API.
-2. Определяет задействованные агенты по путям файлов:
-   - `02_nodechain` → `AGENT-CHAIN`
-   - `05_bridge` → `AGENT-BRIDGE`
-   - `06_governance` → `AGENT-GOV`
-   - `10_proof_of_transaction` → `AGENT-EMISSION`
-   - Всегда добавляется `AGENT-TEST-INT` (интеграционное тестирование)
-3. Запускает соответствующих агентов через Claude Code для проверки изменений.
+**Матрица агентов:**
 
----
+| Агент | Модуль | Условие запуска |
+|-------|--------|-----------------|
+| `AGENT-CHAIN` | `02_nodechain_engine` | изменения в `02_nodechain/` |
+| `AGENT-BRIDGE` | `05_bridge_layer` | изменения в `05_bridge/` |
+| `AGENT-GOV` | `06_governance_layer` | изменения в `06_governance/` |
+| `AGENT-EMISSION` | `10_proof_of_transaction_engine` | изменения в `10_proof_of_transaction/` |
+| `AGENT-TEST-INT` | все модули | запускается **всегда** на каждый PR |
 
-### 3. `.github/workflows/nightly-audit.yml` — Nightly Audit
-
-**Назначение:** Ежедневный ночной аудит всего репозитория.
-
-**Триггер:** Cron `0 0 * * *` (полночь UTC) + ручной запуск (`workflow_dispatch`).
-
-**Логика:**
-1. `npm audit --audit-level=high` — проверка уязвимостей зависимостей.
-2. `npm test -- --coverage` — полный прогон тестов с покрытием.
-3. Claude проводит аудит по 7 пунктам:
-   - TODO/FIXME/mock/заглушки
-   - Completeness всех 14 модулей AFC
-   - Модули без тестов или coverage < 80%
-   - Security: hardcoded secrets, SQL injection risks
-   - Архитектурные инварианты: non-custodial, role isolation, ArosCoin 1:1 emission
-   - Генерация отчёта `reports/NIGHTLY_AUDIT_YYYYMMDD.md`
-   - Создание GitHub Issue при критических проблемах
-4. Отчёт загружается как артефакт GitHub Actions.
+Каждый агент постит structured report в комментарий PR через `gh pr comment`. `AGENT-TEST-INT` дополнительно запускает TypeScript type check, lint, unit + integration tests.
 
 ---
 
-## Директория `reports/`
+### 3. `.github/workflows/nightly-audit.yml` — Nightly Full Audit
 
-Создана директория `/reports/` для хранения ночных аудит-отчётов в формате `NIGHTLY_AUDIT_YYYYMMDD.md`.
+**Назначение:** Ежедневный автоматический аудит всего репозитория в 00:00 UTC.
+
+**Триггер:** `schedule: cron '0 0 * * *'` + `workflow_dispatch` (ручной запуск).
+
+**6 шагов аудита:**
+1. **TODO/Stub/Mock scan** — сканирует все 14 модулей AFC на `TODO, FIXME, HACK, stub, placeholder, mock` в production коде.
+2. **Full test suite** — `npm test` с подсчётом passed/failed.
+3. **TypeScript check** — `tsc --noEmit`, счётчик `error TS*`.
+4. **npm security audit** — парсит JSON-вывод, выделяет critical/high CVE.
+5. **Module completeness** — проверяет наличие всех 14 модулей `01_coin_engine → 14_decentralized_tx_encoding`.
+6. **Генерация `NIGHTLY_AUDIT_REPORT.md`** с health-статусом ✅/⚠️/❌ и детальными таблицами; коммитится в main автоматически.
+
+При критических находках создаётся GitHub Issue с лейблами `audit,needs-human,auto-generated`. Artifacts хранятся 30 дней.
 
 ---
 
 ## Архитектура Self-Healing Pipeline
 
 ```
-CI падает
-    ↓
-auto-fix.yml (AGENT-FIXER)
-    ↓
-[исправлено?] → да → git push → CI зелёный
-    ↓ нет
-GitHub Issue (needs-human, auto-fix-failed)
-```
+Push/PR ──→ AST CI
+               │
+               ▼ (failure)
+         auto-fix.yml
+               │
+         ┌─────┴──────┐
+         │             │
+    Fix applied    Max attempts (3)
+    (commit+push)  exceeded or fix failed
+                       │
+                  GitHub Issue
+                  (needs-human,ci-failure)
 
-```
-PR открыт/обновлён
-    ↓
-agent-dispatcher.yml
-    ↓
-Детектирует модули → назначает агентов
-    ↓
-AGENT-CHAIN / AGENT-BRIDGE / AGENT-GOV / AGENT-EMISSION + AGENT-TEST-INT
-```
+PR opened ──→ agent-dispatcher.yml
+                    │
+              detect-changes (job)
+                    │
+        ┌───────────┼───────────┐
+        │           │           │
+   AGENT-CHAIN  AGENT-BRIDGE  AGENT-GOV
+   (02_node)    (05_bridge)   (06_gov)
+                               │
+                    AGENT-EMISSION    AGENT-TEST-INT
+                    (10_pot)          (всегда, все PR)
 
-```
-Каждую ночь (00:00 UTC)
-    ↓
-nightly-audit.yml
-    ↓
-npm audit + npm test --coverage
-    ↓
-Claude: аудит 14 модулей AFC
-    ↓
-reports/NIGHTLY_AUDIT_YYYYMMDD.md
-    ↓
-[критично?] → GitHub Issue
+00:00 UTC ──→ nightly-audit.yml
+                    │
+              6-step audit
+                    │
+         NIGHTLY_AUDIT_REPORT.md → git commit → main
+                    │
+              (if critical)
+                    │
+             GitHub Issue (audit,needs-human)
 ```
 
 ---
 
-## Требования
+## Переменные окружения
 
-- GitHub Secret `ANTHROPIC_API_KEY` — уже добавлен в репозиторий.
-- `GITHUB_TOKEN` — предоставляется GitHub Actions автоматически.
-- Node.js 20 — используется во всех workflows.
-- `@anthropic-ai/claude-code` — устанавливается в каждом job через `npm install -g`.
+| Secret | Где используется | Статус |
+|--------|-----------------|--------|
+| `ANTHROPIC_API_KEY` | auto-fix (`scripts/fix-ci.ts`), nightly-audit | ✅ добавлен в репозиторий |
+| `GITHUB_TOKEN` | все три workflow | ✅ автоматически GitHub Actions |
+
+## Используемые Actions
+
+| Action | Версия |
+|--------|---------|
+| `actions/checkout` | v4 |
+| `actions/setup-node` | v4 (Node.js 20 + npm cache) |
+| `actions/upload-artifact` | v4 |
+| `actions/github-script` | v7 |
+
+---
+
+*Сгенерировано AGENT-AUTOMATOR · AST-Aros-Financial-Paradigm*

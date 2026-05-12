@@ -1,88 +1,106 @@
 # aro_emission_protocol.md
 
-**## **I. Purpose****
+## I. Purpose
 
-This document defines the **emission protocol** for the native token ARO within the AST (Aros Studio Tokenomics) system. The protocol governs how, when, and under what rules ARO tokens are minted, allocated, and monitored to ensure sustainability, fairness, and transparency.
+This document defines the **canonical emission protocol** for the native token ARO within the AST (Aros Studio Tokenomics) system. The protocol governs how, when, and under what rules ARO tokens are minted, split as commission, and burned to ensure sustainability, fairness, and transparency.
 
 ---
 
-## II. Fee Distribution Principles
+## II. Emission Principles
 
 1. **No Pre-Transaction Finalization**
     - ARO tokens are **not pre-mined**.
-    - Fee Distribution occurs **on-demand**, triggered strictly by transactional activity and systemic utility.
-2. **Utility-Based Fee Distribution**
-    - ARO tokens are minted as a direct consequence of **transactional processing needs**.
-    - Fee Distribution is proportional to the volume and complexity of decentralized processing operations.
-3. **Controlled Supply**
-    - A **maximum emission cap** is defined in the system config (hard limit).
-    - Dynamic emission curves regulate supply inflation over time.
+    - Emission occurs **on-demand**, triggered strictly by transactional activity.
+
+2. **1:1 Emission**
+    - ARO tokens are minted in a **1:1 ratio to the transaction amount**.
+    - A transaction of amount `A` emits exactly `A` ARO. No multipliers or complex load indices.
+
+3. **Transient Supply**
+    - Emitted ARO are burned after the transaction completes.
+    - Net circulating supply change per canonical TX cycle = **0**.
+    - The ledger retains full `totalMinted` and `totalBurned` counters for audit.
+
+4. **Controlled Supply via AFC Reserve**
+    - There is no hard supply cap; supply is bounded by real transaction volume.
+    - The AFC reserve accumulates 25% of every commission, driving the emission price index upward monotonically.
 
 ---
 
-## **III. Fee Distribution Trigger Logic**
+## III. Emission Trigger Logic
 
 ```mermaid
 sequenceDiagram
     participant T as Transaction Request
-    participant E as Fee Distribution Engine
+    participant E as EmissionService
     participant L as Ledger
-    T->>E: Submit transaction for processing
-    E->>E: Calculate processing cost (network load, NPI, etc.)
-    E->>E: Determine token emission amount
-    E->>L: Mint new ARO tokens to system reserve
-    L->>T: Confirm available balance for payout
+
+    T->>E: processTransactionEmission(amount, recipient, refId)
+    E->>E: calculate() → emission=amount, commission=amount×rate
+    E->>L: MINT emission → recipient (1:1)
+    E->>L: FEE_DISTRIBUTION nodeShare(75%) → NODE_POOL
+    E->>L: FEE_DISTRIBUTION afcShare(25%) → AFC_RESERVE
+    E->>E: updateAfcReserve(afcShare) → reserveIndex rises
+    E->>L: BURN emission → BURN_VAULT (ARO destroyed)
+    L->>T: Confirm (audit trail complete)
 ```
 
 ---
 
-## **IV. Fee Distribution Governance**
+## IV. Canonical Emission Formula
 
-| **Component** | **Role** |
-| --- | --- |
-| Fee Distribution Engine | Calculates when emission is required and how much to emit |
-| Node Oracle Committee | Monitors network state to approve emission thresholds |
-| All-Seeing Eye | Audits emission actions to prevent abuse or drift from emission law |
+```
+Emission     = Transaction Amount           (1:1)
+Commission   = Transaction Amount × rate    (default 0.5%)
+Node Share   = Commission × 0.75
+AFC Reserve  = Commission × 0.25
 
----
-
-## **V. Allocation Strategy**
-
-- Emitted tokens are **not immediately released** to the public. Instead, they are:
-    1. Stored in a **smart reserve contract**.
-    2. Distributed through controlled channels:
-        - **Node payments**
-        - **Ecosystem bounties**
-        - **Infrastructure development fund**
+AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
+```
 
 ---
 
-## **VI. Fee Distribution Formula (Simplified)**
+## V. Emission Governance
 
-EMISSION_AMOUNT = Σ(transaction_load × scaling_index × node_payment_ratio)
-
-Where:
-
-- transaction_load: measured in encrypted data segments
-- scaling_index: dynamic coefficient based on demand curve
-- node_payment_ratio: predetermined % of tokens allocated for node payment
-
----
-
-## **VII. Fee Distribution Cap and Degradation**
-
-- ARO has a **finite hard cap** (MAX_SUPPLY) enforced at the protocol level.
-- Once 80% of MAX_SUPPLY is reached, **emission rate linearly degrades** until halted at 100%.
+| Component              | Role                                                              |
+|------------------------|-------------------------------------------------------------------|
+| EmissionService        | Implements canonical 1:1 lifecycle; source of truth for emission |
+| Node Pool              | Receives 75% of commission per TX and per epoch                  |
+| AFC Reserve            | Receives 25% of commission; drives price index upward            |
+| All-Seeing Eye         | Audits emission actions to prevent abuse or drift from protocol  |
+| Node Oracle Committee  | Monitors network state and approves commission rate changes       |
 
 ---
 
-## **VIII. Emergency Brake**
+## VI. Allocation Flow
 
-In case of protocol anomaly or exploit:
+After emission, tokens flow as follows:
 
-- The **Fee Distribution Engine** can be halted by multi-signature from:
-  - All-Seeing Eye
-  - Oracle Committee
-  - Founder Authority (if defined in initial config)
+1. `SYSTEM_EMISSION_AUTHORITY` mints `emissionAmount` → `recipient`
+2. `recipient` pays `nodeShare` (75%) → `SYSTEM_NODE_POOL`
+3. `recipient` pays `afcShare` (25%) → `SYSTEM_AFC_RESERVE`
+4. `recipient` burns `emissionAmount` → `SYSTEM_BURN_VAULT`
+
+All four steps execute atomically within a single database transaction.
+
+---
+
+## VII. Supply Snapshot Invariants
+
+Per canonical TX cycle:
+- `totalMinted` increases by `emissionAmount`
+- `totalBurned` increases by `emissionAmount`
+- `circulatingSupply` is unchanged (mint and burn cancel out)
+
+---
+
+## VIII. Emergency Brake
+
+In case of protocol anomaly or exploit, the emission engine can be halted by multi-signature from:
+- All-Seeing Eye
+- Oracle Committee
+- Founder Authority (if defined in initial config)
+
+Environment variable `KILL_SWITCH=true` halts all emission transitions; read-only mode persists.
 
 ---

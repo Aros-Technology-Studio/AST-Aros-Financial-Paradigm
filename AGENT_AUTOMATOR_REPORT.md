@@ -1,9 +1,9 @@
 # AGENT_AUTOMATOR_REPORT
 
-**Дата:** 2026-05-12
+**Дата:** 2026-05-13
 **Агент:** AGENT-AUTOMATOR
 **Репозиторий:** AST-Aros-Financial-Paradigm
-**Ветка:** claude/clever-ptolemy-XOB4V
+**Ветка:** agent/self-healing-pipeline
 
 ---
 
@@ -113,4 +113,4 @@ AGENT_AUTOMATOR_REPORT.md              — этот файл
 
 ---
 
-*Сгенерировано AGENT-AUTOMATOR · AST-Aros-Financial-Paradigm · 2026-05-12*
+*Сгенерировано AGENT-AUTOMATOR · AST-Aros-Financial-Paradigm · 2026-05-13*

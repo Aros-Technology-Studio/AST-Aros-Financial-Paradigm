@@ -3,8 +3,13 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   dispatch:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +37,11 @@ jobs:
             agents.push('AGENT-TEST-INT');
             core.setOutput('agents', agents.join(','));
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Run assigned agents
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -39,8 +49,5 @@ jobs:
         run: |
           echo "Запускаю агентов: $ASSIGNED_AGENTS"
           npm install -g @anthropic-ai/claude-code
-          claude --print "
-          Запущены агенты: $ASSIGNED_AGENTS
-          PR содержит изменения в соответствующих модулях.
-          Проверь изменения, запусти тесты, отчитайся.
-          "
+          claude --dangerously-skip-permissions -p \
+            "Запущены агенты: $ASSIGNED_AGENTS. PR содержит изменения в соответствующих модулях. Проверь изменения, запусти тесты, отчитайся."

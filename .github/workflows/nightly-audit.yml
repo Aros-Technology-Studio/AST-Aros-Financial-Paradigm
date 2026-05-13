@@ -4,6 +4,10 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  issues: write
+
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -30,7 +34,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           npm install -g @anthropic-ai/claude-code
-          claude --print "
+          claude --dangerously-skip-permissions -p "
           Проведи полный ночной аудит репозитория:
 
           1. Найди все TODO, FIXME, mock, заглушки в коде
@@ -41,7 +45,7 @@ jobs:
              - Non-custodial соблюдается?
              - Role isolation не нарушена?
              - ArosCoin 1:1 emission правильно реализована?
-          6. Создай файл reports/NIGHTLY_AUDIT_$(date +%Y%m%d).md
+          6. Создай файл reports/NIGHTLY_AUDIT_\$(date +%Y%m%d).md
              с полным отчётом
           7. Если критические проблемы → создай GitHub Issue
           "

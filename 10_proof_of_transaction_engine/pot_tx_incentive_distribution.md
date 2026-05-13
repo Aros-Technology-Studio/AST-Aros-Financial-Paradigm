@@ -1,39 +1,71 @@
 # PoT Transaction Incentive Distribution
 
 **Module:** AST PoT Engine  
-**Status:** Draft  
-**Date:** 2025-08-24  
+**Status:** Active  
+**Date:** 2026-05-13  
 
 ## 1. Purpose
-Distributes incentives (fees/emission) to validating nodes post-PoT confirmation in NodeChain.
+
+Distributes fee incentives to validating nodes post-PoT confirmation in NodeChain, following the
+canonical 75/25 commission split defined in `01_coin_engine/payment_distribution.md`.
 
 ## 2. Principles
-- Merit-Based: Proportional to weight/role in NodeChain.
-- Deflationary: Portion burned.
 
-## 3. Distribution Logic
-1. Collect fees from NodeChain TX.
-2. Allocate: 60% validators, 30% attesters, 10% burn.
-3. Disburse per weight.
+- **Canonical Split First**: The top-level split of every commission is always 75% → Node Pool,
+  25% → AFC Reserve. This layer distributes only the 75% node pool portion.
+- **Merit-Based**: Each node's share of the pool is proportional to its PoT weight.
+- **No Fee Burn**: Fees are not burned at distribution time. Burning applies to the emitted ARO
+  tokens (handled by `EmissionService`) — not to commission income.
+
+## 3. Two-Level Distribution Model
+
+```
+Commission (= TX Amount × rate)
+  ├── 75% → NODE POOL              ← this module distributes this portion
+  │     └── Each node receives: nodePool × (node_weight / Σ node_weights)
+  └── 25% → AFC RESERVE            ← locked in SYSTEM_AFC_RESERVE
+```
+
+> **Historical note**: Earlier versions of this document specified a 60% / 30% / 10% (validators /
+> attesters / burn) split applied directly to total fees. That model has been superseded by the
+> canonical 75/25 protocol (PR #72). Within the node pool, all active nodes — whether validators or
+> attesters — compete on PoT weight alone; there is no hard role-tier percentage.
 
 ## 4. Formula
-Node Incentive = total_incentives * (node_weight / total_weights)
 
-## 5. Python Example
+```
+nodePool      = commission × 0.75
+afcReserve    = commission × 0.25
+
+node_weight_i = potScore(node_i) / Σ potScore(all_nodes)   # normalised, sums to 1.0
+
+payment_i     = nodePool × node_weight_i
+```
+
+`potScore` is a function of verified transaction count, validation latency, and slashing penalties.
+
+## 5. Reference Implementation
+
 ```python
-def distribute(total_incentives: float, nodes: list[dict]) -> dict:
-    total_weight = sum(n['weight'] for n in nodes)
-    dist = {}
+def distribute_node_pool(commission: float, nodes: list[dict]) -> dict:
+    node_pool = commission * 0.75
+    # afc_reserve = commission * 0.25  # handled by EmissionService / FeeDistributionService
+
+    total_weight = sum(n['pot_score'] for n in nodes)
+    payments = {}
     for node in nodes:
-        share = total_incentives * (node['weight'] / total_weight)
-        dist[node['id']] = share
-    return dist
+        payments[node['id']] = node_pool * (node['pot_score'] / total_weight)
+    return payments
 ```
 
 ## 6. Dependencies
-- 01_coin_engine/payment_distribution.md (fee splits).
-- 08_emission_layer/epoch_allocation_model.md (emission tie-in).
+
+- `01_coin_engine/payment_distribution.md` — canonical 75/25 split definition
+- `src/token/emission.service.ts` — per-TX emission lifecycle (MINT → FEE → BURN)
+- `src/fee_distribution/fee_distribution.service.ts` — epoch-level 75/25 distribution
 
 ## 7. Notes
-- Epoch-End: Distribute at epoch close in NodeChain.
-- Audit: Feed to All-Seeing Eye for transparency.
+
+- **Epoch-End**: Accumulated node pool tokens are distributed at epoch close in NodeChain.
+- **Audit**: Every distribution event is fed to The All-Seeing Eye for transparency.
+- **Commission Rate**: Governance can adjust the rate within protocol bounds via `EmissionService.updateCommissionRate()`.

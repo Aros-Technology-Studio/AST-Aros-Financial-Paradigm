@@ -1,26 +1,70 @@
 import { Controller, Post, Body, Get, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { TokenService } from './token.service';
+import { EmissionService } from './emission.service';
 
 @Controller('api/v1/token')
 export class TokenController {
     private readonly logger = new Logger(TokenController.name);
 
-    constructor(private readonly tokenService: TokenService) { }
+    constructor(
+        private readonly tokenService: TokenService,
+        private readonly emissionService: EmissionService,
+    ) { }
+
+    /**
+     * Canonical 1:1 emission entry point.
+     * POST /api/v1/token/emit
+     * Body: { transactionAmount, recipient, referenceId, commissionRate? }
+     *
+     * Emission = transactionAmount (1:1)
+     * Fee      = transactionAmount × rate  → 75% nodes + 25% AFC reserve
+     * Burn     = emissionAmount after TX completes
+     */
+    @Post('emit')
+    async canonicalEmit(
+        @Body() body: {
+            transactionAmount: number;
+            recipient: string;
+            referenceId: string;
+            commissionRate?: number;
+        },
+    ) {
+        try {
+            const result = await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+            return {
+                status:               'SUCCESS',
+                transactionAmount:    result.transactionAmount,
+                emissionAmount:       result.emissionAmount,
+                commission:           result.commission,
+                nodeShare:            result.nodeShare,
+                afcReserveShare:      result.afcReserveShare,
+                commissionRate:       result.commissionRate,
+                currentEmissionPrice: this.emissionService.getCurrentEmissionPrice(),
+                afcReserveState:      this.emissionService.getAfcReserveState(),
+            };
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Get('emit/reserve')
+    getAfcReserveState() {
+        return this.emissionService.getAfcReserveState();
+    }
+
+    @Get('emit/price')
+    getCurrentEmissionPrice() {
+        return { reserveIndex: this.emissionService.getCurrentEmissionPrice() };
+    }
 
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {
-        // Institutional Interface: ArosCoinSettlementInterface
-        // Allows AFC anchors to settle large batches of ArosCoin off-chain (or optimized on-chain)
-
         this.logger.log(`[Institutional Settlement] Processing Batch ${body.batchId} from ${body.counterparty}. Vol: ${body.totalVolume}`);
-
-        // 1. Record Volume in Process Reserve (This strengthens the currency)
-        // Accessing private service via public wrapper methods if they existed, or injecting ProcessReserve here too.
-        // For now, let's treat it as a "Mintless" volume update? 
-        // No, settlement usually implies movement.
-        // Let's assume we invoke a method on TokenService to "recordSettlement".
-
-        // return this.tokenService.processSettlement(body);
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
     }
 

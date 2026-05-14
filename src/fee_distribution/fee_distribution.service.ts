@@ -5,6 +5,7 @@ import { EpochEntity } from './epoch.entity';
 import { DistributionLogEntity } from './distribution_log.entity';
 import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
+import { EmissionService } from '../token/emission.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
 
@@ -25,9 +26,10 @@ export class FeeDistributionService {
         private readonly transactionRepo: Repository<Transaction>,
         private readonly potService: PoTService,
         private readonly tokenService: TokenService,
+        private readonly emissionService: EmissionService,
         private readonly nodeChainService: NodeChainService,
         private readonly smartContractService: SmartContractIntegration,
-        private readonly dataSource: DataSource, // For transactionality
+        private readonly dataSource: DataSource,
     ) { }
 
     /**
@@ -163,7 +165,7 @@ export class FeeDistributionService {
                 `→ node pool=${nodePool.toFixed(8)} (75%) | AFC reserve=${afcReserve.toFixed(8)} (25%)`,
             );
 
-            // Record AFC reserve contribution
+            // Record AFC reserve contribution on ledger
             await this.transactionRepo.save({
                 hash:         `AFC_RESERVE_${epoch.epochNumber}`,
                 previousHash: 'SYSTEM',
@@ -177,6 +179,10 @@ export class FeeDistributionService {
                 status:       TransactionStatus.CONFIRMED,
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
+
+            // Sync epoch AFC contribution into emission price index so that
+            // epoch-level distributions also drive the reserveIndex upward.
+            this.emissionService.updateAfcReserve(afcReserve);
 
             let distributedSum = 0;
 

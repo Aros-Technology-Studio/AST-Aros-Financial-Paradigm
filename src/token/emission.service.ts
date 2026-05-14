@@ -162,6 +162,14 @@ export class EmissionService {
     }
 
     /**
+     * Records an epoch-level AFC contribution from FeeDistributionService.
+     * Keeps the in-memory reserve index consistent with both per-TX and per-epoch sources.
+     */
+    recordEpochAfcContribution(afcAmount: number): void {
+        this.updateAfcReserve(afcAmount);
+    }
+
+    /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
      */

@@ -12,20 +12,41 @@ Distributes incentives (fees/emission) to validating nodes post-PoT confirmation
 - Deflationary: Portion burned.
 
 ## 3. Distribution Logic
-1. Collect fees from NodeChain TX.
-2. Allocate: 60% validators, 30% attesters, 10% burn.
-3. Disburse per weight.
+
+Canonical 75/25 split (aligned with `EmissionService` and `FeeDistributionService`):
+
+1. Collect commission from each finalized PoT TX.
+2. Allocate:
+   - **75%** → Node Pool (`SYSTEM_NODE_POOL_00000000000000000000`)
+   - **25%** → AFC Reserve (`SYSTEM_AFC_RESERVE_000000000000000000`)
+3. Within the node pool, disburse per PoT-normalized weight (see §4).
+
+> **Historical note**: Earlier revisions of this file specified a 60/30/10 split across validators, attesters, and burn. The canonical protocol (PR #72) supersedes this with the unified 75/25 model. Governance bounties and ecosystem grants are funded from the AFC reserve via governance vote, not from the per-TX commission split.
 
 ## 4. Formula
-Node Incentive = total_incentives * (node_weight / total_weights)
+
+```
+node_pool    = total_incentives × 0.75
+afc_reserve  = total_incentives × 0.25
+
+payment_per_node = node_pool × node_weight
+node_weight      = potScore(node) / Σ potScore(all_nodes)
+```
 
 ## 5. Python Example
+
 ```python
+NODE_SHARE = 0.75
+AFC_SHARE  = 0.25
+
 def distribute(total_incentives: float, nodes: list[dict]) -> dict:
+    node_pool   = total_incentives * NODE_SHARE
+    afc_reserve = total_incentives * AFC_SHARE
+
     total_weight = sum(n['weight'] for n in nodes)
-    dist = {}
+    dist = {'afc_reserve': afc_reserve}
     for node in nodes:
-        share = total_incentives * (node['weight'] / total_weight)
+        share = node_pool * (node['weight'] / total_weight)
         dist[node['id']] = share
     return dist
 ```

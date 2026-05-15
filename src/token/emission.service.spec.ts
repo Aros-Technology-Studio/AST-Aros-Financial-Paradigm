@@ -1,61 +1,30 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { EmissionService } from './emission.service';
-import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
-import { TransactionType } from '../ledger/entities/transaction.entity';
+import { SupplySnapshot } from './entities/supply_snapshot.entity';
+import { Repository } from 'typeorm';
 
-const mockSupplyRepo = {
-    find: jest.fn(),
-    findOne: jest.fn(),
-    save: jest.fn(),
-};
-
-const mockLedgerService = {
-    recordTransaction: jest.fn().mockResolvedValue({ hash: 'TX_HASH' }),
-};
-
-const mockQueryRunner = {
-    connect: jest.fn(),
-    startTransaction: jest.fn(),
-    commitTransaction: jest.fn(),
-    rollbackTransaction: jest.fn(),
-    release: jest.fn(),
-    manager: {
-        find: jest.fn().mockResolvedValue([]),
-        save: jest.fn().mockResolvedValue(undefined),
-    },
-};
-
-const mockDataSource = {
-    createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
-};
+// Direct instantiation — avoids DI wiring for pure-unit tests.
+// All tested methods (calculate, getAfcReserveState, getCurrentEmissionPrice,
+// updateCommissionRate, updateAfcReserve) operate on in-memory state only.
+function buildService(): EmissionService {
+    return new EmissionService(
+        {} as Repository<SupplySnapshot>,
+        {} as LedgerService,
+        {} as DataSource,
+    );
+}
 
 describe('EmissionService', () => {
     let service: EmissionService;
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                EmissionService,
-                { provide: getRepositoryToken(SupplySnapshot), useValue: mockSupplyRepo },
-                { provide: LedgerService, useValue: mockLedgerService },
-                { provide: 'DataSource', useValue: mockDataSource },
-            ],
-        })
-            .overrideProvider('DataSource')
-            .useValue(mockDataSource)
-            .compile();
-
-        service = module.get<EmissionService>(EmissionService);
-        jest.clearAllMocks();
-        mockQueryRunner.manager.find.mockResolvedValue([]);
-        mockLedgerService.recordTransaction.mockResolvedValue({ hash: 'TX_HASH' });
+    beforeEach(() => {
+        service = buildService();
     });
 
     // ────────────────────────────────────────────────────────────────────────
-    // calculate() — pure function, canonical 1:1 model
+    // calculate() — canonical 1:1 model
     // ────────────────────────────────────────────────────────────────────────
 
     describe('calculate()', () => {
@@ -116,28 +85,30 @@ describe('EmissionService', () => {
 
         it('rises monotonically as AFC reserve accumulates', () => {
             const before = service.getCurrentEmissionPrice();
-            // Trigger reserve growth directly via calculate + getAfcReserveState
-            const result = service.calculate(100_000);
-            // Simulate reserve update
-            (service as any).updateAfcReserve(result.afcReserveShare);
+            (service as any).updateAfcReserve(12.5);
             const after = service.getCurrentEmissionPrice();
             expect(after).toBeGreaterThan(before);
         });
 
         it('reserveIndex = 1.0 + sqrt(totalReserve) / 10_000', () => {
-            const testAmount = 10_000; // 25 AFC units at 0.5% rate, 25% split = 12.5
-            const afcAmount = testAmount * 0.005 * 0.25; // 12.5
+            const afcAmount = 12.5; // $10k tx, 0.5% commission, 25% AFC share
             (service as any).updateAfcReserve(afcAmount);
             const expectedIndex = 1.0 + Math.sqrt(afcAmount) / 10_000;
             expect(service.getCurrentEmissionPrice()).toBeCloseTo(expectedIndex, 6);
         });
 
-        it('getAfcReserveState returns a read-only snapshot', () => {
+        it('getAfcReserveState returns a snapshot with required fields', () => {
             const state = service.getAfcReserveState();
             expect(state).toHaveProperty('totalReserve');
             expect(state).toHaveProperty('reserveIndex');
             expect(state).toHaveProperty('transactionCount');
             expect(state).toHaveProperty('lastUpdated');
+        });
+
+        it('transactionCount increments on each AFC update', () => {
+            (service as any).updateAfcReserve(10);
+            (service as any).updateAfcReserve(10);
+            expect(service.getAfcReserveState().transactionCount).toBe(2);
         });
     });
 

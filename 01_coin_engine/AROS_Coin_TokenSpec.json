@@ -6,10 +6,12 @@
       "decimals": 8,
       "totalSupply": "dynamic", 
       "supplyMechanism": {
-        "type": "transaction-fee-based",
+        "type": "transaction-bounded-1to1",
         "initialSupply": 0,
         "mintOn": "verified_transaction",
-        "burnOn": "governance_rule"
+        "burnOn": "transaction_completion",
+        "emissionModel": "1:1 — emissionAmount equals transactionAmount exactly",
+        "netCirculatingChange": 0
       }
     },
     "governance": {
@@ -22,12 +24,13 @@
     },
     "transactionFees": {
       "feeType": "variable",
-      "calculation": "gasless_weighted + time_priority + load_balance",
+      "defaultRate": 0.005,
+      "calculation": "transactionAmount × commissionRate",
       "distribution": {
-        "nodeOperators": 0.75,
-        "AST treasury": 0.20,
-        "Audit Pool": 0.05
-      }
+        "nodePool": 0.75,
+        "afcReserve": 0.25
+      },
+      "notes": "75% → SYSTEM_NODE_POOL (distributed by PoT weight); 25% → SYSTEM_AFC_RESERVE (drives emission price index)"
     },
     "compatibility": {
       "blockchain": "AST_NodeChain",

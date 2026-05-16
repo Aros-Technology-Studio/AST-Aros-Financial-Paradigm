@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { EmissionService } from './emission.service';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
+import { TransactionType } from '../ledger/entities/transaction.entity';
 import { DataSource } from 'typeorm';
 
 const mockLedger = { recordTransaction: jest.fn().mockResolvedValue({}) };
@@ -95,22 +96,24 @@ describe('EmissionService — canonical 1:1 model', () => {
 
             const calls = mockLedger.recordTransaction.mock.calls;
             expect(calls).toHaveLength(4);
-            expect(calls[0][0].type).toBe('MINT');
-            expect(calls[1][0].type).toBe('FEE_DISTRIBUTION');
-            expect(calls[2][0].type).toBe('FEE_DISTRIBUTION');
-            expect(calls[3][0].type).toBe('BURN');
+            expect(calls[0][0].type).toBe(TransactionType.MINT);
+            expect(calls[1][0].type).toBe(TransactionType.FEE_DISTRIBUTION);
+            expect(calls[2][0].type).toBe(TransactionType.FEE_DISTRIBUTION);
+            expect(calls[3][0].type).toBe(TransactionType.BURN);
         });
 
         it('MINT amount equals transaction amount (1:1)', async () => {
             await service.processTransactionEmission(200, 'ADDR_1', 'REF_B');
-            const mintCall = mockLedger.recordTransaction.mock.calls[0][0];
-            expect(parseFloat(mintCall.amount)).toBeCloseTo(200, 6);
+            const [mintCall] = mockLedger.recordTransaction.mock.calls;
+            expect(mintCall[0].type).toBe(TransactionType.MINT);
+            expect(parseFloat(mintCall[0].amount)).toBeCloseTo(200, 6);
         });
 
         it('BURN amount equals emission amount (ARO destroyed after TX)', async () => {
             await service.processTransactionEmission(200, 'ADDR_1', 'REF_C');
-            const burnCall = mockLedger.recordTransaction.mock.calls[3][0];
-            expect(parseFloat(burnCall.amount)).toBeCloseTo(200, 6);
+            const burnCall = mockLedger.recordTransaction.mock.calls[3];
+            expect(burnCall[0].type).toBe(TransactionType.BURN);
+            expect(parseFloat(burnCall[0].amount)).toBeCloseTo(200, 6);
         });
 
         it('returns an EmissionResult with correct values', async () => {

@@ -64,8 +64,8 @@ export class BridgeService {
             request.relatedTxHash = request.externalReference;
             await this.bridgeRepo.save(request);
 
-            this.logger.log(`Deposit processed via Bridge. Ref: ${transactionId}, TX: ${mintResult.txHash}`);
-            return { success: true, txHash: mintResult.txHash };
+            this.logger.log(`Deposit processed via Bridge. Ref: ${transactionId}, TX: ${request.externalReference}`);
+            return { success: true, txHash: request.externalReference };
 
         } catch (error) {
             // 6. Обработка ошибок

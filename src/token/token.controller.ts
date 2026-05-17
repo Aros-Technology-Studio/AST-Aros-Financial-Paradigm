@@ -1,11 +1,15 @@
 import { Controller, Post, Body, Get, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { TokenService } from './token.service';
+import { EmissionService } from './emission.service';
 
 @Controller('api/v1/token')
 export class TokenController {
     private readonly logger = new Logger(TokenController.name);
 
-    constructor(private readonly tokenService: TokenService) { }
+    constructor(
+        private readonly tokenService: TokenService,
+        private readonly emissionService: EmissionService,
+    ) { }
 
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {
@@ -22,6 +26,41 @@ export class TokenController {
 
         // return this.tokenService.processSettlement(body);
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
+    }
+
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Emit = txAmount (1:1), Fee = txAmount × rate, 75% nodes / 25% AFC reserve, burn after TX.
+     */
+    @Post('emit')
+    async emitForTransaction(
+        @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+    ) {
+        try {
+            const result = await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+            return {
+                status:           'SUCCESS',
+                referenceId:      body.referenceId,
+                emissionAmount:   result.emissionAmount,
+                commission:       result.commission,
+                nodeShare:        result.nodeShare,
+                afcReserveShare:  result.afcReserveShare,
+                commissionRate:   result.commissionRate,
+                emissionPrice:    this.emissionService.getCurrentEmissionPrice(),
+            };
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Get('emission/reserve')
+    getAfcReserveState() {
+        return this.emissionService.getAfcReserveState();
     }
 
     @Post('mint')

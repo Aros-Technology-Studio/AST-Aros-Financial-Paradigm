@@ -1,14 +1,14 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ProcessingParams } from './tokenomics.interfaces';
-import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
+import { EmissionService } from './emission.service';
 
 @Injectable()
 export class TokenomicsService {
     private readonly logger = new Logger(TokenomicsService.name);
 
     constructor(
-        private readonly processReserve: ProcessReserveLedgerService,
+        private readonly emissionService: EmissionService,
     ) {}
 
     private processingConfig = {
@@ -33,20 +33,16 @@ export class TokenomicsService {
     }
 
     /**
-     * Price is driven by the AFC reserve index from EmissionService.
-     * Called externally; the price source of truth lives in EmissionService.
-     * This method exists for compatibility with callers that expect it here.
-     *
-     * NOTE: For canonical price, prefer EmissionService.getCurrentEmissionPrice().
+     * Returns current emission price from the canonical AFC reserve index.
+     * Delegates to EmissionService — the authoritative price source.
+     * Formula: 1.0 + sqrt(totalAfcReserve) / 10_000
      */
     getCurrentPrice(): number {
-        const state = this.processReserve.getReserveState();
-        return state.reserveIndex;
+        return this.emissionService.getCurrentEmissionPrice();
     }
 
     /** @deprecated Use EmissionService.processTransactionEmission() for canonical flow. */
     updateInternalValuation(): void {
-        // No-op: valuation is now driven by AFC reserve in EmissionService.
-        // Kept for backward-compat with existing callers.
+        // No-op: valuation is driven by AFC reserve in EmissionService.
     }
 }

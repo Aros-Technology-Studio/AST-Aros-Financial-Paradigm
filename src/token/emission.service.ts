@@ -182,6 +182,15 @@ export class EmissionService {
     }
 
     /**
+     * Public entry point for epoch-level AFC contributions (e.g. FeeDistributionService).
+     * Keeps the in-memory reserve index in sync with ledger-recorded epoch fees.
+     */
+    addAfcReserve(amount: number): void {
+        if (amount <= 0) return;
+        this.updateAfcReserve(amount);
+    }
+
+    /**
      * Returns the current AFC reserve state (read-only snapshot).
      */
     getAfcReserveState(): Readonly<AfcReserveState> {

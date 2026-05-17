@@ -7,6 +7,27 @@ export class TokenController {
 
     constructor(private readonly tokenService: TokenService) { }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Emits txAmount ARO to recipient, splits commission 75/25 (nodes/AFC),
+     * then burns the emitted ARO. Net circulating supply change = 0.
+     */
+    @Post('emission')
+    async processCanonicalEmission(
+        @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+    ) {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {
         // Institutional Interface: ArosCoinSettlementInterface

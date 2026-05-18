@@ -185,3 +185,25 @@ After 12.50 AFC accumulated:
 - **Persist `AfcReserveState` to DB** — currently in-memory; lost on service restart. Add `AfcReserveEntity` table.
 - **Sync epoch AFC contribution** — `FeeDistributionService` records AFC on ledger but does not call `EmissionService.updateAfcReserve()`; consider calling it after each epoch finalization to keep the in-memory index accurate.
 - **Deprecate `TokenService.mint()`** — now that the controller uses the canonical path, mark `mint()` as `@deprecated` and plan removal.
+
+---
+
+## 10. Independent Re-verification Pass — 2026-05-18
+
+A second audit pass independently confirmed all fixes from §3 are in place and no regressions have been introduced.
+
+| File checked | State |
+|-------------|-------|
+| `src/token/emission.service.ts` | ✅ Lines 52–71: `emission = transactionAmount` (1:1), `commission = txAmount * rate`, `nodeShare = commission * 0.75`, `afcShare = commission * 0.25` |
+| `src/token/emission.interfaces.ts` | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` — all fields correct |
+| `src/token/token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService.processTransactionEmission()` |
+| `src/token/token.controller.ts` | ✅ `POST /mint` calls `mintForTransaction()`; `GET /emission/state` returns AFC live state |
+| `src/token/tokenomics.service.ts` | ✅ `getCurrentPrice()` → `emissionService.getCurrentEmissionPrice()` |
+| `src/token/token.module.ts` | ✅ `EmissionService` in providers and exports |
+| `src/fee_distribution/fee_distribution.service.ts` | ✅ `NODE_SHARE_RATIO=0.75`, `AFC_SHARE_RATIO=0.25` — canonical epoch split confirmed |
+| `src/proof_of_transaction_engine/pot.service.ts` | ✅ PoT weight normalisation unchanged |
+| `01_coin_engine/coin_emission_model.md` | ✅ Canonical formulas, AFC reserve index, worked example |
+| `01_coin_engine/aro_emission_protocol.md` | ✅ Sequence diagram, allocation flow — all correct |
+| `01_coin_engine/payment_distribution.md` | ✅ 75/25 split, PoT weight formula, historical note on deprecated 60/15/15/5/5 |
+
+**All canonical invariants hold. No further code changes required.**

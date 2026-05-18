@@ -201,8 +201,40 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 8. Remaining Recommendations
+## 8. Pass 3 — Verification Run (2026-05-18)
+
+**Agent run:** AGENT-CORE (current session)  
+**Purpose:** Full re-audit of all emission logic against canonical model after Pass 1+2 changes.
+
+### Verification Result: ✅ All canonical invariants confirmed
+
+All Pass 1 and Pass 2 fixes are in place and correct. The emission engine fully implements the canonical model with no divergences.
+
+### Additional change — `src/token/token.service.spec.ts`
+
+Added `mintForTransaction()` test suite (3 tests) covering the canonical entry point:
+- Delegates to `EmissionService.processTransactionEmission()` with correct arguments
+- Throws `BadRequestException` on zero/negative amount
+- Emits `token.emission.canonical` event with correct payload
+
+This closes the last item in the Pass 2 recommendations list.
+
+### All Files Changed Across All Passes
+
+| File | Pass | Change |
+|------|------|--------|
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | 1 | Fixed divergent 60/30/10 split → canonical 75/25 |
+| `src/token/emission.service.spec.ts` | 1 | Created — 25 Jest unit tests for `EmissionService` |
+| `tests/test_emission.py` | 1 | Created — 22 deterministic Python reference tests |
+| `src/token/emission.service.ts` | 2 | Added `public addAfcReserve()` method for external callers |
+| `src/token/tokenomics.service.ts` | 2 | `getCurrentPrice()` now delegates to `EmissionService` (canonical formula) |
+| `src/fee_distribution/fee_distribution.service.ts` | 2 | Injects `EmissionService`; calls `addAfcReserve()` after epoch distribution |
+| `src/token/token.service.spec.ts` | 3 | Added `mintForTransaction()` test suite (canonical entry point) |
+| `AGENT_CORE_REPORT.md` | 1+2+3 | This file |
+
+---
+
+## 9. Remaining Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add an `AfcReserveEntity` table with periodic snapshots and restore on boot.
-- **Wire `mintForTransaction()` into ingestion pipeline** — replace any remaining legacy `mint()` calls in the bridge/ingestion path with the canonical entry point.
-- **Add `mintForTransaction` tests to `token.service.spec.ts`** — existing spec only covers legacy `mint()` and `burn()`.
+- **Wire `mintForTransaction()` into ingestion pipeline** — `IngestionService.ingestAsset()` has legacy `mint()` commented out; should call `mintForTransaction()` for canonical flow.

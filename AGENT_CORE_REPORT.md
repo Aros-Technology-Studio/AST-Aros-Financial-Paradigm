@@ -48,8 +48,9 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | `emission.service.ts` | ✅ Full canonical 1:1 lifecycle implemented | None required |
 | `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved | None required |
 | `tokenomics.service.ts` | ❌ `getCurrentPrice()` delegated to `processReserve` (log1p), not canonical sqrt | **Fixed** — now delegates to `EmissionService.getCurrentEmissionPrice()` |
-| `token.controller.ts` | ❌ `POST /api/v1/token/mint` called legacy `mint()` — no fee split, no burn | **Fixed** — now calls `mintForTransaction()`; adds `GET /emission/state` |
+| `token.controller.ts` | ❌ `POST /api/v1/token/mint` called legacy `mint()` — no fee split, no burn | **Fixed** — now calls `mintForTransaction()`; adds `GET /emission/state` (AFC reserve live state) |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported | None required |
+| `emission.service.spec.ts` | ❌ Missing | **Added** — 17 unit tests for `calculate()`, AFC reserve formula, `processTransactionEmission()`, and `updateCommissionRate()` |
 
 ### src/fee_distribution/ — Canonical, no changes needed
 
@@ -183,5 +184,4 @@ After 12.50 AFC accumulated:
 
 - **Persist `AfcReserveState` to DB** — currently in-memory; lost on service restart. Add `AfcReserveEntity` table.
 - **Sync epoch AFC contribution** — `FeeDistributionService` records AFC on ledger but does not call `EmissionService.updateAfcReserve()`; consider calling it after each epoch finalization to keep the in-memory index accurate.
-- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Deprecate `TokenService.mint()`** — now that the controller uses the canonical path, mark `mint()` as `@deprecated` and plan removal.

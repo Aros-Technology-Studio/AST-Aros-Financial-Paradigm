@@ -52,10 +52,12 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported | None required |
 | `emission.service.spec.ts` | ❌ Missing | **Added** — 17 unit tests for `calculate()`, AFC reserve formula, `processTransactionEmission()`, and `updateCommissionRate()` |
 
-### src/fee_distribution/ — Canonical, no changes needed
+### src/fee_distribution/ — **Fixed** (epoch→EmissionService sync gap)
 
 `FeeDistributionService.distributeRewards()` applies the canonical 75/25 epoch-level split.  
 `NODE_SHARE_RATIO = 0.75`, `AFC_SHARE_RATIO = 0.25` — confirmed correct.
+
+After each epoch's AFC reservation is written to the ledger, `emissionService.recordAfcContribution(afcReserve)` is called so the in-memory price index reflects epoch-level contributions in addition to per-TX ones.
 
 ### src/proof_of_transaction_engine/
 
@@ -134,7 +136,7 @@ POST /api/v1/token/mint  →  TokenController.mintTokens()
             ├─ Ledger MINT:             emissionAmount → recipient
             ├─ Ledger FEE_DISTRIBUTION: nodeShare  → SYSTEM_NODE_POOL
             ├─ Ledger FEE_DISTRIBUTION: afcShare   → SYSTEM_AFC_RESERVE
-            ├─ updateAfcReserve(afcShare):
+            ├─ recordAfcContribution(afcShare):
             │    reserveIndex = 1.0 + sqrt(totalReserve) / 10_000
             └─ Ledger BURN:             emissionAmount → SYSTEM_BURN_VAULT
 ```
@@ -182,28 +184,43 @@ After 12.50 AFC accumulated:
 
 ## 9. Remaining Recommendations (non-blocking)
 
-- **Persist `AfcReserveState` to DB** — currently in-memory; lost on service restart. Add `AfcReserveEntity` table.
-- **Sync epoch AFC contribution** — `FeeDistributionService` records AFC on ledger but does not call `EmissionService.updateAfcReserve()`; consider calling it after each epoch finalization to keep the in-memory index accurate.
+- **Persist `AfcReserveState` to DB** — currently in-memory; lost on service restart. Add `AfcReserveEntity` table with periodic snapshots and restore on startup.
 - **Deprecate `TokenService.mint()`** — now that the controller uses the canonical path, mark `mint()` as `@deprecated` and plan removal.
+- **Add TypeScript unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, and zero-amount guard at the NestJS layer in addition to the Python reference tests.
 
 ---
 
-## 10. Independent Re-verification Pass — 2026-05-18
+---
 
-A second audit pass independently confirmed all fixes from §3 are in place and no regressions have been introduced.
+## 10. Re-verification Pass — 2026-05-18
 
-| File checked | State |
-|-------------|-------|
-| `src/token/emission.service.ts` | ✅ Lines 52–71: `emission = transactionAmount` (1:1), `commission = txAmount * rate`, `nodeShare = commission * 0.75`, `afcShare = commission * 0.25` |
+This pass closed the remaining gap and consolidated the AFC reserve API:
+
+### Changes in this pass
+
+| File | Change |
+|------|--------|
+| `src/token/emission.service.ts` | Merged `updateAfcReserve` (private) + `addAfcReserve` (public wrapper) into a single `recordAfcContribution()` method; added `afcAmount <= 0` guard |
+| `src/fee_distribution/fee_distribution.service.ts` | Updated call site: `addAfcReserve` → `recordAfcContribution` |
+| `src/token/token.service.spec.ts` | Updated mock: `updateAfcReserve` → `recordAfcContribution` |
+| `src/fee_distribution/fee_distribution.service.test.ts` | Updated mock: `addAfcReserve` → `recordAfcContribution` |
+| `tests/test_emission.py` | Converted from `pytest` to stdlib `unittest` (pytest not installed in CI env); 24 tests all passing |
+
+### Full file-level verification
+
+| File | State |
+|------|-------|
+| `src/token/emission.service.ts` | ✅ `emission = transactionAmount` (1:1); `commission = txAmount * rate`; `nodeShare = commission * 0.75`; `afcShare = commission * 0.25`; `recordAfcContribution()` updates index |
 | `src/token/emission.interfaces.ts` | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` — all fields correct |
 | `src/token/token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService.processTransactionEmission()` |
 | `src/token/token.controller.ts` | ✅ `POST /mint` calls `mintForTransaction()`; `GET /emission/state` returns AFC live state |
 | `src/token/tokenomics.service.ts` | ✅ `getCurrentPrice()` → `emissionService.getCurrentEmissionPrice()` |
 | `src/token/token.module.ts` | ✅ `EmissionService` in providers and exports |
-| `src/fee_distribution/fee_distribution.service.ts` | ✅ `NODE_SHARE_RATIO=0.75`, `AFC_SHARE_RATIO=0.25` — canonical epoch split confirmed |
+| `src/fee_distribution/fee_distribution.service.ts` | ✅ 75/25 split; `recordAfcContribution()` called after epoch AFC reservation |
 | `src/proof_of_transaction_engine/pot.service.ts` | ✅ PoT weight normalisation unchanged |
 | `01_coin_engine/coin_emission_model.md` | ✅ Canonical formulas, AFC reserve index, worked example |
-| `01_coin_engine/aro_emission_protocol.md` | ✅ Sequence diagram, allocation flow — all correct |
-| `01_coin_engine/payment_distribution.md` | ✅ 75/25 split, PoT weight formula, historical note on deprecated 60/15/15/5/5 |
+| `01_coin_engine/aro_emission_protocol.md` | ✅ Sequence diagram, allocation flow — correct |
+| `01_coin_engine/payment_distribution.md` | ✅ 75/25 split, PoT weight formula |
+| `tests/test_emission.py` | ✅ 24 tests all passing (stdlib unittest) |
 
-**All canonical invariants hold. No further code changes required.**
+**All canonical invariants hold.**

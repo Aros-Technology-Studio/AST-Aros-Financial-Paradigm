@@ -43,7 +43,7 @@ describe('FeeDistributionService', () => {
     const mockTokenService = {};
 
     const mockEmissionService = {
-        addAfcReserve: jest.fn(),
+        recordAfcContribution: jest.fn(),
     };
 
     const mockNodeChainService = {

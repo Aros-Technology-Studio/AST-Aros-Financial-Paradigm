@@ -180,8 +180,9 @@ export class FeeDistributionService {
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
 
-            // Sync in-memory AFC reserve index so the canonical price rises after each epoch
-            this.emissionService.addAfcReserve(afcReserve);
+            // Sync epoch AFC contribution into EmissionService so the price index
+            // reflects both per-transaction and per-epoch reserve accumulation.
+            this.emissionService.recordAfcContribution(afcReserve);
 
             let distributedSum = 0;
 

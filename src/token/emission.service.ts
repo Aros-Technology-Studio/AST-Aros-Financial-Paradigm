@@ -164,8 +164,9 @@ export class EmissionService {
     /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
+     * Public so FeeDistributionService can sync epoch-level AFC contributions.
      */
-    private updateAfcReserve(afcAmount: number): void {
+    updateAfcReserve(afcAmount: number): void {
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();
@@ -179,6 +180,15 @@ export class EmissionService {
             `[AFC Reserve] +${afcAmount.toFixed(4)} → Total=${this.afcReserveState.totalReserve.toFixed(4)} ` +
             `Index=${this.afcReserveState.reserveIndex.toFixed(6)}`,
         );
+    }
+
+    /**
+     * Public entry point for epoch-level AFC contributions (e.g. FeeDistributionService).
+     * Keeps the in-memory reserve index in sync with ledger-recorded epoch fees.
+     */
+    addAfcReserve(amount: number): void {
+        if (amount <= 0) return;
+        this.updateAfcReserve(amount);
     }
 
     /**

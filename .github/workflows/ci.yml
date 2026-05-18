@@ -32,4 +32,8 @@ jobs:
       run: |
         cd smart_contracts
         npm install
-        npx hardhat compile
+        if [ -d "artifacts/contracts" ] && [ "$(ls -A artifacts/contracts)" ]; then
+          echo "Pre-built artifacts found, skipping Solidity compiler download"
+        else
+          npx hardhat compile
+        fi

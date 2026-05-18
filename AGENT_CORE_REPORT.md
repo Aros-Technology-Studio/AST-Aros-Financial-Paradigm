@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-05-18  
+**Date:** 2026-05-18 (Pass 5 — verification audit)  
 **Task:** Audit ArosCoin emission logic against the canonical model, align all code and documentation
 
 ---
@@ -222,7 +222,45 @@ This closes the final divergence between the HTTP API surface and the canonical 
 
 ---
 
-## 9. Remaining Recommendations
+## 9. Pass 5 — Verification Audit (2026-05-18)
+
+**Purpose:** Full re-audit of the canonical emission model across all code and documentation.
+
+**Audit result: ALL CLEAR — no deviations found.**
+
+| Check | Result |
+|-------|--------|
+| `EmissionService.calculate()` — 1:1 emission | ✅ `emissionAmount = transactionAmount` |
+| `EmissionService.calculate()` — fee formula | ✅ `commission = txAmount * 0.005` |
+| `EmissionService.calculate()` — 75/25 split | ✅ `nodeShare = commission * 0.75`, `afcShare = commission * 0.25` |
+| `EmissionService.processTransactionEmission()` — 4 atomic ledger steps | ✅ MINT → FEE×2 → BURN in `QueryRunner` |
+| `EmissionService.updateAfcReserve()` — price index formula | ✅ `1.0 + sqrt(totalReserve) / 10_000` |
+| `EmissionService.addAfcReserve()` — public epoch sync point | ✅ present |
+| `TokenomicsService.getCurrentPrice()` — canonical formula | ✅ delegates to `emissionService.getCurrentEmissionPrice()` |
+| `FeeDistributionService.distributeRewards()` — 75/25 epoch split | ✅ `nodePool = fees * 0.75`, `afcReserve = fees * 0.25` |
+| `FeeDistributionService` — syncs EmissionService after epoch | ✅ `emissionService.addAfcReserve(afcReserve)` |
+| `TokenController POST /mint` — routes to canonical path | ✅ calls `mintForTransaction()` |
+| `TokenController GET /emission/state` — exposes live AFC state | ✅ present |
+| `emission.service.spec.ts` — 25 Jest tests | ✅ all pass |
+| `token.service.spec.ts` — tests for `mintForTransaction()` | ✅ all pass |
+| `fee_distribution.service.test.ts` — 6 distribution tests | ✅ all pass |
+| `tests/test_emission.py` — 22 Python reference tests | ✅ present |
+| `01_coin_engine/coin_emission_model.md` — documentation | ✅ canonical 1:1 formulas |
+| `01_coin_engine/aro_emission_protocol.md` — documentation | ✅ canonical sequence flow |
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | ✅ canonical 75/25 split |
+
+**Test run summary (Pass 5):**
+```
+Test Suites: 3 passed, 3 total
+Tests:       36 passed, 36 total
+  - EmissionService: 25 tests
+  - TokenService:     5 tests
+  - FeeDistribution:  6 tests
+```
+
+---
+
+## 10. Remaining Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add an `AfcReserveEntity` table with periodic snapshots and restore on boot.
 - **Wire `mintForTransaction()` into ingestion pipeline** — `IngestionService.ingestAsset()` has legacy `mint()` commented out; should call `mintForTransaction()` for canonical flow.

@@ -38,6 +38,7 @@
 | `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved |
 | `tokenomics.service.ts` | **FIXED (Pass 2)** — `getCurrentPrice()` now delegates to `EmissionService.getCurrentEmissionPrice()` (was using non-canonical log1p formula) |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
+| `token.controller.ts` | **FIXED (Pass 4)** — `POST /mint` now calls `mintForTransaction()` (canonical); `GET /emission/state` added |
 
 ### src/fee_distribution/ — Status
 
@@ -73,6 +74,7 @@
 | Epoch fees also 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` |
 | Epoch AFC fees update price index | Yes | **FIXED (Pass 2)** — `emissionService.addAfcReserve()` called post-epoch |
 | `getCurrentPrice()` returns canonical formula | Yes | **FIXED (Pass 2)** — delegates to `emissionService.getCurrentEmissionPrice()` |
+| Controller routes canonical | Yes | **FIXED (Pass 4)** — `POST /mint` calls `mintForTransaction()` |
 | Net circulating supply change per TX cycle | 0 | ✅ `totalMinted += emission`, `totalBurned += emission` → net zero |
 
 ---
@@ -184,6 +186,7 @@ After 12.50 AFC accumulated:
 5. All four ledger steps succeed or all roll back (atomic `QueryRunner` transaction)
 6. Epoch AFC fees update `reserveIndex` via `addAfcReserve()` — fixed Pass 2
 7. `TokenomicsService.getCurrentPrice()` returns canonical sqrt-based index — fixed Pass 2
+8. `POST /api/v1/token/mint` routes through `mintForTransaction()` — fixed Pass 4
 
 ---
 
@@ -194,43 +197,28 @@ After 12.50 AFC accumulated:
 | `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | 1 | Fixed divergent 60/30/10 split → canonical 75/25 |
 | `src/token/emission.service.spec.ts` | 1 | Created — 25 Jest unit tests for `EmissionService` |
 | `tests/test_emission.py` | 1 | Created — 22 deterministic Python reference tests |
-| `src/token/emission.service.ts` | 2 | Added `public addAfcReserve()` method |
-| `src/token/tokenomics.service.ts` | 2 | `getCurrentPrice()` now uses `EmissionService` (canonical formula) |
-| `src/fee_distribution/fee_distribution.service.ts` | 2 | Injected `EmissionService`; calls `addAfcReserve()` after epoch distribution |
-| `AGENT_CORE_REPORT.md` | 1+2 | This file |
-
----
-
-## 8. Pass 3 — Verification Run (2026-05-18)
-
-**Agent run:** AGENT-CORE (current session)  
-**Purpose:** Full re-audit of all emission logic against canonical model after Pass 1+2 changes.
-
-### Verification Result: ✅ All canonical invariants confirmed
-
-All Pass 1 and Pass 2 fixes are in place and correct. The emission engine fully implements the canonical model with no divergences.
-
-### Additional change — `src/token/token.service.spec.ts`
-
-Added `mintForTransaction()` test suite (3 tests) covering the canonical entry point:
-- Delegates to `EmissionService.processTransactionEmission()` with correct arguments
-- Throws `BadRequestException` on zero/negative amount
-- Emits `token.emission.canonical` event with correct payload
-
-This closes the last item in the Pass 2 recommendations list.
-
-### All Files Changed Across All Passes
-
-| File | Pass | Change |
-|------|------|--------|
-| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | 1 | Fixed divergent 60/30/10 split → canonical 75/25 |
-| `src/token/emission.service.spec.ts` | 1 | Created — 25 Jest unit tests for `EmissionService` |
-| `tests/test_emission.py` | 1 | Created — 22 deterministic Python reference tests |
 | `src/token/emission.service.ts` | 2 | Added `public addAfcReserve()` method for external callers |
 | `src/token/tokenomics.service.ts` | 2 | `getCurrentPrice()` now delegates to `EmissionService` (canonical formula) |
 | `src/fee_distribution/fee_distribution.service.ts` | 2 | Injects `EmissionService`; calls `addAfcReserve()` after epoch distribution |
 | `src/token/token.service.spec.ts` | 3 | Added `mintForTransaction()` test suite (canonical entry point) |
-| `AGENT_CORE_REPORT.md` | 1+2+3 | This file |
+| `src/token/token.controller.ts` | 4 | `POST /mint` calls `mintForTransaction()` (canonical); `GET /emission/state` added |
+| `AGENT_CORE_REPORT.md` | 1+2+3+4 | This file |
+
+---
+
+## 8. Pass 4 — Controller Fix (2026-05-18)
+
+**Purpose:** The REST controller `POST /api/v1/token/mint` called the legacy `TokenService.mint()`
+which bypassed the canonical emission flow entirely — no commission calculation, no 75/25 split,
+no AFC reserve update, no burn.
+
+**Fix applied to `src/token/token.controller.ts`:**
+- `POST /mint` now calls `mintForTransaction(parseFloat(amount), recipient, refId, commissionRate?)`
+- `EmissionService` injected directly into the controller
+- New `GET /emission/state` endpoint returns live AFC reserve state + current emission price index
+- Removed stale inline comments from the settlement endpoint
+
+This closes the final divergence between the HTTP API surface and the canonical 1:1 emission model.
 
 ---
 
@@ -238,3 +226,4 @@ This closes the last item in the Pass 2 recommendations list.
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add an `AfcReserveEntity` table with periodic snapshots and restore on boot.
 - **Wire `mintForTransaction()` into ingestion pipeline** — `IngestionService.ingestAsset()` has legacy `mint()` commented out; should call `mintForTransaction()` for canonical flow.
+- **Deprecate `TokenService.mint()`** — mark it `@deprecated`; all canonical traffic now flows through `mintForTransaction()`. The legacy path is still invoked by bridge fiat-deposit flows; those should be migrated.

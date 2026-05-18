@@ -165,7 +165,7 @@ export class FeeDistributionService {
                 `→ node pool=${nodePool.toFixed(8)} (75%) | AFC reserve=${afcReserve.toFixed(8)} (25%)`,
             );
 
-            // Record AFC reserve contribution on ledger
+            // Record AFC reserve contribution to ledger
             await this.transactionRepo.save({
                 hash:         `AFC_RESERVE_${epoch.epochNumber}`,
                 previousHash: 'SYSTEM',
@@ -180,10 +180,8 @@ export class FeeDistributionService {
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
 
-            // Sync AFC reserve into EmissionService so the price index rises per canonical model.
-            // Without this call the in-memory reserveIndex would only reflect per-TX contributions,
-            // missing epoch-level accumulations entirely.
-            this.emissionService.updateAfcReserve(afcReserve);
+            // Sync in-memory AFC reserve index so the canonical price rises after each epoch
+            this.emissionService.addAfcReserve(afcReserve);
 
             let distributedSum = 0;
 

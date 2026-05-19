@@ -2,6 +2,7 @@
 Canonical 1:1 emission model — pure-math unit tests (no framework dependency).
 These mirror the TypeScript EmissionService.calculate() invariants.
 """
+import sys
 
 
 def calculate(transaction_amount: float, commission_rate: float = 0.005):
@@ -111,4 +112,4 @@ if __name__ == "__main__":
             print(f"  FAIL  {t.__name__}: {e}")
             failed += 1
     print(f"\n{passed} passed, {failed} failed")
-    exit(failed)
+    sys.exit(failed)

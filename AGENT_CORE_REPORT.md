@@ -281,3 +281,45 @@ Tests: 22 passed, 22 total
 | Price source of truth | EmissionService | ✅ `tokenomics.getCurrentPrice()` → `EmissionService` |
 
 **Status: CANONICAL MODEL FULLY IMPLEMENTED. No corrective action required.**
+
+---
+
+## 12. Final Audit Pass — 2026-05-19 (AGENT-CORE v3)
+
+Two residual spec-file divergences found and fixed:
+
+### Fix A — `AROS_Coin_TokenSpec.json` (machine-readable spec)
+
+| Field | Before | After |
+|-------|--------|-------|
+| `supplyMechanism.type` | `transaction-fee-based` | `transaction-amount-emission-1:1` |
+| `supplyMechanism.burnOn` | `governance_rule` | `transaction_completion` |
+| `transactionFees.distribution` | `{nodeOperators:0.75, ASTtreasury:0.20, AuditPool:0.05}` | removed (replaced with canonical `commission` block) |
+| `commission.distribution` | _(missing)_ | `{nodePool:0.75, afcReserve:0.25}` |
+| `afcReservePriceIndex` | _(missing)_ | `reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000` |
+| `metadata.version` | `1.0.0` | `2.0.0` |
+| `metadata.contractRef` | `contracts/aros_token_mainnet.sol` | `src/token/emission.service.ts` |
+
+### Fix B — `01_coin_engine/burn_and_mint_rules.md`
+
+| Section | Before | After |
+|---------|--------|-------|
+| §1 "When Minting is Allowed" | No mention of 1:1 canonical emission | Added canonical emission as primary minting trigger |
+| §1 "Minting Constraints" | `dailyMintLimit` hard-cap | Replaced with AFC price index as organic throttle; no fixed cap |
+| §2 "When Burning is Triggered" | Burn only on reverse-tokenization or governance | Added canonical per-TX automatic burn as primary trigger |
+| §4 "Fee Distribution Parameters" | `dailyMintLimit:250k`, `burnRate:3%`, `mintThreshold:500k` | Replaced with canonical parameters table (`emissionRate`, `commissionRate`, `nodeShareRatio`, `afcReserveRatio`, `burnTrigger`) |
+
+### Post-fix state — all files confirmed canonical
+
+| File | Status |
+|------|--------|
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | ✅ v2.0.0 — canonical 1:1, `burnOn:transaction_completion`, `nodePool:0.75/afcReserve:0.25` |
+| `01_coin_engine/burn_and_mint_rules.md` | ✅ Canonical emission trigger, no conflicting caps, correct parameters table |
+| `01_coin_engine/coin_emission_model.md` | ✅ Unchanged — already canonical |
+| `01_coin_engine/aro_emission_protocol.md` | ✅ Unchanged — already canonical |
+| `01_coin_engine/payment_distribution.md` | ✅ Unchanged — already canonical |
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | ✅ Fixed in prior pass — 75/25 |
+| `src/token/emission.service.ts` | ✅ Unchanged — canonical implementation |
+| `src/token/token.controller.ts` | ✅ Fixed in prior pass — `mintForTransaction()` + `GET /emission/state` |
+
+**All canonical invariants hold across code and documentation.**

@@ -4,12 +4,14 @@
       "name": "AROS Coin",
       "symbol": "ARO",
       "decimals": 8,
-      "totalSupply": "dynamic", 
+      "totalSupply": "dynamic",
       "supplyMechanism": {
-        "type": "transaction-fee-based",
+        "type": "transaction-amount-emission-1:1",
         "initialSupply": 0,
         "mintOn": "verified_transaction",
-        "burnOn": "governance_rule"
+        "burnOn": "transaction_completion",
+        "emissionFormula": "emissionAmount = transactionAmount",
+        "burnFormula": "burnAmount = emissionAmount (net circulating change = 0)"
       }
     },
     "governance": {
@@ -20,14 +22,20 @@
         "changeSupplyMechanism": "via_smart_contract_vote"
       }
     },
-    "transactionFees": {
-      "feeType": "variable",
-      "calculation": "gasless_weighted + time_priority + load_balance",
+    "commission": {
+      "defaultRate": 0.005,
+      "rateUnit": "fraction",
+      "formula": "commission = transactionAmount * rate",
       "distribution": {
-        "nodeOperators": 0.75,
-        "AST treasury": 0.20,
-        "Audit Pool": 0.05
-      }
+        "nodePool": 0.75,
+        "afcReserve": 0.25
+      },
+      "nodePoolAddress": "SYSTEM_NODE_POOL_00000000000000000000",
+      "afcReserveAddress": "SYSTEM_AFC_RESERVE_000000000000000000"
+    },
+    "afcReservePriceIndex": {
+      "formula": "reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10000",
+      "description": "Monotonically rising — every subsequent emission is priced higher as AFC reserve accumulates"
     },
     "compatibility": {
       "blockchain": "AST_NodeChain",
@@ -40,9 +48,10 @@
       "immutability": true
     },
     "metadata": {
-      "version": "1.0.0",
-      "lastUpdated": "2025-06-20",
-      "contractRef": "contracts/aros_token_mainnet.sol"
+      "version": "2.0.0",
+      "lastUpdated": "2026-05-19",
+      "contractRef": "src/token/emission.service.ts",
+      "canonicalSpec": "01_coin_engine/coin_emission_model.md"
     }
   }
 ]

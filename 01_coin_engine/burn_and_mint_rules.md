@@ -19,15 +19,16 @@ Both processes are essential for:
 
 ### ✅ When Minting is Allowed
 
-- When new fiat is tokenized via Tokenization Pipeline → an equal value of ARO is minted.
-- When system reserves fall below liquidity threshold, per `mintThreshold` config.
-- For technical airdrops or bounty issuance, authorized by The All-Seeing Eye.
+- **Canonical emission:** For every verified transaction of amount `A`, exactly `A` ARO are minted (1:1 emission via `EmissionService.processTransactionEmission()`).
+- When new fiat is tokenized via the Tokenization Pipeline → an equal value of ARO is minted through the canonical emission engine.
+- For technical airdrops or bounty issuance, authorized by The All-Seeing Eye (must still pass through canonical emission path).
 
 ### 🔒 Minting Constraints
 
 - Must be triggered via verified pipeline event.
 - All minting events are signed by validator group quorum (≥ 67%).
-- Daily hard-cap: configurable via `dailyMintLimit` parameter.
+- Emission is organically bounded by real transaction volume (1:1 ratio) — no fixed daily cap.
+- The AFC reserve price index (`reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000`) rises with each TX, acting as the natural throttle against artificial inflation.
 
 ### 📦 Minting Mechanism
 
@@ -41,8 +42,8 @@ Both processes are essential for:
 
 ### ✅ When Burning is Triggered
 
-- Upon **Reverse Tokenization**: crypto is converted back to fiat.
-- When transactional fees are configured to include partial burn (per `feePolicy`).
+- **Canonical emission burn:** After every transaction completes, the full `emissionAmount` (= `transactionAmount`) is burned. This is automatic — net circulating supply change per TX cycle = 0.
+- Upon **Reverse Tokenization**: crypto is converted back to fiat (bridge withdrawal path via `TokenService.burn()`).
 - In case of detected fraud, via special corrective governance vote.
 
 ### 🔥 Burn Mechanism
@@ -63,14 +64,20 @@ Both processes are essential for:
 
 ---
 
-## 4. Fee Distribution Parameters
+## 4. Canonical Emission Parameters
 
-| Parameter          | Description                                     | Example Value     |
-| ------------------ | ----------------------------------------------- | ----------------- |
-| `dailyMintLimit`   | Max ARO that can be minted in 24h               | 250,000 ARO       |
-| `burnRate`         | % of fee to burn in each txn (configurable)     | 3% of txn fee     |
-| `mintThreshold`    | Minimum reserve balance before new mint allowed | 500,000 ARO       |
-| `fraudPenaltyBurn` | Amount burned in confirmed abuse cases          | 100% of stake     |
+| Parameter          | Description                                                               | Canonical Value               |
+| ------------------ | ------------------------------------------------------------------------- | ----------------------------- |
+| `emissionRate`     | ARO minted per unit of transaction amount                                 | 1:1 (emission = TX amount)    |
+| `commissionRate`   | Fee charged on each transaction (governance-adjustable)                   | 0.5% of TX amount (default)   |
+| `nodeShareRatio`   | % of commission distributed to the node pool (by PoT weight)             | 75%                           |
+| `afcReserveRatio`  | % of commission locked in the AFC reserve contract                        | 25%                           |
+| `burnTrigger`      | ARO burned after transaction completes — same amount as emitted           | 100% of emission amount       |
+| `fraudPenaltyBurn` | Amount burned in confirmed abuse cases (governance slashing)              | 100% of stake                 |
+
+> **Note:** There is no fixed `dailyMintLimit` or `mintThreshold` in the canonical emission model.
+> Supply is bounded organically by real transaction volume (1:1).
+> The AFC reserve price index serves as the protocol throttle against speculative activity.
 
 ---
 

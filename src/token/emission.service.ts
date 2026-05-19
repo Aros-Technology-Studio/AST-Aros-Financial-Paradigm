@@ -107,7 +107,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now(),
                 metadata:  { referenceId, operation: 'CANONICAL_1_1_EMISSION' },
-            });
+            }, queryRunner);
 
             // Step 2a — Record 75% commission to node pool
             await this.ledgerService.recordTransaction({
@@ -118,7 +118,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 1,
                 metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: result.commissionRate },
-            });
+            }, queryRunner);
 
             // Step 2b — Record 25% commission to AFC reserve
             await this.ledgerService.recordTransaction({
@@ -129,7 +129,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 2,
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
-            });
+            }, queryRunner);
 
             // Step 3 — Update AFC reserve state (price index rises)
             this.recordAfcContribution(result.afcReserveShare);
@@ -143,7 +143,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 3,
                 metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
-            });
+            }, queryRunner);
 
             // Step 5 — Update supply snapshot
             await this.updateSupplySnapshot(queryRunner, referenceId, result);

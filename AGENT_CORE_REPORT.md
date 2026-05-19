@@ -323,3 +323,53 @@ Two residual spec-file divergences found and fixed:
 | `src/token/token.controller.ts` | ✅ Fixed in prior pass — `mintForTransaction()` + `GET /emission/state` |
 
 **All canonical invariants hold across code and documentation.**
+
+---
+
+## 13. Atomicity Fix — 2026-05-19 (AGENT-CORE v4)
+
+### Bug: emission lifecycle steps were NOT actually atomic
+
+**Root cause** (`src/token/emission.service.ts` + `src/ledger/ledger.service.ts`):
+
+`processTransactionEmission()` owns an outer `QueryRunner` (for the `SupplySnapshot` update)
+but called `ledgerService.recordTransaction()` four times **without** passing that runner.
+Each call opened, committed, and released its **own** internal `QueryRunner`.
+
+Consequence: if `BURN` (step 4) threw after `MINT` (step 1) and both `FEE_DISTRIBUTION` steps had
+already committed to the DB, the emitted ARO would remain in circulation permanently — a direct
+violation of the canonical "transient token" invariant and invariant #5
+("All ledger steps succeed or all roll back").
+
+The report at §3/§5 stated "All five steps execute atomically" — that claim was incorrect
+prior to this fix.
+
+### Fix applied
+
+**`src/ledger/ledger.service.ts`** — `recordTransaction()` now accepts an optional second parameter:
+
+```typescript
+async recordTransaction(
+    dto: Partial<Transaction>,
+    externalRunner?: QueryRunner,   // ← new
+): Promise<Transaction>
+```
+
+- `externalRunner` provided → join caller's transaction; no `connect/commit/rollback/release`.
+- `externalRunner` absent → self-managed lifecycle (backwards-compatible with all existing callers).
+
+**`src/token/emission.service.ts`** — all four `recordTransaction()` calls inside
+`processTransactionEmission()` now pass `queryRunner` as the second argument.
+
+Result: MINT + FEE_DISTRIBUTION×2 + BURN + SupplySnapshot all execute inside a **single**
+database transaction. Any step failure rolls back all prior steps atomically.
+
+### Post-fix invariant table
+
+| # | Invariant | Status |
+|---|-----------|--------|
+| 1 | `emissionAmount == transactionAmount` | ✅ enforced in `calculate()` |
+| 2 | `nodeShare + afcShare == commission` | ✅ exact ratio |
+| 3 | `totalMinted == totalBurned` per TX cycle | ✅ SupplySnapshot records net-zero |
+| 4 | `reserveIndex` monotonically non-decreasing | ✅ only grows |
+| 5 | All 4 ledger steps + snapshot atomic | ✅ **Fixed** — single outer `QueryRunner` |

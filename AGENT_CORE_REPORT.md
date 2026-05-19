@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-05-18  
+**Date:** 2026-05-19 (updated — re-verification pass)  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code
 
 ---
@@ -224,3 +224,60 @@ This pass closed the remaining gap and consolidated the AFC reserve API:
 | `tests/test_emission.py` | ✅ 24 tests all passing (stdlib unittest) |
 
 **All canonical invariants hold.**
+
+---
+
+## 11. Re-verification Pass — 2026-05-19
+
+Full second-pass audit confirms all canonical invariants remain intact.
+
+### Test suite status
+
+```
+PASS src/token/emission.service.spec.ts
+  EmissionService — Canonical 1:1 Model
+    calculate()
+      ✓ uses 1:1 emission — emissionAmount equals transactionAmount
+      ✓ canonical example: $10,000 at 0.5% commission
+      ✓ default commission rate is 0.5%
+      ✓ node share is 75% of commission
+      ✓ AFC share is 25% of commission
+      ✓ nodeShare + afcReserveShare = commission (no leakage)
+      ✓ accepts a custom commission rate
+      ✓ throws BadRequestException for zero amount
+      ✓ throws BadRequestException for negative amount
+    AFC reserve price index
+      ✓ starts at 1.0 (no reserve accumulated)
+      ✓ initial reserve state is zero
+      ✓ price index rises after processing a transaction (canonical sqrt formula)
+      ✓ reserve index grows monotonically across multiple transactions
+      ✓ governance can update commission rate
+      ✓ throws when commission rate is out of range
+    processTransactionEmission() — ledger call order
+      ✓ makes exactly 4 ledger calls per transaction
+      ✓ first call is MINT 1:1 to recipient
+      ✓ second call distributes 75% commission to node pool
+      ✓ third call distributes 25% commission to AFC reserve
+      ✓ fourth call burns the emitted ARO (transient token lifecycle)
+      ✓ commits the DB transaction on success
+      ✓ rolls back and rethrows on ledger failure
+
+Tests: 22 passed, 22 total
+```
+
+### Canonical model verification — confirmed 2026-05-19
+
+| Rule | Expected | Code |
+|------|----------|------|
+| Emission = TX Amount | 1:1 | ✅ `emission = transactionAmount` |
+| Fee = TX Amount × 0.5% | default | ✅ `commission = transactionAmount * rate` |
+| Node share | 75% | ✅ `nodeShare = commission * 0.75` |
+| AFC reserve share | 25% | ✅ `afcShare = commission * 0.25` |
+| ARO burn after TX | transient | ✅ `BURN` ledger entry in same atomic TX |
+| AFC reserve drives price | √ formula | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` |
+| Epoch-level 75/25 | same split | ✅ `FeeDistributionService.distributeRewards()` |
+| Epoch AFC synced to index | yes | ✅ `recordAfcContribution()` called post-epoch |
+| Controller endpoint | canonical | ✅ `POST /mint` → `mintForTransaction()` |
+| Price source of truth | EmissionService | ✅ `tokenomics.getCurrentPrice()` → `EmissionService` |
+
+**Status: CANONICAL MODEL FULLY IMPLEMENTED. No corrective action required.**

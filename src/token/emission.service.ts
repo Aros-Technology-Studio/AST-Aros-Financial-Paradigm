@@ -107,7 +107,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now(),
                 metadata:  { referenceId, operation: 'CANONICAL_1_1_EMISSION' },
-            });
+            }, queryRunner);
 
             // Step 2a — Record 75% commission to node pool
             await this.ledgerService.recordTransaction({
@@ -118,7 +118,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 1,
                 metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: result.commissionRate },
-            });
+            }, queryRunner);
 
             // Step 2b — Record 25% commission to AFC reserve
             await this.ledgerService.recordTransaction({
@@ -129,10 +129,10 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 2,
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
-            });
+            }, queryRunner);
 
             // Step 3 — Update AFC reserve state (price index rises)
-            this.updateAfcReserve(result.afcReserveShare);
+            this.recordAfcContribution(result.afcReserveShare);
 
             // Step 4 — Burn emission (ARO are transient per canonical model)
             await this.ledgerService.recordTransaction({
@@ -143,7 +143,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 3,
                 metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
-            });
+            }, queryRunner);
 
             // Step 5 — Update supply snapshot
             await this.updateSupplySnapshot(queryRunner, referenceId, result);
@@ -162,16 +162,19 @@ export class EmissionService {
     }
 
     /**
-     * Grows the AFC reserve and recalculates the emission price index.
+     * Records an AFC reserve contribution and recalculates the price index.
+     * Called on every per-TX emission AND by FeeDistributionService after each
+     * epoch finalization so the index reflects both per-TX and epoch-level AFC.
      * Price index rises monotonically as the reserve accumulates.
      */
-    private updateAfcReserve(afcAmount: number): void {
+    recordAfcContribution(afcAmount: number): void {
+        if (afcAmount <= 0) return;
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();
 
         // Index = 1.0 + sqrt(totalReserve) / 10_000
-        // Gives sub-linear growth: stable at low volume, meaningful at scale.
+        // Sub-linear growth: stable at low volume, meaningful at scale.
         this.afcReserveState.reserveIndex =
             1.0 + Math.sqrt(this.afcReserveState.totalReserve) / 10_000;
 

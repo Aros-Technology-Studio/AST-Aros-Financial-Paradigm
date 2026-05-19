@@ -15,7 +15,8 @@ import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/proc
 const mockEmissionService = {
     calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
     processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
-    updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    recordAfcContribution: jest.fn().mockResolvedValue(undefined),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockTokenomicsService = {
@@ -150,6 +151,61 @@ describe('TokenService', () => {
 
             // Should not even start transaction
             expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('mintForTransaction (canonical 1:1 emission path)', () => {
+        it('delegates to EmissionService and returns result', async () => {
+            const emissionResult = {
+                transactionAmount: 1000,
+                emissionAmount: 1000,
+                commission: 5,
+                nodeShare: 3.75,
+                afcReserveShare: 1.25,
+                commissionRate: 0.005,
+            };
+            mockEmissionService.processTransactionEmission.mockResolvedValue(emissionResult);
+
+            const result = await service.mintForTransaction(1000, 'REC_1', 'REF_CANONICAL');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                1000, 'REC_1', 'REF_CANONICAL', undefined,
+            );
+            expect(result.emissionAmount).toBe(1000);
+            expect(result.commission).toBeCloseTo(5, 6);
+        });
+
+        it('throws BadRequestException on non-positive amount', async () => {
+            await expect(service.mintForTransaction(0, 'REC', 'REF'))
+                .rejects.toThrow(BadRequestException);
+            await expect(service.mintForTransaction(-1, 'REC', 'REF'))
+                .rejects.toThrow(BadRequestException);
+        });
+
+        it('emits token.emission.canonical event with correct payload', async () => {
+            const emissionResult = {
+                transactionAmount: 500,
+                emissionAmount: 500,
+                commission: 2.5,
+                nodeShare: 1.875,
+                afcReserveShare: 0.625,
+                commissionRate: 0.005,
+            };
+            mockEmissionService.processTransactionEmission.mockResolvedValue(emissionResult);
+            const mockGetCurrentPrice = jest.fn().mockReturnValue(1.0000353);
+            mockEmissionService.getCurrentEmissionPrice = mockGetCurrentPrice;
+
+            const eventEmitterMock = (service as any).eventEmitter;
+            await service.mintForTransaction(500, 'REC_EVENT', 'REF_EVENT');
+
+            expect(eventEmitterMock.emit).toHaveBeenCalledWith(
+                'token.emission.canonical',
+                expect.objectContaining({
+                    referenceId: 'REF_EVENT',
+                    transactionAmount: 500,
+                    emissionAmount: 500,
+                }),
+            );
         });
     });
 });

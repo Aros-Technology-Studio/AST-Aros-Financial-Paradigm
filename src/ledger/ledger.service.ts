@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException, Logger, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { Transaction, TransactionStatus, TransactionType } from './entities/transaction.entity';
 import * as crypto from 'crypto';
 
@@ -19,10 +19,22 @@ export class LedgerService {
         private readonly txEncoder: TxEncoderService,
     ) { }
 
-    async recordTransaction(dto: Partial<Transaction>): Promise<Transaction> {
-        const queryRunner = this.dataSource.createQueryRunner();
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
+    /**
+     * Records a single ledger transaction.
+     *
+     * @param externalRunner  When provided, the operation joins the caller's
+     *                        transaction (no commit/rollback/release here).
+     *                        When omitted, a fresh QueryRunner is created and
+     *                        owned by this call.
+     */
+    async recordTransaction(dto: Partial<Transaction>, externalRunner?: QueryRunner): Promise<Transaction> {
+        const ownsRunner = !externalRunner;
+        const queryRunner = externalRunner ?? this.dataSource.createQueryRunner();
+
+        if (ownsRunner) {
+            await queryRunner.connect();
+            await queryRunner.startTransaction();
+        }
 
         try {
             const lastTx = await queryRunner.manager
@@ -47,7 +59,8 @@ export class LedgerService {
             newTx.hash = this.calculateHash(newTx);
 
             const savedTx = await queryRunner.manager.save(Transaction, newTx);
-            await queryRunner.commitTransaction();
+
+            if (ownsRunner) await queryRunner.commitTransaction();
 
             this.logger.log(`Transaction recorded at height ${savedTx.ledgerHeight}: ${savedTx.hash}`);
 
@@ -62,11 +75,11 @@ export class LedgerService {
             return savedTx;
 
         } catch (error) {
-            await queryRunner.rollbackTransaction();
+            if (ownsRunner) await queryRunner.rollbackTransaction();
             this.logger.error(`Failed to record transaction: ${error.message}`, error.stack);
             throw new InternalServerErrorException('Ledger recording failed');
         } finally {
-            await queryRunner.release();
+            if (ownsRunner) await queryRunner.release();
         }
     }
 

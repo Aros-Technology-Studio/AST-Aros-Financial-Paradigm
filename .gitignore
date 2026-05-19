@@ -17,5 +17,11 @@ Thumbs.db
 
 .venv
 
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
 contracts/cache
 contracts/artifacts

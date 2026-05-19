@@ -13,8 +13,12 @@ Distributes incentives (fees/emission) to validating nodes post-PoT confirmation
 
 ## 3. Distribution Logic
 1. Collect fees from NodeChain TX.
-2. Allocate: 60% validators, 30% attesters, 10% burn.
-3. Disburse per weight.
+2. Allocate: **75% → node pool** (validators + attesters by PoT weight), **25% → AFC reserve**.
+3. Within the 75% node pool, disburse per PoT-normalized weight (see §4 and `payment_distribution.md`).
+
+> **Note:** The earlier 60/30/10 split (validators/attesters/burn) was superseded by the canonical
+> 75/25 model (PR #72). Burn is handled atomically at the emission layer, not at incentive
+> distribution. See `01_coin_engine/payment_distribution.md` for the authoritative canonical split.
 
 ## 4. Formula
 Node Incentive = total_incentives * (node_weight / total_weights)

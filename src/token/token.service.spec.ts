@@ -125,6 +125,39 @@ describe('TokenService', () => {
         });
     });
 
+    describe('mintForTransaction (canonical 1:1 emission)', () => {
+        it('should delegate to EmissionService and emit canonical event', async () => {
+            const txAmount = 10_000;
+            const recipient = 'RECIPIENT_ADDR';
+            const refId = 'TX_REF_001';
+
+            mockEmissionService.processTransactionEmission.mockResolvedValue({
+                transactionAmount: txAmount,
+                emissionAmount:    txAmount,
+                commission:        50,
+                nodeShare:         37.5,
+                afcReserveShare:   12.5,
+                commissionRate:    0.005,
+            });
+            mockEmissionService.getCurrentEmissionPrice = jest.fn().mockReturnValue(1.0000353);
+
+            const result = await service.mintForTransaction(txAmount, recipient, refId);
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                txAmount, recipient, refId, undefined,
+            );
+            expect(result.emissionAmount).toBe(txAmount);
+            expect(result.commission).toBe(50);
+            expect(result.nodeShare).toBe(37.5);
+            expect(result.afcReserveShare).toBe(12.5);
+        });
+
+        it('should throw BadRequestException for zero or negative amount', async () => {
+            await expect(service.mintForTransaction(0, 'ADDR', 'REF')).rejects.toThrow();
+            await expect(service.mintForTransaction(-1, 'ADDR', 'REF')).rejects.toThrow();
+        });
+    });
+
     describe('burn', () => {
         it('should burn tokens and trigger bridge payout', async () => {
             const amount = '50';

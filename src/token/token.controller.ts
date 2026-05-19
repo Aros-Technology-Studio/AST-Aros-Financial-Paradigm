@@ -7,6 +7,29 @@ export class TokenController {
 
     constructor(private readonly tokenService: TokenService) { }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Triggered by the PoT-validated transaction pipeline.
+     *
+     * Flow: Emit = txAmount (1:1) → Fee split 75/25 → Burn emitted ARO
+     */
+    @Post('emit')
+    async emitForTransaction(
+        @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+    ) {
+        try {
+            const result = await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+            return { status: 'SUCCESS', ...result };
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {
         // Institutional Interface: ArosCoinSettlementInterface

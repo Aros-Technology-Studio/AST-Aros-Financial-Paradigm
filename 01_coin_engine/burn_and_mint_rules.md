@@ -19,21 +19,24 @@ Both processes are essential for:
 
 ### ✅ When Minting is Allowed
 
+**Canonical (PoT) path** — the primary and authoritative path:
+- On every PoT-validated transaction: `emissionAmount = transactionAmount` (1:1).
+- Triggered via `EmissionService.processTransactionEmission()` — not discretionary.
+
+**Bridge / FIAT-deposit path** (secondary, for fiat-to-ARO conversion):
 - When new fiat is tokenized via Tokenization Pipeline → an equal value of ARO is minted.
-- When system reserves fall below liquidity threshold, per `mintThreshold` config.
-- For technical airdrops or bounty issuance, authorized by The All-Seeing Eye.
+- Must be triggered via verified bridge pipeline event.
 
 ### 🔒 Minting Constraints
 
-- Must be triggered via verified pipeline event.
-- All minting events are signed by validator group quorum (≥ 67%).
-- Daily hard-cap: configurable via `dailyMintLimit` parameter.
+- Canonical PoT minting has no discretionary cap; supply is bounded by real transaction volume.
+- Bridge minting events are signed by validator group quorum (≥ 67%).
+- Emergency halt via `KILL_SWITCH=true` (environment variable) halts all emission.
 
 ### 📦 Minting Mechanism
 
-- Mint contract accepts: `{ eventType, fiatValue, recipientWallet, mintNonce }`.
-- Auto-generates `mintProof` for audit log.
-- Tokens distributed to wallet or module per purpose.
+- Canonical: `EmissionService` mints exactly `txAmount` ARO to the recipient, then burns the same amount atomically (net circulating supply change = 0).
+- Bridge: Mint contract accepts `{ eventType, fiatValue, recipientWallet, mintNonce }` and generates `mintProof` for audit log.
 
 ---
 
@@ -41,15 +44,16 @@ Both processes are essential for:
 
 ### ✅ When Burning is Triggered
 
-- Upon **Reverse Tokenization**: crypto is converted back to fiat.
-- When transactional fees are configured to include partial burn (per `feePolicy`).
-- In case of detected fraud, via special corrective governance vote.
+- **Canonical burn** (primary): Emitted ARO are burned atomically at the end of every PoT-validated transaction cycle. Burn amount equals `emissionAmount` (100% of emission). Net circulating supply change = 0.
+- **Reverse Tokenization**: ARO burned when crypto is converted back to fiat via the bridge.
+- **Fraud/Governance burn**: In confirmed abuse cases, a corrective governance vote may burn stake.
 
 ### 🔥 Burn Mechanism
 
-- Burn contract receives: `{ burnAmount, originTxID, burnReason }`.
-- Updates `burnLedger` with full audit metadata.
-- Fee Distribution count adjusted and pushed to public index.
+- Canonical: `BURN` ledger record for full `emissionAmount` in the same `QueryRunner` transaction as the mint. Recipient = `SYSTEM_BURN_VAULT_00000000000000000000`.
+- Bridge: Burn contract receives `{ burnAmount, originTxID, burnReason }` and updates `burnLedger`.
+
+> **Note**: There is no partial `burnRate` applied to PoT-canonical transactions. The full emitted amount is burned on completion. Any legacy references to a `3% burnRate` on txn fees apply only to bridge/withdrawal flows, not to the canonical emission lifecycle.
 
 ---
 
@@ -57,20 +61,22 @@ Both processes are essential for:
 
 | Scenario                    | Protection Mechanism                            |
 | --------------------------- | ----------------------------------------------- |
-| Excessive mint requests     | Rate-limiter per IP/wallet group                |
+| Excessive emission requests | PoT validation required; no emission without verified TX |
 | Reused mint/burn nonces     | Nonce replay detection, rejection with hash log |
 | Validator collusion attempt | Randomized quorum rotation every 24h            |
+| Emission drift              | All-Seeing Eye audits every emission cycle      |
 
 ---
 
-## 4. Fee Distribution Parameters
+## 4. Canonical Parameters
 
-| Parameter          | Description                                     | Example Value     |
-| ------------------ | ----------------------------------------------- | ----------------- |
-| `dailyMintLimit`   | Max ARO that can be minted in 24h               | 250,000 ARO       |
-| `burnRate`         | % of fee to burn in each txn (configurable)     | 3% of txn fee     |
-| `mintThreshold`    | Minimum reserve balance before new mint allowed | 500,000 ARO       |
-| `fraudPenaltyBurn` | Amount burned in confirmed abuse cases          | 100% of stake     |
+| Parameter            | Description                                            | Value                  |
+| -------------------- | ------------------------------------------------------ | ---------------------- |
+| `emissionRatio`      | ARO minted per unit of transaction amount              | 1:1 (exact)            |
+| `defaultCommissionRate` | Fee charged on transaction amount                   | 0.5% (0.005)           |
+| `nodeShareRatio`     | Share of commission to node pool                       | 75% (0.75)             |
+| `afcReserveRatio`    | Share of commission to AFC reserve                     | 25% (0.25)             |
+| `fraudPenaltyBurn`   | Amount burned in confirmed abuse cases                 | 100% of stake          |
 
 ---
 

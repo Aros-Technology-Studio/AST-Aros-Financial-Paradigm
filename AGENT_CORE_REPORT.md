@@ -1,9 +1,9 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+**Branch:** `claude/inspiring-cannon-6Vy7h`  
+**Date:** 2026-05-19  
+**Task:** Audit ArosCoin emission logic against the canonical 1:1 model; align all code and documentation
 
 ---
 
@@ -11,42 +11,42 @@
 
 ### 01_coin_engine — Status: Documentation only (no source code)
 
-| File | Pre-patch content | Action taken |
+| File | Pre-audit content | Action taken |
 |------|------------------|--------------|
-| `coin_emission_model.md` | Described `E = F / N` (fee ÷ nodes) — diverged from canonical 1:1 | **Rewritten** to canonical model |
-| `aro_emission_protocol.md` | `EMISSION_AMOUNT = Σ(load × index × ratio)` — diverged | **Rewritten** to canonical formulas |
-| `payment_distribution.md` | 60/15/15/5/5 multi-actor split — diverged from canonical 75/25 | **Rewritten** to 75/25 |
-| `burn_and_mint_rules.md` | Correct general burn-on-withdrawal policy; no 1:1 mention | Left as-is (non-contradictory) |
-| `README.md` | Architecture overview; no formula conflicts | Left as-is |
+| `coin_emission_model.md` | Canonical 1:1 formulas, AFC reserve index, example already correct | ✅ Confirmed, no change |
+| `aro_emission_protocol.md` | Canonical 1:1 formulas, Mermaid flow, Mermaid diagram already correct | ✅ Confirmed, no change |
+| `payment_distribution.md` | Canonical 75/25 split already documented | ✅ Confirmed, no change |
+| `burn_and_mint_rules.md` | Contained `burnRate: 3% of txn fee` and `dailyMintLimit` parameters that conflict with canonical model | **Updated** — clarified canonical burn (100% of emission, net-zero) vs. bridge/withdrawal path; corrected parameters table |
 
-**Module 01 is NOT deprecated** — it is pure documentation. The canonical source code lives in `src/token/`.
+**Module 01 is NOT deprecated** — pure documentation. Canonical source code lives in `src/token/`.
 
 ### 10_proof_of_transaction_engine — Status: Documentation only
 
 Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
-Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here.
+Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here; no changes required.
 
-### src/token/ — Status: Canonical code confirmed correct
+### src/token/ — Status: Canonical code confirmed correct + endpoint added
 
-| File | Verified state |
-|------|---------------|
-| `emission.interfaces.ts` | ✅ Defines `EmissionResult`, `EmissionConfig`, `AfcReserveState` |
-| `emission.service.ts` | ✅ Full canonical 1:1 lifecycle implemented |
-| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved |
-| `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve.getReserveState().reserveIndex`; `updateInternalValuation()` is a deprecated no-op |
-| `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
+| File | Verified state | Change |
+|------|---------------|--------|
+| `emission.interfaces.ts` | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` — all correct | None |
+| `emission.service.ts` | ✅ Full canonical 1:1 lifecycle implemented | None |
+| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved for bridge/FIAT path | None |
+| `tokenomics.service.ts` | ✅ `getCurrentPrice()` proxies `processReserve.getReserveState().reserveIndex`; `updateInternalValuation()` is deprecated no-op | None |
+| `token.module.ts` | ✅ `EmissionService` registered as provider and exported | None |
+| `token.controller.ts` | ❌ Only exposed legacy `/mint` (FIAT_DEPOSIT) — no canonical emission endpoint | **Added** `POST /api/v1/token/emit` that calls `mintForTransaction()` |
 
 ### src/fee_distribution/ — Status: Canonical code confirmed correct
 
 | File | Verified state |
 |------|---------------|
-| `fee_distribution.service.ts` → `distributeRewards()` | ✅ Applies 75/25 split: 75% node pool, 25% AFC reserve per epoch |
+| `fee_distribution.service.ts` → `distributeRewards()` | ✅ 75/25 split: 75% node pool, 25% AFC reserve per epoch |
 
 ### src/proof_of_transaction_engine/ — Status: Correct, unchanged
 
 | File | Notes |
 |------|-------|
-| `process_reserve.service.ts` | General process volume ledger; `reserveIndex` via `log1p` — used by legacy tokenomics |
+| `process_reserve.service.ts` | General process volume ledger; `reserveIndex` via `log1p` — used by legacy tokenomics proxy |
 | `pot.service.ts` | PoT scoring and weight normalization — correct and untouched |
 
 ---
@@ -59,9 +59,10 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | Fee = TX Amount × rate | default 0.5% | ✅ `commission = transactionAmount * rate` |
 | Fee split: 75% nodes | Yes | ✅ `nodeShare = commission * 0.75` |
 | Fee split: 25% AFC reserve | Yes | ✅ `afcShare = commission * 0.25` |
-| ARO burn after TX | Yes | ✅ `BURN` ledger record for `emissionAmount` in same atomic TX |
+| ARO burn after TX | Yes | ✅ `BURN` ledger record for `emissionAmount` in same atomic QueryRunner TX |
 | AFC reserve grows → price rises | Yes | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` |
 | Epoch fees also 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` |
+| Canonical API endpoint | Yes | ✅ `POST /api/v1/token/emit` (added this session) |
 
 ---
 
@@ -78,15 +79,17 @@ processTransactionEmission(txAmount, recipient, refId, rate?)
   │    nodeShare      = commission × 0.75
   │    afcShare       = commission × 0.25
   │
-  ├─ Ledger MINT:            emissionAmount → recipient
-  ├─ Ledger FEE_DISTRIBUTION: nodeShare → SYSTEM_NODE_POOL
-  ├─ Ledger FEE_DISTRIBUTION: afcShare  → SYSTEM_AFC_RESERVE
+  ├─ Ledger MINT:             emissionAmount → recipient
+  ├─ Ledger FEE_DISTRIBUTION: nodeShare  → SYSTEM_NODE_POOL
+  ├─ Ledger FEE_DISTRIBUTION: afcShare   → SYSTEM_AFC_RESERVE
   ├─ updateAfcReserve(afcShare):
   │    reserveIndex = 1.0 + sqrt(totalReserve) / 10_000
-  └─ Ledger BURN:            emissionAmount → SYSTEM_BURN_VAULT
+  ├─ Ledger BURN:             emissionAmount → SYSTEM_BURN_VAULT
+  └─ updateSupplySnapshot():  totalMinted++, totalBurned++, circulatingSupply unchanged
 ```
 
-All four ledger operations execute atomically within a single `QueryRunner` transaction.
+All ledger operations execute atomically within a single `QueryRunner` transaction.  
+On failure, full rollback — no partial state.
 
 ### System Addresses
 
@@ -96,6 +99,16 @@ All four ledger operations execute atomically within a single `QueryRunner` tran
 | `SYSTEM_NODE_POOL` | `SYSTEM_NODE_POOL_00000000000000000000` |
 | `SYSTEM_AFC_RESERVE` | `SYSTEM_AFC_RESERVE_000000000000000000` |
 | `SYSTEM_BURN_VAULT` | `SYSTEM_BURN_VAULT_00000000000000000000` |
+
+### New API Endpoint (`src/token/token.controller.ts`)
+
+```
+POST /api/v1/token/emit
+Body: { transactionAmount: number, recipient: string, referenceId: string, commissionRate?: number }
+→ calls TokenService.mintForTransaction() → EmissionService.processTransactionEmission()
+→ emits 'token.emission.canonical' event for All-Seeing Eye
+→ returns { status: 'SUCCESS', ...EmissionResult }
+```
 
 ---
 
@@ -127,19 +140,20 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Documentation Changes Made in This Pass
+## 6. Changes Made in This Pass
 
 | File | Change |
 |------|--------|
-| `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas, AFC reserve index, example |
-| `01_coin_engine/aro_emission_protocol.md` | Replaced complex load-index formula with canonical 1:1 + 75/25 + burn flow |
-| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split; added validator weight formula |
+| `src/token/token.controller.ts` | Added `POST /api/v1/token/emit` canonical emission endpoint |
+| `01_coin_engine/burn_and_mint_rules.md` | Corrected `burnRate`/`dailyMintLimit` confusion; clarified canonical 100% burn vs. bridge path |
+| `AGENT_CORE_REPORT.md` | Updated with current audit (this document) |
 
 ---
 
-## 7. Recommendations
+## 7. Open Recommendations
 
-- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
-- **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
-- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
-- **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add an `AfcReserveEntity` table with periodic snapshots.
+- **Wire `mintForTransaction()` into the ingestion pipeline** — replace all remaining `mint()` calls in bridge/ingestion with the canonical entry point where semantically appropriate.
+- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard, and invariant: `nodeShare + afcShare === commission`.
+- **Sync epoch AFC contribution to `EmissionService`** — `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+- **Governance-bound commission rate change** — `updateCommissionRate()` should require a governance vote record before accepting changes, not just a range check.

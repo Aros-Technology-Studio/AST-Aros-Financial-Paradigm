@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
+**Branch:** `claude/inspiring-cannon-U0M88`  
+**Date:** 2026-05-19  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
 
 ---
@@ -11,20 +11,26 @@
 
 ### 01_coin_engine — Status: Documentation only (no source code)
 
-| File | Pre-patch content | Action taken |
-|------|------------------|--------------|
-| `coin_emission_model.md` | Described `E = F / N` (fee ÷ nodes) — diverged from canonical 1:1 | **Rewritten** to canonical model |
-| `aro_emission_protocol.md` | `EMISSION_AMOUNT = Σ(load × index × ratio)` — diverged | **Rewritten** to canonical formulas |
-| `payment_distribution.md` | 60/15/15/5/5 multi-actor split — diverged from canonical 75/25 | **Rewritten** to 75/25 |
-| `burn_and_mint_rules.md` | Correct general burn-on-withdrawal policy; no 1:1 mention | Left as-is (non-contradictory) |
-| `README.md` | Architecture overview; no formula conflicts | Left as-is |
+| File | State | Action |
+|------|-------|--------|
+| `coin_emission_model.md` | ✅ Canonical 1:1 formulas, AFC reserve index, 75/25 split | Verified correct (patched in prior pass) |
+| `aro_emission_protocol.md` | ✅ Full canonical protocol with Mermaid sequence diagram | Verified correct (patched in prior pass) |
+| `payment_distribution.md` | ✅ 75/25 canonical split; historical note on old 60/15/15/5/5 | Verified correct (patched in prior pass) |
+| `burn_and_mint_rules.md` | ✅ General burn-on-withdrawal policy; non-contradictory | Unchanged |
+| `README.md` | ✅ Architecture overview; no formula conflicts | Unchanged |
 
-**Module 01 is NOT deprecated** — it is pure documentation. The canonical source code lives in `src/token/`.
+**Module 01 is NOT deprecated** — it is pure documentation. Canonical source code lives in `src/token/`.
+
+---
 
 ### 10_proof_of_transaction_engine — Status: Documentation only
 
-Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
-Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here.
+| File | Pre-patch state | Action |
+|------|----------------|--------|
+| `pot_tx_incentive_distribution.md` | ❌ Listed old "60% validators, 30% attesters, 10% burn" split | **Fixed** — updated to canonical 75/25 with note on superseded model |
+| All other `.md` files | ✅ No conflicting emission formulas | Unchanged |
+
+---
 
 ### src/token/ — Status: Canonical code confirmed correct
 
@@ -35,12 +41,17 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved |
 | `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve.getReserveState().reserveIndex`; `updateInternalValuation()` is a deprecated no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
+| `token.service.spec.ts` | ✅ Tests added for `mintForTransaction()` canonical entry point |
+
+---
 
 ### src/fee_distribution/ — Status: Canonical code confirmed correct
 
 | File | Verified state |
 |------|---------------|
 | `fee_distribution.service.ts` → `distributeRewards()` | ✅ Applies 75/25 split: 75% node pool, 25% AFC reserve per epoch |
+
+---
 
 ### src/proof_of_transaction_engine/ — Status: Correct, unchanged
 
@@ -127,19 +138,40 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Documentation Changes Made in This Pass
+## 6. Changes Made in This Pass
+
+| File | Change |
+|------|--------|
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | **Fixed** old 60/30/10 split → canonical 75/25 with historical note |
+| `tests/test_emission.py` | **Created** — 19 unit tests covering all invariants (19/19 passing) |
+| `src/token/token.service.spec.ts` | **Added** `mintForTransaction()` test suite (canonical entry point) |
+| `AGENT_CORE_REPORT.md` | Updated with complete findings from this pass |
+
+### Prior-pass documentation changes (already in repo)
 
 | File | Change |
 |------|--------|
 | `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas, AFC reserve index, example |
 | `01_coin_engine/aro_emission_protocol.md` | Replaced complex load-index formula with canonical 1:1 + 75/25 + burn flow |
-| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split; added validator weight formula |
+| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split |
 
 ---
 
-## 7. Recommendations
+## 7. Test Coverage (tests/test_emission.py)
+
+| Class | Tests | Status |
+|-------|-------|--------|
+| `TestEmissionRatio` | 3 — 1:1 ratio for various amounts, reference $10k example, custom rate | ✅ All pass |
+| `TestCommissionSplit` | 5 — default rate, 75/25 sum, node 75%, AFC 25%, custom rate | ✅ All pass |
+| `TestBurnInvariant` | 2 — net delta=0, totalMinted==totalBurned | ✅ All pass |
+| `TestAfcReserveIndex` | 5 — index at zero, positive reserve, monotonic growth, reference example, sub-linear | ✅ All pass |
+| `TestInputValidation` | 4 — zero amount, negative amount, dust amount, large amount | ✅ All pass |
+| **Total** | **19** | **19/19 ✅** |
+
+---
+
+## 8. Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
-- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.

@@ -1,4 +1,3 @@
-
 import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { ProcessingParams } from './tokenomics.interfaces';
 import { EmissionService } from './emission.service';

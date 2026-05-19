@@ -18,12 +18,6 @@ export class TokenController {
 
         this.logger.log(`[Institutional Settlement] Processing Batch ${body.batchId} from ${body.counterparty}. Vol: ${body.totalVolume}`);
 
-        // 1. Record Volume in Process Reserve (This strengthens the currency)
-        // Accessing private service via public wrapper methods if they existed, or injecting ProcessReserve here too.
-        // For now, let's treat it as a "Mintless" volume update? 
-        // No, settlement usually implies movement.
-        // Let's assume we invoke a method on TokenService to "recordSettlement".
-
         // return this.tokenService.processSettlement(body);
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
     }
@@ -71,7 +65,7 @@ export class TokenController {
     @Get('emission/state')
     getEmissionState() {
         return {
-            emissionPrice:  this.emissionService.getCurrentEmissionPrice(),
+            emissionPrice:   this.emissionService.getCurrentEmissionPrice(),
             afcReserveState: this.emissionService.getAfcReserveState(),
         };
     }

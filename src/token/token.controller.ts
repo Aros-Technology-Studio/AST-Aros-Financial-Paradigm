@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { TokenService } from './token.service';
+import { EmissionResult } from './emission.interfaces';
 
 @Controller('api/v1/token')
 export class TokenController {
@@ -22,6 +23,22 @@ export class TokenController {
 
         // return this.tokenService.processSettlement(body);
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
+    }
+
+    @Post('emit')
+    async emitForTransaction(
+        @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+    ): Promise<EmissionResult> {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @Post('mint')

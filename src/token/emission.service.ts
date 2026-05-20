@@ -182,6 +182,17 @@ export class EmissionService {
     }
 
     /**
+     * Applies an AFC reserve contribution originating from epoch-level fee distribution.
+     * Keeps the in-memory price index consistent with on-ledger AFC inflows from both
+     * per-transaction emission and epoch finalization paths.
+     */
+    recordEpochAfcContribution(afcAmount: number): void {
+        if (afcAmount <= 0) return;
+        this.updateAfcReserve(afcAmount);
+        this.logger.log(`[AFC Reserve] Epoch contribution applied: ${afcAmount.toFixed(8)}`);
+    }
+
+    /**
      * Returns the current AFC reserve state (read-only snapshot).
      */
     getAfcReserveState(): Readonly<AfcReserveState> {

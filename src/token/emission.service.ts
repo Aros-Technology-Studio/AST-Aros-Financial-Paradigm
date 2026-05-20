@@ -162,6 +162,14 @@ export class EmissionService {
     }
 
     /**
+     * Allows external services (e.g. FeeDistributionService) to report epoch-level
+     * AFC contributions so the canonical price index stays consistent across all paths.
+     */
+    addAfcContribution(afcAmount: number): void {
+        this.updateAfcReserve(afcAmount);
+    }
+
+    /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
      */

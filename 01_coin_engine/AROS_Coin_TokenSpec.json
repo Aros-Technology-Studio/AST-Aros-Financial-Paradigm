@@ -4,29 +4,41 @@
       "name": "AROS Coin",
       "symbol": "ARO",
       "decimals": 8,
-      "totalSupply": "dynamic", 
+      "totalSupply": "dynamic",
       "supplyMechanism": {
-        "type": "transaction-fee-based",
+        "type": "transaction-amount-based",
         "initialSupply": 0,
         "mintOn": "verified_transaction",
-        "burnOn": "governance_rule"
+        "burnOn": "transaction_completion",
+        "emissionRatio": "1:1",
+        "netCirculatingChange": 0
       }
+    },
+    "emissionModel": {
+      "formula": "emission = transactionAmount",
+      "commissionRate": 0.005,
+      "commissionSplit": {
+        "nodePool": 0.75,
+        "afcReserve": 0.25
+      },
+      "afcReservePriceIndex": "1.0 + sqrt(totalAfcReserve) / 10000",
+      "burnTrigger": "post_transaction_completion"
     },
     "governance": {
       "issuer": "AST Core Protocol",
       "modificationRules": {
         "changeDecimals": false,
         "changeSymbol": false,
-        "changeSupplyMechanism": "via_smart_contract_vote"
+        "changeSupplyMechanism": "via_smart_contract_vote",
+        "changeCommissionRate": "via_governance_vote"
       }
     },
     "transactionFees": {
       "feeType": "variable",
-      "calculation": "gasless_weighted + time_priority + load_balance",
+      "defaultRate": 0.005,
       "distribution": {
-        "nodeOperators": 0.75,
-        "AST treasury": 0.20,
-        "Audit Pool": 0.05
+        "nodePool": 0.75,
+        "afcReserve": 0.25
       }
     },
     "compatibility": {
@@ -37,12 +49,14 @@
     "security": {
       "auditTrail": true,
       "signedPayloads": true,
-      "immutability": true
+      "immutability": true,
+      "killSwitch": "KILL_SWITCH env var"
     },
     "metadata": {
-      "version": "1.0.0",
-      "lastUpdated": "2025-06-20",
-      "contractRef": "contracts/aros_token_mainnet.sol"
+      "version": "1.1.0",
+      "lastUpdated": "2026-05-21",
+      "contractRef": "contracts/aros_token_mainnet.sol",
+      "canonicalImpl": "src/token/emission.service.ts"
     }
   }
 ]

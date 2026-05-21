@@ -1,8 +1,9 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { EmissionConfig, EmissionResult, AfcReserveState } from './emission.interfaces';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
+import { AfcReserveSnapshotEntity } from './entities/afc_reserve_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../ledger/entities/transaction.entity';
 
@@ -17,7 +18,7 @@ import { TransactionType } from '../ledger/entities/transaction.entity';
  *   AFC reserve growth → price of next emission rises
  */
 @Injectable()
-export class EmissionService {
+export class EmissionService implements OnModuleInit {
     private readonly logger = new Logger(EmissionService.name);
 
     private readonly SYSTEM_EMISSION_AUTHORITY = 'SYSTEM_EMISSION_AUTHORITY_00000000000';
@@ -41,9 +42,31 @@ export class EmissionService {
     constructor(
         @InjectRepository(SupplySnapshot)
         private readonly supplyRepository: Repository<SupplySnapshot>,
+        @InjectRepository(AfcReserveSnapshotEntity)
+        private readonly afcSnapshotRepo: Repository<AfcReserveSnapshotEntity>,
         private readonly ledgerService: LedgerService,
         private readonly dataSource: DataSource,
     ) {}
+
+    /**
+     * Restores AFC reserve state from the latest persisted snapshot on startup.
+     * Prevents index reset on service restart.
+     */
+    async onModuleInit(): Promise<void> {
+        const latest = await this.afcSnapshotRepo.findOne({
+            order: { createdAt: 'DESC' },
+        });
+        if (latest) {
+            this.afcReserveState.totalReserve     = parseFloat(latest.totalReserve);
+            this.afcReserveState.reserveIndex     = parseFloat(latest.reserveIndex);
+            this.afcReserveState.transactionCount = latest.transactionCount;
+            this.logger.log(
+                `[AFC Reserve] Restored from DB: total=${this.afcReserveState.totalReserve.toFixed(4)} ` +
+                `index=${this.afcReserveState.reserveIndex.toFixed(6)} ` +
+                `txCount=${this.afcReserveState.transactionCount}`,
+            );
+        }
+    }
 
     /**
      * Calculates all emission values for a given transaction amount.
@@ -131,8 +154,8 @@ export class EmissionService {
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
             });
 
-            // Step 3 — Update AFC reserve state (price index rises)
-            this.updateAfcReserve(result.afcReserveShare);
+            // Step 3 — Update AFC reserve state (price index rises) + persist
+            await this.updateAfcReserve(result.afcReserveShare, referenceId);
 
             // Step 4 — Burn emission (ARO are transient per canonical model)
             await this.ledgerService.recordTransaction({
@@ -162,16 +185,15 @@ export class EmissionService {
     }
 
     /**
-     * Grows the AFC reserve and recalculates the emission price index.
-     * Price index rises monotonically as the reserve accumulates.
+     * Grows the AFC reserve, recalculates the emission price index,
+     * and persists the new state so it survives service restarts.
      */
-    private updateAfcReserve(afcAmount: number): void {
+    private async updateAfcReserve(afcAmount: number, referenceId: string): Promise<void> {
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();
 
         // Index = 1.0 + sqrt(totalReserve) / 10_000
-        // Gives sub-linear growth: stable at low volume, meaningful at scale.
         this.afcReserveState.reserveIndex =
             1.0 + Math.sqrt(this.afcReserveState.totalReserve) / 10_000;
 
@@ -179,6 +201,14 @@ export class EmissionService {
             `[AFC Reserve] +${afcAmount.toFixed(4)} → Total=${this.afcReserveState.totalReserve.toFixed(4)} ` +
             `Index=${this.afcReserveState.reserveIndex.toFixed(6)}`,
         );
+
+        const snapshot = this.afcSnapshotRepo.create({
+            totalReserve:    this.afcReserveState.totalReserve.toFixed(8),
+            reserveIndex:    this.afcReserveState.reserveIndex.toFixed(10),
+            transactionCount: this.afcReserveState.transactionCount,
+            triggerReferenceId: referenceId,
+        });
+        await this.afcSnapshotRepo.save(snapshot);
     }
 
     /**

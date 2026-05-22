@@ -128,37 +128,45 @@ Never store secrets in repo. Use Docker secrets or CI variables. AST has no end-
 
 **9) Reference API (Internal)**
 
-OpenAPI fragments live in /specs/openapi/*.yaml. Typical flows:
+OpenAPI fragments live in /specs/openapi/*.yaml. Canonical flows:
 
-9.1 Calculate next emission
+9.1 Calculate emission for a transaction (1:1 model)
 
-POST /v1/emission/next
+POST /v1/token/emit
 
 {
-  "epoch": 102934,
-  "activity": {"tx_volume": "321904.200000", "unique_senders": 1842, "latency_bucket": "P50"},
-  "policy": {"base_rate": 1.0, "decay": 0.965},
-  "compliance_factor": 0.92
+  "transactionAmount": 10000,
+  "recipientAddress": "addr_...",
+  "referenceId": "tx_01HXR...",
+  "commissionRate": 0.005
 }
 
 Response:
 
-{"mint_arx": "128900000", "cap_hit": false, "explanations": ["base*decay*activity*compliance"]}
-
-**9.2 Apply mint/burn**
-
-POST /v1/supply/transition
-
 {
-  "transition_id": "tx_01HXR...",
-  "kind": "MINT_payment",
-  "amount_arx": "128900000",
-  "evidence": {"nodechain_event": "evt_...", "proof": "0xabc..."}
+  "transactionAmount": 10000,
+  "emissionAmount": 10000,
+  "commission": 50,
+  "nodeShare": 37.5,
+  "afcReserveShare": 12.5,
+  "commissionRate": 0.005
 }
+
+**9.2 Get current emission price index**
+
+GET /v1/token/emission-price
 
 Response:
 
-{"ok": true, "total_supply_arx": "123456789000000"}
+{"reserveIndex": 1.0000353, "totalReserve": 12.5, "transactionCount": 1}
+
+**9.3 Get supply stats**
+
+GET /v1/token/supply-stats
+
+Response:
+
+{"totalMinted": "10000.00000000", "totalBurned": "10000.00000000", "circulatingSupply": "0.00000000"}
 
 
 ⸻

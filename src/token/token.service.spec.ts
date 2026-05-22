@@ -16,6 +16,7 @@ const mockEmissionService = {
     calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
     processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
     updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockTokenomicsService = {
@@ -122,6 +123,57 @@ describe('TokenService', () => {
                 .rejects.toThrow('Ledger Error');
 
             expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        });
+    });
+
+    describe('mintForTransaction (canonical 1:1 emission)', () => {
+        it('should delegate to EmissionService and emit a token.emission.canonical event', async () => {
+            const txAmount  = 10_000;
+            const recipient = 'RECIPIENT_ADDR_001';
+            const refId     = 'TX_CANONICAL_001';
+
+            const emissionResult = {
+                transactionAmount: txAmount,
+                emissionAmount:    txAmount,
+                commission:        50,
+                nodeShare:         37.5,
+                afcReserveShare:   12.5,
+                commissionRate:    0.005,
+            };
+            mockEmissionService.processTransactionEmission.mockResolvedValue(emissionResult);
+
+            const result = await service.mintForTransaction(txAmount, recipient, refId);
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                txAmount, recipient, refId, undefined,
+            );
+            expect(result.emissionAmount).toBe(txAmount);
+            expect(result.commission).toBe(50);
+            expect(result.nodeShare).toBe(37.5);
+            expect(result.afcReserveShare).toBe(12.5);
+        });
+
+        it('should pass a custom commissionRate to EmissionService', async () => {
+            const customRate = 0.01; // 1%
+            mockEmissionService.processTransactionEmission.mockResolvedValue({
+                transactionAmount: 1000, emissionAmount: 1000,
+                commission: 10, nodeShare: 7.5, afcReserveShare: 2.5, commissionRate: customRate,
+            });
+
+            await service.mintForTransaction(1000, 'ADDR', 'TX_RATE_001', customRate);
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                1000, 'ADDR', 'TX_RATE_001', customRate,
+            );
+        });
+
+        it('should reject non-positive transaction amounts', async () => {
+            await expect(service.mintForTransaction(0, 'ADDR', 'TX_ZERO'))
+                .rejects.toThrow(BadRequestException);
+            await expect(service.mintForTransaction(-100, 'ADDR', 'TX_NEG'))
+                .rejects.toThrow(BadRequestException);
+
+            expect(mockEmissionService.processTransactionEmission).not.toHaveBeenCalled();
         });
     });
 

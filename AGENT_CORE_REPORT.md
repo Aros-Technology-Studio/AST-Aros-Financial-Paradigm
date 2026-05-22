@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
+**Branch:** `claude/inspiring-cannon-PEydC`  
+**Date:** 2026-05-22 (updated; original audit: 2026-05-12)  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
 
 ---
@@ -143,3 +143,23 @@ After 12.50 AFC accumulated:
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## 8. 2026-05-22 Re-Audit (AGENT-CORE pass #2)
+
+### Additional gaps found and fixed in this pass
+
+| # | Gap | Risk | Fix applied |
+|---|-----|------|-------------|
+| 1 | `TokenController` had no canonical emission HTTP endpoint | External systems could not trigger 1:1 emission via REST API | **Added** `POST /api/v1/token/emission/process` → `mintForTransaction()` |
+| 2 | Nonces in `processTransactionEmission` used `Date.now() + N` | Nonce collisions under concurrent load | **Fixed** to deterministic `${referenceId}_STEP_{N}` keys |
+| 3 | No unit tests for `mintForTransaction()` | Canonical path could regress silently | **Added** 3 test cases in `token.service.spec.ts` |
+
+### Confirmed unchanged and correct
+
+- `EmissionService.calculate()` — 1:1 formula, fee split 75/25: ✅
+- `EmissionService.processTransactionEmission()` — atomic 4-step lifecycle: ✅
+- `SupplySnapshot` invariant (net-zero circulating supply): ✅
+- `AfcReserveState.reserveIndex = 1.0 + sqrt(R) / 10_000`: ✅
+- Module 01 is active documentation, NOT deprecated: ✅

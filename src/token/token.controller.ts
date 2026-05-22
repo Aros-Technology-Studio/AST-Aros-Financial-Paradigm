@@ -24,6 +24,35 @@ export class TokenController {
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
     }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Triggers the full emission lifecycle:
+     *   Mint emissionAmount ARO → recipient (1:1)
+     *   Distribute fee: 75% → NODE_POOL, 25% → AFC_RESERVE
+     *   Burn emissionAmount ARO (ARO are transient)
+     *   AFC reserve index rises
+     */
+    @Post('emission/process')
+    async processCanonicalEmission(
+        @Body() body: {
+            transactionAmount: number;
+            recipient: string;
+            referenceId: string;
+            commissionRate?: number;
+        },
+    ) {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @Post('mint')
     async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
         try {

@@ -56,7 +56,7 @@ export class SmartContractIntegration implements OnModuleInit {
         const hash = this.hashReference(refId);
 
         // 1. Check Local DB first (faster)
-        const localExists = await this.eventRepo.exist({ where: { transactionHash: hash } });
+        const localExists = await this.eventRepo.exists({ where: { transactionHash: hash } });
         if (localExists) return true;
 
         // 2. Check External Contract if available

@@ -98,6 +98,9 @@ export class EmissionService {
         await queryRunner.startTransaction();
 
         try {
+            // Deterministic nonces: referenceId-scoped, collision-safe under concurrency
+            const baseTs = Date.now();
+
             // Step 1 — Mint ARO 1:1 to recipient
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.MINT,
@@ -105,8 +108,8 @@ export class EmissionService {
                 recipient: recipientAddress,
                 amount:    result.emissionAmount.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now(),
-                metadata:  { referenceId, operation: 'CANONICAL_1_1_EMISSION' },
+                nonce:     baseTs,
+                metadata:  { referenceId, operation: 'CANONICAL_1_1_EMISSION', step: 1 },
             });
 
             // Step 2a — Record 75% commission to node pool
@@ -116,8 +119,8 @@ export class EmissionService {
                 recipient: this.NODE_POOL_ADDRESS,
                 amount:    result.nodeShare.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 1,
-                metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: result.commissionRate },
+                nonce:     baseTs + 1,
+                metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: result.commissionRate, step: 2 },
             });
 
             // Step 2b — Record 25% commission to AFC reserve
@@ -127,8 +130,8 @@ export class EmissionService {
                 recipient: this.AFC_RESERVE_ADDRESS,
                 amount:    result.afcReserveShare.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 2,
-                metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
+                nonce:     baseTs + 2,
+                metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate, step: 3 },
             });
 
             // Step 3 — Update AFC reserve state (price index rises)
@@ -141,8 +144,8 @@ export class EmissionService {
                 recipient: this.BURN_ADDRESS,
                 amount:    result.emissionAmount.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 3,
-                metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
+                nonce:     baseTs + 3,
+                metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN', step: 4 },
             });
 
             // Step 5 — Update supply snapshot

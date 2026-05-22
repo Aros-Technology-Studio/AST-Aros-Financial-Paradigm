@@ -57,11 +57,14 @@ Based on one or more of the following:
 
 ### 🔹 5. Distribution Routing
 
-Token allocation performed using one of the following models:
-- Validator payment split (e.g., 60% to confirming node, 40% to treasury)
-- NodeChain round-based rotation
-- Governance treasury replenishment
-- Shard-local redistribution
+Token allocation follows the **canonical 75/25 split** defined by the emission protocol:
+
+- **75%** → Node pool (`SYSTEM_NODE_POOL`), divided among active validator nodes by PoT-normalized weight
+- **25%** → AFC reserve contract (`SYSTEM_AFC_RESERVE`), locked to drive the emission price index upward
+
+Additional routing modes (governance-only):
+- NodeChain round-based rotation (within the 75% node share)
+- Emergency treasury replenishment (requires multi-sig governance quorum)
 
 ### 🔹 6. Finalization & Logging
 

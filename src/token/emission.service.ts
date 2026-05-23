@@ -197,6 +197,21 @@ export class EmissionService {
     }
 
     /**
+     * Records an external AFC reserve contribution (e.g., from epoch finalization)
+     * so the in-memory reserveIndex stays in sync with all reserve sources.
+     *
+     * Called by FeeDistributionService after each epoch's 25% AFC allocation.
+     */
+    recordEpochAfcContribution(amount: number): void {
+        if (amount <= 0) return;
+        this.updateAfcReserve(amount);
+        this.logger.log(
+            `[AFC Reserve] Epoch contribution ${amount.toFixed(4)} recorded. ` +
+            `Index=${this.afcReserveState.reserveIndex.toFixed(6)}`,
+        );
+    }
+
+    /**
      * Allows governance to update the commission rate.
      */
     updateCommissionRate(newRate: number): void {

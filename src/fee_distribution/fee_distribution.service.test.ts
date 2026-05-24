@@ -29,6 +29,7 @@ describe('FeeDistributionService', () => {
         createQueryBuilder: jest.fn(() => ({
             select: jest.fn().mockReturnThis(),
             where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
             getRawOne: jest.fn().mockReturnValue({ sum: '100.00' }),
         })),
         save: jest.fn(),

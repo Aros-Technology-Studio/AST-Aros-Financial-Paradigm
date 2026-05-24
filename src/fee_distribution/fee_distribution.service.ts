@@ -132,11 +132,24 @@ export class FeeDistributionService {
         }
     }
 
+    /**
+     * Calculates total node-pool fees accumulated during an epoch interval.
+     *
+     * In the canonical 1:1 emission model, commissions are recorded as
+     * FEE_DISTRIBUTION transactions with `fee = '0'` and `amount` = the
+     * actual commission value.  Summing the legacy `tx.fee` field always
+     * returns zero for canonical emission, so we aggregate on `tx.amount`
+     * for FEE_DISTRIBUTION entries directed to the node pool instead.
+     */
     private async calculateTotalFees(start: Date, end: Date): Promise<number> {
+        const NODE_POOL_ADDRESS = 'SYSTEM_NODE_POOL_00000000000000000000';
+
         const { sum } = await this.transactionRepo
             .createQueryBuilder('tx')
-            .select('SUM(CAST(tx.fee AS DECIMAL))', 'sum')
+            .select('SUM(CAST(tx.amount AS DECIMAL))', 'sum')
             .where('tx.createdAt BETWEEN :start AND :end', { start, end })
+            .andWhere('tx.type = :type', { type: TransactionType.FEE_DISTRIBUTION })
+            .andWhere('tx.recipient = :recipient', { recipient: NODE_POOL_ADDRESS })
             .getRawOne();
 
         return parseFloat(sum || '0');

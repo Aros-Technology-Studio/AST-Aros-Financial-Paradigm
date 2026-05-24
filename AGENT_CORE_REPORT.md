@@ -1,8 +1,9 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
+**Branch:** `claude/inspiring-cannon-MiErT` (Pass 2; canonical emission originally landed in `agent/core-emission` → merged PR #72; docs fixed in `claude/inspiring-cannon-4qbjK` → PR #79)  
+**Date (Pass 2):** 2026-05-24  
+**Date (Pass 1):** 2026-05-12  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
 
 ---
@@ -48,6 +49,43 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 |------|-------|
 | `process_reserve.service.ts` | General process volume ledger; `reserveIndex` via `log1p` — used by legacy tokenomics |
 | `pot.service.ts` | PoT scoring and weight normalization — correct and untouched |
+
+---
+
+## 1b. Pass 2 Findings (2026-05-24)
+
+This pass re-audited all code paths to confirm every public entry point routes through the canonical emission engine.
+
+### Critical Divergence Found: REST API → Legacy Mint Path
+
+| Location | Problem | Fix |
+|----------|---------|-----|
+| `src/token/token.controller.ts` → `POST /api/v1/token/mint` | Called `TokenService.mint()` (legacy — no commission split, no burn, no AFC update) instead of `mintForTransaction()` | **Fixed**: endpoint now calls `mintForTransaction(parseFloat(amount), recipient, refId)` |
+| `src/token/token.service.ts` → `mint()` | Lacked `@deprecated` JSDoc; was silently mis-routing API traffic | **Fixed**: JSDoc added, explaining violation and migration path |
+
+**Impact of the divergence (before fix):**
+
+For every external call to `POST /api/v1/token/mint`:
+- ❌ No commission deducted (0% fee instead of 0.5%)
+- ❌ 75% / 25% node / AFC split skipped → node pool and AFC reserve not funded
+- ❌ ARO not burned after TX → `circulatingSupply` permanently inflated
+- ❌ AFC reserve index not updated → emission price never rose
+
+**After fix:**
+- ✅ All REST-initiated mints go through `EmissionService.processTransactionEmission()`
+- ✅ Full canonical 5-step lifecycle: MINT → FEE(75%) → FEE(25%) → AFC update → BURN
+- ✅ Net circulating supply change = 0 per TX cycle (canonical invariant restored)
+
+### No Changes Required
+
+| File | Status |
+|------|--------|
+| `src/token/emission.service.ts` | ✅ Canonical, no changes |
+| `src/token/emission.interfaces.ts` | ✅ Correct, no changes |
+| `src/token/token.service.ts::mintForTransaction()` | ✅ Canonical, no changes |
+| `src/token/tokenomics.service.ts` | ✅ Price via AFC index, `@deprecated` no-op correct |
+| `src/fee_distribution/fee_distribution.service.ts` | ✅ Epoch 75/25 split correct |
+| `01_coin_engine/` docs | ✅ Fixed in Pass 1 |
 
 ---
 
@@ -140,6 +178,7 @@ After 12.50 AFC accumulated:
 ## 7. Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
-- **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
+- ~~**Wire `mintForTransaction()` into ingestion pipeline**~~ — ✅ **Done (Pass 2)**: `POST /api/v1/token/mint` now routes to `mintForTransaction()`.
+- **Migrate remaining `mint()` callers** — Any internal bridge/ingestion code still calling `TokenService.mint()` directly should be migrated to `mintForTransaction()`. The legacy method is now `@deprecated`.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.

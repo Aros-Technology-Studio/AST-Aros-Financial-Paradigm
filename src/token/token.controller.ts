@@ -27,7 +27,14 @@ export class TokenController {
     @Post('mint')
     async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
         try {
-            return await this.tokenService.mint(body.amount, body.recipient, body.refId);
+            // Route to canonical 1:1 emission: mint→fee_split(75/25)→burn, all atomic.
+            // Legacy TokenService.mint() is deprecated; this endpoint now calls the
+            // canonical path via EmissionService.processTransactionEmission().
+            return await this.tokenService.mintForTransaction(
+                parseFloat(body.amount),
+                body.recipient,
+                body.refId,
+            );
         } catch (e) {
             throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
         }

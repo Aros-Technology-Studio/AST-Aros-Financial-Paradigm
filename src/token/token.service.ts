@@ -76,6 +76,13 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use mintForTransaction() for all new code.
+     *   This legacy method mints without commission split, fee distribution, or burn,
+     *   violating the canonical 1:1 emission model. It is retained only for backward
+     *   compatibility with internal tooling that has not yet been migrated.
+     *   The REST endpoint POST /api/v1/token/mint now routes to mintForTransaction().
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

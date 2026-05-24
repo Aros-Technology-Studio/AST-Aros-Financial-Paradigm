@@ -142,7 +142,7 @@ AFC reserve after this TX:
   totalReserve       = 12.50 (cumulative)
   reserveIndex       = 1.0 + sqrt(12.50) / 10,000
                      = 1.0 + 3.5355... / 10,000
-                     = 1.00003536
+                     = 1.00035355
 
   → Every subsequent emission is priced higher by this index
 ```

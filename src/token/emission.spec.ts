@@ -408,8 +408,9 @@ describe('EmissionService — Canonical 1:1 Model', () => {
             expect(result.nodeShare + result.afcReserveShare).toBeCloseTo(50, 8);
 
             // AFC index after this reserve addition
+            // sqrt(12.5) = 3.5355..., / 10_000 = 0.00035355..., + 1.0 = 1.00035355...
             const expectedIndex = 1.0 + Math.sqrt(12.5) / 10_000;
-            expect(expectedIndex).toBeCloseTo(1.0000353, 6);
+            expect(expectedIndex).toBeCloseTo(1.0003535, 6);
         });
     });
 });

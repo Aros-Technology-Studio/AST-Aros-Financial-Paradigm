@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException, Logger, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { Transaction, TransactionStatus, TransactionType } from './entities/transaction.entity';
 import * as crypto from 'crypto';
 
@@ -19,10 +19,25 @@ export class LedgerService {
         private readonly txEncoder: TxEncoderService,
     ) { }
 
-    async recordTransaction(dto: Partial<Transaction>): Promise<Transaction> {
-        const queryRunner = this.dataSource.createQueryRunner();
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
+    /**
+     * Records a transaction on the ledger.
+     *
+     * @param dto         Transaction data to persist.
+     * @param externalRunner  Optional QueryRunner supplied by the caller.
+     *                    When provided, the method participates in the caller's
+     *                    existing transaction — it does NOT connect, commit,
+     *                    or release the runner. This enables true multi-step
+     *                    atomicity (e.g. the canonical emission lifecycle).
+     *                    When omitted, the method manages its own transaction.
+     */
+    async recordTransaction(dto: Partial<Transaction>, externalRunner?: QueryRunner): Promise<Transaction> {
+        const ownedRunner = !externalRunner;
+        const queryRunner  = externalRunner ?? this.dataSource.createQueryRunner();
+
+        if (ownedRunner) {
+            await queryRunner.connect();
+            await queryRunner.startTransaction();
+        }
 
         try {
             const lastTx = await queryRunner.manager
@@ -47,7 +62,10 @@ export class LedgerService {
             newTx.hash = this.calculateHash(newTx);
 
             const savedTx = await queryRunner.manager.save(Transaction, newTx);
-            await queryRunner.commitTransaction();
+
+            if (ownedRunner) {
+                await queryRunner.commitTransaction();
+            }
 
             this.logger.log(`Transaction recorded at height ${savedTx.ledgerHeight}: ${savedTx.hash}`);
 
@@ -62,11 +80,15 @@ export class LedgerService {
             return savedTx;
 
         } catch (error) {
-            await queryRunner.rollbackTransaction();
+            if (ownedRunner) {
+                await queryRunner.rollbackTransaction();
+            }
             this.logger.error(`Failed to record transaction: ${error.message}`, error.stack);
             throw new InternalServerErrorException('Ledger recording failed');
         } finally {
-            await queryRunner.release();
+            if (ownedRunner) {
+                await queryRunner.release();
+            }
         }
     }
 

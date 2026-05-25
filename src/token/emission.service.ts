@@ -97,8 +97,13 @@ export class EmissionService {
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
+        // Snapshot AFC state so we can roll back in-memory state if the DB transaction fails
+        const afcSnapshot = { ...this.afcReserveState };
+
         try {
             // Step 1 — Mint ARO 1:1 to recipient
+            // All ledger calls share the same QueryRunner → true atomicity.
+            // If any step fails, ALL four ledger entries AND the supply snapshot roll back together.
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.MINT,
                 sender:    this.SYSTEM_EMISSION_AUTHORITY,
@@ -107,7 +112,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now(),
                 metadata:  { referenceId, operation: 'CANONICAL_1_1_EMISSION' },
-            });
+            }, queryRunner);
 
             // Step 2a — Record 75% commission to node pool
             await this.ledgerService.recordTransaction({
@@ -118,7 +123,7 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 1,
                 metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: result.commissionRate },
-            });
+            }, queryRunner);
 
             // Step 2b — Record 25% commission to AFC reserve
             await this.ledgerService.recordTransaction({
@@ -129,9 +134,10 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 2,
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
-            });
+            }, queryRunner);
 
             // Step 3 — Update AFC reserve state (price index rises)
+            // Done before BURN so index is current when the BURN entry is written.
             this.updateAfcReserve(result.afcReserveShare);
 
             // Step 4 — Burn emission (ARO are transient per canonical model)
@@ -143,9 +149,9 @@ export class EmissionService {
                 fee:       '0',
                 nonce:     Date.now() + 3,
                 metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
-            });
+            }, queryRunner);
 
-            // Step 5 — Update supply snapshot
+            // Step 5 — Update supply snapshot (same queryRunner — atomically bundled)
             await this.updateSupplySnapshot(queryRunner, referenceId, result);
 
             await queryRunner.commitTransaction();
@@ -154,7 +160,9 @@ export class EmissionService {
             return result;
         } catch (error) {
             await queryRunner.rollbackTransaction();
-            this.logger.error(`[Emission] TX=${referenceId} failed: ${error.message}`);
+            // Restore in-memory AFC state so it stays consistent with the DB
+            this.afcReserveState = afcSnapshot;
+            this.logger.error(`[Emission] TX=${referenceId} failed — AFC state rolled back: ${error.message}`);
             throw error;
         } finally {
             await queryRunner.release();

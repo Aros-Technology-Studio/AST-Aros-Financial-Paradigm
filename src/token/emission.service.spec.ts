@@ -190,11 +190,11 @@ describe('EmissionService', () => {
       }
     });
 
-    it('reserveIndex formula: 1.0 + sqrt(100_000_000) / 10_000 ≈ 11.0', () => {
-      // Simulate large reserve
+    it('reserveIndex formula: 1.0 + sqrt(100_000_000) / 10_000 ≈ 2.0', () => {
+      // sqrt(100_000_000) = 10_000  →  10_000 / 10_000 = 1.0  →  index = 2.0
       const bigReserve = 100_000_000;
       const expected   = 1.0 + Math.sqrt(bigReserve) / 10_000;
-      expect(expected).toBeCloseTo(11.0, 1);
+      expect(expected).toBeCloseTo(2.0, 4);
     });
   });
 

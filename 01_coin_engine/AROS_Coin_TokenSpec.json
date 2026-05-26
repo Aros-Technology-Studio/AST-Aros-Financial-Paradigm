@@ -9,7 +9,7 @@
         "type": "transaction-fee-based",
         "initialSupply": 0,
         "mintOn": "verified_transaction",
-        "burnOn": "governance_rule"
+        "burnOn": "post_transaction_canonical_burn"
       }
     },
     "governance": {
@@ -25,9 +25,9 @@
       "calculation": "gasless_weighted + time_priority + load_balance",
       "distribution": {
         "nodeOperators": 0.75,
-        "AST treasury": 0.20,
-        "Audit Pool": 0.05
-      }
+        "AFC_reserve": 0.25
+      },
+      "note": "Canonical split: 75% node operators (distributed by PoT weight), 25% AFC reserve. Updated from legacy 75/20/5 to match emission.service.ts canonical implementation."
     },
     "compatibility": {
       "blockchain": "AST_NodeChain",
@@ -40,8 +40,8 @@
       "immutability": true
     },
     "metadata": {
-      "version": "1.0.0",
-      "lastUpdated": "2025-06-20",
+      "version": "1.1.0",
+      "lastUpdated": "2026-05-26",
       "contractRef": "contracts/aros_token_mainnet.sol"
     }
   }

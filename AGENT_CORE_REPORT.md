@@ -1,9 +1,13 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+**Branch:** `claude/inspiring-cannon-amurM`  
+**Date:** 2026-05-27  
+**Task:** Full re-audit of ArosCoin emission logic; find deviations from canonical model; fix and verify
+
+> **Supersedes** the 2026-05-12 report (branch `claude/inspiring-cannon-4qbjK`).  
+> Previous pass aligned the spec docs (`01_coin_engine/*.md`).  
+> This pass aligned the **source code** (`src/token/token.service.ts`).
 
 ---
 
@@ -141,5 +145,83 @@ After 12.50 AFC accumulated:
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
-- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## 8. Pass-2 Changes (2026-05-27)
+
+### Deviations Found
+
+| Location | Issue | Severity |
+|----------|-------|----------|
+| `src/token/token.service.ts` → `mint()` | No commission calculation; no 75/25 split; `tx.fee` = `undefined` | **High** |
+| `src/token/token.service.ts` → `burn()` | No commission calculation; no 75/25 split; `tx.fee` = `undefined` | **High** |
+
+> `EmissionService` itself was already fully canonical. The deviations were only in the  
+> legacy bridge-layer methods (`mint` / `burn`) of `TokenService`.
+
+### Fixes Applied
+
+**`src/token/token.service.ts`**
+
+1. Added canonical system address constants:
+   ```typescript
+   private readonly FEE_POOL_ADDRESS    = 'SYSTEM_FEE_POOL_00000000000000000000';
+   private readonly NODE_POOL_ADDRESS   = 'SYSTEM_NODE_POOL_00000000000000000000';
+   private readonly AFC_RESERVE_ADDRESS = 'SYSTEM_AFC_RESERVE_000000000000000000';
+   ```
+
+2. `mint()` — fiat bridge deposit now applies canonical fee distribution:
+   - Calls `this.emissionService.calculate(amount_num)` to get commission breakdown
+   - Sets `fee: emissionCalc.commission.toFixed(8)` on the MINT ledger record
+   - Records `FEE_DISTRIBUTION` → 75% to `SYSTEM_NODE_POOL` (operation: `NODE_FEE_75PCT`)
+   - Records `FEE_DISTRIBUTION` → 25% to `SYSTEM_AFC_RESERVE` (operation: `AFC_RESERVE_25PCT`)
+   - Emits event payload now includes `commission`, `nodeShare`, `afcReserveShare`
+   - Marked `@deprecated` with note to use `mintForTransaction()` for canonical emission
+
+3. `burn()` — fiat bridge withdrawal now applies canonical fee distribution:
+   - Same commission calculation and `FEE_DISTRIBUTION` steps as `mint()` fix
+   - Sets `fee: emissionCalc.commission.toFixed(8)` on the BURN ledger record
+   - Marked `@deprecated`
+   - Clarified that post-commit bridge-call failure must be handled by retry at bridge layer
+
+**`src/token/emission.service.spec.ts`** *(NEW)*
+
+23 test cases covering:
+- `calculate()`: 1:1 ratio, 0.5% rate, 75/25 split, no-leakage invariant, custom rate, boundary guards
+- `updateCommissionRate()`: governance bounds
+- `processTransactionEmission()`: full lifecycle, MINT→FEE→FEE→BURN step order, AFC reserve growth, monotonic price index, DB commit/rollback
+- Supply snapshot: `totalMinted == totalBurned` invariant, `circulatingSupply == 0` net-zero invariant
+
+### Architecture Diagram (Two Emission Paths)
+
+```
+Canonical Emission (transaction processing)        Legacy Bridge Emission
+        │                                                  │
+mintForTransaction(txAmount, recipient, refId)       mint(amount, recipient, refId)
+        │                                                  │
+EmissionService.processTransactionEmission()    commission = emissionService.calculate()
+        │                                                  │
+  ┌─────┴──────────────────────────────────┐     ┌────────┴───────────────────┐
+  │ MINT   10,000 ARO → recipient          │     │ MINT   amount → recipient  │
+  │ FEE    37.5 ARO   → NODE_POOL (75%)   │     │ FEE    nodeShare → NODE_POOL│
+  │ FEE    12.5 ARO   → AFC_RESERVE (25%) │     │ FEE    afcShare  → AFC_RES  │
+  │ BURN   10,000 ARO → BURN_VAULT        │     │ (NO BURN — user holds ARO)  │
+  └─────┬──────────────────────────────────┘     └────────┬───────────────────┘
+  circulatingSupply Δ = 0                    circulatingSupply Δ = +amount
+  (transient ARO — exists only during TX)    (fiat deposit → real ARO balance)
+```
+
+### Final Status After Pass-2
+
+| Component | Status |
+|-----------|--------|
+| `EmissionService` | ✅ Canonical — unchanged |
+| `TokenService.mintForTransaction()` | ✅ Canonical — unchanged |
+| `TokenService.mint()` | ✅ Fixed — canonical 75/25 split added |
+| `TokenService.burn()` | ✅ Fixed — canonical 75/25 split added |
+| `FeeDistributionService` | ✅ Canonical — unchanged |
+| `PoTService` | ✅ Canonical — unchanged |
+| `01_coin_engine/` | ✅ Active spec — not deprecated |
+| `emission.service.spec.ts` | ✅ New — 23 canonical invariant tests |

@@ -15,8 +15,13 @@ import { EmissionResult } from './emission.interfaces';
 @Injectable()
 export class TokenService {
     private readonly logger = new Logger(TokenService.name);
-    private readonly MINT_ADDRESS = 'SYSTEM_MINT_AUTHORITY_000000000000000000';
-    private readonly BURN_ADDRESS = 'SYSTEM_BURN_VAULT_00000000000000000000';
+
+    // ── System addresses (canonical) ────────────────────────────────────────
+    private readonly MINT_ADDRESS        = 'SYSTEM_MINT_AUTHORITY_000000000000000000';
+    private readonly BURN_ADDRESS        = 'SYSTEM_BURN_VAULT_00000000000000000000';
+    private readonly FEE_POOL_ADDRESS    = 'SYSTEM_FEE_POOL_00000000000000000000';
+    private readonly NODE_POOL_ADDRESS   = 'SYSTEM_NODE_POOL_00000000000000000000';
+    private readonly AFC_RESERVE_ADDRESS = 'SYSTEM_AFC_RESERVE_000000000000000000';
 
     constructor(
         @InjectRepository(SupplySnapshot)
@@ -76,6 +81,22 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use {@link mintForTransaction} for canonical 1:1 emission.
+     *
+     * This method handles **fiat-bridge deposit** operations only (FIAT_DEPOSIT).
+     * Unlike the canonical emission cycle, emitted ARO are NOT burned here — the user
+     * holds them until a corresponding `burn()` (withdrawal) is called.
+     *
+     * Canonical fee distribution IS applied:
+     *   Commission = amount × 0.5%
+     *   75% → SYSTEM_NODE_POOL   (processing-node rewards)
+     *   25% → SYSTEM_AFC_RESERVE (reserve growth → price index rises)
+     *
+     * @param amount      Gross deposit amount in ARO
+     * @param recipient   Recipient address
+     * @param referenceId External reference / bank transaction ID
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
@@ -84,47 +105,68 @@ export class TokenService {
         await queryRunner.startTransaction();
 
         try {
-            const currentPrice = this.tokenomicsService.getCurrentPrice();
-            this.logger.log(`Initiating MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId}) @ Price ${currentPrice}`);
+            const amount_num    = parseFloat(amount);
+            const emissionCalc  = this.emissionService.calculate(amount_num);
 
-            // Logic: If amount is FIAT, we divide by Price. If amount is TOKENS, we just mint tokens.
-            // Assuming input 'amount' is TOKENS for now based on legacy logic, 
-            // BUT for dynamic pricing usually the input from Bank is FIAT.
-            // Let's assume the Bridge sends token amount calculated elsewhere OR we should change this to accept Fiat and calc Tokens.
-            // For minimal disruption: We assume Bridge calc or we just log the price.
-            // *CRITICAL*: User asked for price to rise. 
-            // We will trigger a price increment AFTER minting to simulate "Activity".
+            this.logger.log(
+                `[Bridge Deposit] ${amount} AROS → ${recipient} (Ref: ${referenceId}) | ` +
+                `Commission: ${emissionCalc.commission.toFixed(8)} ARO ` +
+                `(Nodes: ${emissionCalc.nodeShare.toFixed(8)}, AFC: ${emissionCalc.afcReserveShare.toFixed(8)})`,
+            );
 
-
+            // Step 1 — Mint ARO to recipient (fiat deposit; no burn — user holds ARO)
             const tx = await this.ledgerService.recordTransaction({
-                type: TransactionType.MINT,
-                sender: this.MINT_ADDRESS,
+                type:      TransactionType.MINT,
+                sender:    this.MINT_ADDRESS,
                 recipient: recipient,
-                amount: amount,
-                nonce: Date.now(),
-                metadata: { referenceId, operation: 'FIAT_DEPOSIT' }
+                amount:    amount,
+                fee:       emissionCalc.commission.toFixed(8), // canonical commission
+                nonce:     Date.now(),
+                metadata:  { referenceId, operation: 'FIAT_DEPOSIT' },
             });
 
-            // [NEW] Record On-Chain Event
-            await this.smartContractService.recordReference(referenceId, 'MINT', { amount: amount, recipient: recipient });
+            // Record on-chain event
+            await this.smartContractService.recordReference(referenceId, 'MINT', { amount, recipient });
+
+            // Step 2a — 75% commission → node pool (canonical split)
+            await this.ledgerService.recordTransaction({
+                type:      TransactionType.FEE_DISTRIBUTION,
+                sender:    this.FEE_POOL_ADDRESS,
+                recipient: this.NODE_POOL_ADDRESS,
+                amount:    emissionCalc.nodeShare.toFixed(8),
+                fee:       '0',
+                nonce:     Date.now() + 1,
+                metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: emissionCalc.commissionRate },
+            });
+
+            // Step 2b — 25% commission → AFC reserve (canonical split)
+            await this.ledgerService.recordTransaction({
+                type:      TransactionType.FEE_DISTRIBUTION,
+                sender:    this.FEE_POOL_ADDRESS,
+                recipient: this.AFC_RESERVE_ADDRESS,
+                amount:    emissionCalc.afcReserveShare.toFixed(8),
+                fee:       '0',
+                nonce:     Date.now() + 2,
+                metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: emissionCalc.commissionRate },
+            });
 
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
             await queryRunner.commitTransaction();
 
             // Emit event for The All-Seeing Eye
             this.eventEmitter.emit('token.mint', {
-                amount: amount,
-                recipient: recipient,
-                refId: referenceId,
-                txHash: tx.hash
+                amount,
+                recipient,
+                refId:          referenceId,
+                txHash:         tx.hash,
+                commission:     emissionCalc.commission,
+                nodeShare:      emissionCalc.nodeShare,
+                afcReserveShare: emissionCalc.afcReserveShare,
             });
 
-            // [NEW] Increment Price due to economic activity
-            // REPLACED: this.tokenomicsService.incrementPrice(1);
-            // NOW: Record volume and update based on Reserve
-            this.processReserve.recordTransactionVolume(parseFloat(amount));
+            // Update process reserve (price index driven by volume)
+            this.processReserve.recordTransactionVolume(amount_num);
             this.tokenomicsService.updateInternalValuation();
-
 
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
@@ -136,6 +178,22 @@ export class TokenService {
         }
     }
 
+    /**
+     * @deprecated Pair with the deprecated {@link mint}. Used only for fiat-bridge withdrawals.
+     *
+     * Burns ARO and triggers fiat payout via the bridge. Canonical fee distribution IS applied:
+     *   Commission = amount × 0.5%
+     *   75% → SYSTEM_NODE_POOL
+     *   25% → SYSTEM_AFC_RESERVE
+     *
+     * Fiat payout is dispatched AFTER the on-chain burn is committed. If the bridge call
+     * fails, the burn is NOT rolled back — callers should implement retry logic at the
+     * bridge layer.
+     *
+     * @param amount        ARO amount to burn
+     * @param sender        Holder address
+     * @param bankDetailsId Bank account reference for fiat payout
+     */
     async burn(amount: string, sender: string, bankDetailsId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
@@ -149,37 +207,67 @@ export class TokenService {
         await queryRunner.startTransaction();
 
         try {
-            this.logger.log(`Initiating BURN: ${amount} AROS from ${sender}`);
+            const amount_num   = parseFloat(amount);
+            const emissionCalc = this.emissionService.calculate(amount_num);
 
+            this.logger.log(
+                `[Bridge Withdrawal] Burn ${amount} AROS from ${sender} | ` +
+                `Commission: ${emissionCalc.commission.toFixed(8)} ARO ` +
+                `(Nodes: ${emissionCalc.nodeShare.toFixed(8)}, AFC: ${emissionCalc.afcReserveShare.toFixed(8)})`,
+            );
+
+            // Step 1 — Burn ARO (fiat withdrawal)
             const tx = await this.ledgerService.recordTransaction({
-                type: TransactionType.BURN,
-                sender: sender,
+                type:      TransactionType.BURN,
+                sender:    sender,
                 recipient: this.BURN_ADDRESS,
-                amount: amount,
-                nonce: Date.now(),
-                metadata: { bankDetailsId, operation: 'FIAT_WITHDRAWAL' }
+                amount:    amount,
+                fee:       emissionCalc.commission.toFixed(8), // canonical commission
+                nonce:     Date.now(),
+                metadata:  { bankDetailsId, operation: 'FIAT_WITHDRAWAL' },
             });
 
-            // [NEW] Record On-Chain Event
-            await this.smartContractService.recordReference(tx.hash, 'BURN', { amount: amount, sender: sender });
+            // Record on-chain event
+            await this.smartContractService.recordReference(tx.hash, 'BURN', { amount, sender });
+
+            // Step 2a — 75% commission → node pool (canonical split)
+            await this.ledgerService.recordTransaction({
+                type:      TransactionType.FEE_DISTRIBUTION,
+                sender:    this.FEE_POOL_ADDRESS,
+                recipient: this.NODE_POOL_ADDRESS,
+                amount:    emissionCalc.nodeShare.toFixed(8),
+                fee:       '0',
+                nonce:     Date.now() + 1,
+                metadata:  { bankDetailsId, operation: 'NODE_FEE_75PCT', commissionRate: emissionCalc.commissionRate },
+            });
+
+            // Step 2b — 25% commission → AFC reserve (canonical split)
+            await this.ledgerService.recordTransaction({
+                type:      TransactionType.FEE_DISTRIBUTION,
+                sender:    this.FEE_POOL_ADDRESS,
+                recipient: this.AFC_RESERVE_ADDRESS,
+                amount:    emissionCalc.afcReserveShare.toFixed(8),
+                fee:       '0',
+                nonce:     Date.now() + 2,
+                metadata:  { bankDetailsId, operation: 'AFC_RESERVE_25PCT', commissionRate: emissionCalc.commissionRate },
+            });
 
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'BURN');
             await queryRunner.commitTransaction();
 
-            // Trigger Fiat Payout via Bridge (Asynchronous or Synchronous depending on policy)
-            // Ideally async so if bank fails, we don't necessarily rollback burn? 
-            // OR strict: if bank fails, we rollback burn.
-            // For now, let's treat it as a subsequent action. If Mock Bank fails, we might just log it (or throw).
-            // Let's await it to ensure user gets feedback.
+            // Trigger fiat payout via bridge (post-commit — bridge retry is external concern)
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            // [NEW] Increment Price due to withdrawal activity?
-            // User strategy said "processing transaction... rises price".
-            // Withdrawal is a transaction. So yes.
-            this.processReserve.recordTransactionVolume(parseFloat(amount));
+            // Update process reserve (withdrawal is economic activity → price index rises)
+            this.processReserve.recordTransactionVolume(amount_num);
             this.tokenomicsService.updateInternalValuation();
 
-            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
+            return {
+                status:  'SUCCESS',
+                txHash:  tx.hash,
+                message: `Tokens burned. Commission: ${emissionCalc.commission.toFixed(8)} ARO. Fiat payout initiated.`,
+                bankTxId,
+            };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

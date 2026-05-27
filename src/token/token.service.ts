@@ -76,7 +76,21 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated NON-CANONICAL — for FIAT_DEPOSIT bridge flow only.
+     *
+     * This method mints ARO without the canonical atomic burn step.
+     * It creates persistent ARO supply for users who deposited fiat.
+     * It does NOT follow the 1:1 transient emission model.
+     *
+     * For canonical 1:1 transient emission, use {@link mintForTransaction} instead.
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
+        this.logger.warn(
+            `[NON-CANONICAL mint()] FIAT_DEPOSIT path called for ref=${referenceId}. ` +
+            `This bypasses the canonical 1:1 burn lifecycle. ` +
+            `Use mintForTransaction() for canonical emission.`,
+        );
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
         const queryRunner = this.dataSource.createQueryRunner();
@@ -136,7 +150,20 @@ export class TokenService {
         }
     }
 
+    /**
+     * @deprecated NON-CANONICAL — for FIAT_WITHDRAWAL bridge flow only.
+     *
+     * This method burns ARO as a standalone operation triggered by user fiat-withdrawal request.
+     * It does NOT correspond to the canonical post-transaction burn in EmissionService,
+     * which fires atomically within processTransactionEmission().
+     *
+     * For canonical 1:1 emission lifecycle, see {@link mintForTransaction}.
+     */
     async burn(amount: string, sender: string, bankDetailsId: string): Promise<any> {
+        this.logger.warn(
+            `[NON-CANONICAL burn()] FIAT_WITHDRAWAL path called for sender=${sender}. ` +
+            `This is a standalone burn — not part of the canonical 1:1 transient emission cycle.`,
+        );
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
         const currentBalance = await this.ledgerService.getBalance(sender);

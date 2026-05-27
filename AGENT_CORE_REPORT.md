@@ -143,3 +143,54 @@ After 12.50 AFC accumulated:
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## 8. AUDIT UPDATE — 2026-05-27 (AGENT-CORE Re-verification)
+
+**Branch:** `claude/inspiring-cannon-MZhep`
+
+### 8.1 Re-audit Scope
+
+Full re-verification of canonical 1:1 emission model across all emission-related files after previous audit pass (2026-05-12).
+
+### 8.2 Findings
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `src/token/emission.service.ts` | ✅ **CANONICAL — CORRECT** | 1:1 emission, 75/25 split, atomic burn, AFC index all verified |
+| `src/token/emission.interfaces.ts` | ✅ **CORRECT** | All types match canonical model |
+| `src/token/token.service.ts::mintForTransaction()` | ✅ **CANONICAL** | Delegates to EmissionService correctly |
+| `src/token/token.service.ts::mint()` | ⚠️ **LEGACY (non-canonical)** | FIAT_DEPOSIT path — mints without atomic burn. Added `@deprecated` JSDoc and warning log. |
+| `src/token/token.service.ts::burn()` | ⚠️ **LEGACY (non-canonical)** | FIAT_WITHDRAWAL path — separate burn without canonical lifecycle. Added `@deprecated` JSDoc. |
+| `src/token/tokenomics.service.ts` | ✅ **CORRECT** | `updateInternalValuation()` already deprecated no-op |
+| `01_coin_engine/aro_emission_protocol.md` | ✅ **MATCHES CODE** | Matches `emission.service.ts` formula exactly |
+| `10_proof_of_transaction_engine/` | ✅ **COMPATIBLE** | PoT handles downstream distribution; no conflict |
+
+### 8.3 Actions Taken
+
+1. **Updated `token.service.ts`** — Added explicit `@deprecated` annotations and `warn`-level log calls to legacy `mint()` and `burn()` methods. These methods remain for backward-compatibility with the fiat bridge but are now clearly marked as non-canonical.
+
+2. **AGENT_CORE_REPORT.md updated** — This section added as addendum to original report.
+
+### 8.4 Canonical Model Verification (2026-05-27)
+
+```
+Emission     = Transaction Amount           ✅ emissionAmount = transactionAmount
+Commission   = TX Amount × 0.005            ✅ commission = transactionAmount * rate
+Node Share   = Commission × 0.75            ✅ nodeShare = commission * 0.75
+AFC Reserve  = Commission × 0.25            ✅ afcShare = commission * 0.25
+Burn         = emissionAmount (atomic)      ✅ BURN step in same QueryRunner TX
+AFC Index    = 1.0 + sqrt(reserve)/10000   ✅ reserveIndex formula confirmed
+Net Supply Δ = 0                            ✅ mint + burn cancel in SupplySnapshot
+```
+
+### 8.5 Verdict
+
+**Canonical 1:1 emission model is CORRECTLY IMPLEMENTED in `src/token/emission.service.ts`.**  
+No regressions found. Legacy fiat-bridge methods now carry explicit non-canonical warnings.
+
+---
+
+*Re-audit by AGENT-CORE — 2026-05-27*  
+*Commit: `feat: canonical 1:1 emission model implementation`*

@@ -12,6 +12,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { EmissionService } from './emission.service';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
@@ -55,8 +56,8 @@ describe('EmissionService — Canonical 1:1 Model', () => {
             providers: [
                 EmissionService,
                 { provide: getRepositoryToken(SupplySnapshot), useValue: mockSupplyRepo },
-                { provide: LedgerService,                       useValue: mockLedgerService },
-                { provide: 'DataSource',                        useValue: mockDataSource },
+                { provide: LedgerService,  useValue: mockLedgerService },
+                { provide: DataSource,     useValue: mockDataSource },
             ],
         }).compile();
 

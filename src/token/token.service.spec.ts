@@ -12,25 +12,36 @@ import { TokenomicsService } from './tokenomics.service';
 import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
+// Dynamic mock: implements canonical 1:1 formula so tests can assert real math values.
 const mockEmissionService = {
-    calculate: jest.fn().mockReturnValue({
-        transactionAmount: 100,
-        emissionAmount: 100,
-        commission: 0.5,
-        nodeShare: 0.375,
-        afcReserveShare: 0.125,
-        commissionRate: 0.005,
+    calculate: jest.fn().mockImplementation((txAmount: number, rate = 0.005) => {
+        const commission = txAmount * rate;
+        return {
+            transactionAmount: txAmount,
+            emissionAmount:    txAmount,          // 1:1
+            commission,
+            nodeShare:         commission * 0.75,
+            afcReserveShare:   commission * 0.25,
+            commissionRate:    rate,
+        };
     }),
-    processTransactionEmission: jest.fn().mockResolvedValue({
-        transactionAmount: 100,
-        emissionAmount: 100,
-        commission: 0.5,
-        nodeShare: 0.375,
-        afcReserveShare: 0.125,
-        commissionRate: 0.005,
-    }),
+    processTransactionEmission: jest.fn().mockImplementation(
+        async (txAmount: number, _recipient: string, _refId: string, rate = 0.005) => {
+            const commission = txAmount * rate;
+            return {
+                transactionAmount: txAmount,
+                emissionAmount:    txAmount,      // 1:1
+                commission,
+                nodeShare:         commission * 0.75,
+                afcReserveShare:   commission * 0.25,
+                commissionRate:    rate,
+            };
+        },
+    ),
     getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
-    getAfcReserveState: jest.fn().mockReturnValue({ totalReserve: 0, reserveIndex: 1.0, transactionCount: 0, lastUpdated: 0 }),
+    getAfcReserveState: jest.fn().mockReturnValue({
+        totalReserve: 0, reserveIndex: 1.0, transactionCount: 0, lastUpdated: 0,
+    }),
     updateAfcReserve: jest.fn().mockResolvedValue(undefined),
 };
 

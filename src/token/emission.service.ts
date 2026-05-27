@@ -197,6 +197,23 @@ export class EmissionService {
     }
 
     /**
+     * Synchronises the AFC reserve index with an epoch-level distribution.
+     * Called by FeeDistributionService after each epoch finalization so that
+     * reserveIndex reflects both per-TX and per-epoch AFC contributions.
+     *
+     * @param afcAmount  - The 25% AFC portion distributed in the epoch (in ARO).
+     * @param epochNumber - Epoch identifier for audit logging.
+     */
+    syncAfcReserveFromEpoch(afcAmount: number, epochNumber: number): void {
+        if (afcAmount <= 0) return;
+        this.updateAfcReserve(afcAmount);
+        this.logger.log(
+            `[AFC Reserve] Epoch ${epochNumber} sync: +${afcAmount.toFixed(4)} AFC → ` +
+            `Index=${this.afcReserveState.reserveIndex.toFixed(6)}`,
+        );
+    }
+
+    /**
      * Allows governance to update the commission rate.
      */
     updateCommissionRate(newRate: number): void {

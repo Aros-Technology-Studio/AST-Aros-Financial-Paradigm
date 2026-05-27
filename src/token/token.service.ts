@@ -76,6 +76,14 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use {@link mintForTransaction} for all canonical ARO emission flows.
+     *
+     * Legacy bridge method — records a raw FIAT_DEPOSIT mint without applying the canonical
+     * 1:1 emission lifecycle (no fee split, no AFC reserve update, no post-TX burn).
+     * Retained for backward-compat with bridge integrations that calculate token amounts
+     * externally before calling this method. New code must call mintForTransaction().
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
@@ -85,16 +93,7 @@ export class TokenService {
 
         try {
             const currentPrice = this.tokenomicsService.getCurrentPrice();
-            this.logger.log(`Initiating MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId}) @ Price ${currentPrice}`);
-
-            // Logic: If amount is FIAT, we divide by Price. If amount is TOKENS, we just mint tokens.
-            // Assuming input 'amount' is TOKENS for now based on legacy logic, 
-            // BUT for dynamic pricing usually the input from Bank is FIAT.
-            // Let's assume the Bridge sends token amount calculated elsewhere OR we should change this to accept Fiat and calc Tokens.
-            // For minimal disruption: We assume Bridge calc or we just log the price.
-            // *CRITICAL*: User asked for price to rise. 
-            // We will trigger a price increment AFTER minting to simulate "Activity".
-
+            this.logger.log(`[Legacy MINT] ${amount} AROS → ${recipient} (Ref: ${referenceId}) @ Price ${currentPrice}`);
 
             const tx = await this.ledgerService.recordTransaction({
                 type: TransactionType.MINT,
@@ -136,6 +135,14 @@ export class TokenService {
         }
     }
 
+    /**
+     * @deprecated Bridge-layer burn for FIAT_WITHDRAWAL flows.
+     *
+     * Handles the reverse bridge path (ARO → fiat payout) via BridgeService.
+     * This is NOT the canonical post-transaction burn — that happens automatically
+     * inside EmissionService.processTransactionEmission() (Step 4).
+     * New code that needs standalone burn for bridge payouts may continue using this.
+     */
     async burn(amount: string, sender: string, bankDetailsId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

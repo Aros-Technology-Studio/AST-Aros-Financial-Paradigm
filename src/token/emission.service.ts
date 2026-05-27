@@ -162,6 +162,16 @@ export class EmissionService {
     }
 
     /**
+     * Records an epoch-level AFC reserve contribution from FeeDistributionService.
+     * Keeps the in-memory price index in sync with both per-TX and epoch-level flows.
+     */
+    recordEpochAfcContribution(afcAmount: number): void {
+        if (afcAmount <= 0) return;
+        this.updateAfcReserve(afcAmount);
+        this.logger.log(`[AFC Reserve] Epoch contribution: +${afcAmount.toFixed(8)}`);
+    }
+
+    /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
      */

@@ -9,6 +9,7 @@ import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { EmissionService } from '../token/emission.service';
 import { DataSource } from 'typeorm';
 
 describe('FeeDistributionService', () => {
@@ -63,6 +64,10 @@ describe('FeeDistributionService', () => {
         createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
     };
 
+    const mockEmissionService = {
+        updateAfcReserve: jest.fn(),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -74,6 +79,7 @@ describe('FeeDistributionService', () => {
                 { provide: TokenService, useValue: mockTokenService },
                 { provide: NodeChainService, useValue: mockNodeChainService },
                 { provide: SmartContractIntegration, useValue: { validateReserve: jest.fn().mockResolvedValue({ isValid: true, onChainSupply: 100 }) } },
+                { provide: EmissionService, useValue: mockEmissionService },
                 { provide: DataSource, useValue: mockDataSource },
             ],
         }).compile();

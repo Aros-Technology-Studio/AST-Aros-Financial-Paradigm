@@ -9,6 +9,7 @@ import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
 
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { EmissionService } from '../token/emission.service';
 
 @Injectable()
 export class FeeDistributionService {
@@ -27,6 +28,7 @@ export class FeeDistributionService {
         private readonly tokenService: TokenService,
         private readonly nodeChainService: NodeChainService,
         private readonly smartContractService: SmartContractIntegration,
+        private readonly emissionService: EmissionService,
         private readonly dataSource: DataSource, // For transactionality
     ) { }
 
@@ -177,6 +179,9 @@ export class FeeDistributionService {
                 status:       TransactionStatus.CONFIRMED,
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
+
+            // Sync epoch AFC contribution into EmissionService so reserveIndex reflects epoch fees too
+            this.emissionService.updateAfcReserve(afcReserve);
 
             let distributedSum = 0;
 

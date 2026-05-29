@@ -197,6 +197,17 @@ export class EmissionService {
     }
 
     /**
+     * Syncs an epoch-level AFC reserve contribution into the in-memory price index.
+     * Call this after FeeDistributionService finalizes each epoch so that the
+     * reserveIndex reflects both per-TX and per-epoch AFC accumulation.
+     */
+    syncEpochAfcContribution(epochAfcAmount: number): void {
+        if (epochAfcAmount <= 0) return;
+        this.updateAfcReserve(epochAfcAmount);
+        this.logger.log(`[Emission] Epoch AFC sync: +${epochAfcAmount.toFixed(4)} → Index=${this.afcReserveState.reserveIndex.toFixed(6)}`);
+    }
+
+    /**
      * Allows governance to update the commission rate.
      */
     updateCommissionRate(newRate: number): void {

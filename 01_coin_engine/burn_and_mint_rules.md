@@ -63,14 +63,29 @@ Both processes are essential for:
 
 ---
 
-## 4. Fee Distribution Parameters
+## 4. Canonical Emission Burn (1:1 Model)
 
-| Parameter          | Description                                     | Example Value     |
-| ------------------ | ----------------------------------------------- | ----------------- |
-| `dailyMintLimit`   | Max ARO that can be minted in 24h               | 250,000 ARO       |
-| `burnRate`         | % of fee to burn in each txn (configurable)     | 3% of txn fee     |
-| `mintThreshold`    | Minimum reserve balance before new mint allowed | 500,000 ARO       |
-| `fraudPenaltyBurn` | Amount burned in confirmed abuse cases          | 100% of stake     |
+Under the canonical emission model (`EmissionService`), ARO tokens are **transient**:
+- Emitted ARO are minted 1:1 to the recipient at transaction start.
+- The same quantity is burned after the transaction completes.
+- Net circulating supply change per canonical TX cycle = **0**.
+- The ledger retains full `totalMinted` and `totalBurned` counters for audit.
+
+This burn is automatic and unconditional — it is not governed by a `burnRate` percentage.
+
+## 5. Fee Distribution Parameters
+
+| Parameter          | Description                                     | Value / Notes                      |
+| ------------------ | ----------------------------------------------- | ---------------------------------- |
+| `commissionRate`   | % of TX amount charged as commission            | default 0.5% (governance-adjustable) |
+| `nodeShareRatio`   | Fraction of commission to node pool             | 0.75 (75%, fixed)                  |
+| `afcReserveRatio`  | Fraction of commission to AFC reserve           | 0.25 (25%, fixed)                  |
+| `fraudPenaltyBurn` | Tokens burned in confirmed governance fraud     | 100% of stake (governance vote)    |
+
+> **Historical note**: Earlier versions defined `dailyMintLimit = 250,000 ARO`,
+> `burnRate = 3% of txn fee`, and `mintThreshold = 500,000 ARO`. These parameters
+> are superseded by the canonical 1:1 emission model, where supply is organically
+> bounded by real transaction volume and post-TX burns are unconditional.
 
 ---
 

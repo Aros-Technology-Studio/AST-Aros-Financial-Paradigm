@@ -1,11 +1,42 @@
 import { Controller, Post, Body, Get, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { TokenService } from './token.service';
+import { EmissionService } from './emission.service';
 
 @Controller('api/v1/token')
 export class TokenController {
     private readonly logger = new Logger(TokenController.name);
 
-    constructor(private readonly tokenService: TokenService) { }
+    constructor(
+        private readonly tokenService: TokenService,
+        private readonly emissionService: EmissionService,
+    ) { }
+
+    /**
+     * Canonical emission endpoint — implements the 1:1 model end-to-end:
+     *   Emit = txAmount, Fee = txAmount × rate → 75% nodes + 25% AFC
+     *   ARO burned after completion, AFC reserve grows, price index rises.
+     */
+    @Post('emit')
+    async canonicalEmit(
+        @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+    ) {
+        try {
+            const result = await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+            return {
+                status: 'SUCCESS',
+                ...result,
+                emissionPrice: this.emissionService.getCurrentEmissionPrice(),
+                afcReserve:    this.emissionService.getAfcReserveState(),
+            };
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {

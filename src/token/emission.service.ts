@@ -77,6 +77,10 @@ export class EmissionService {
      *   3. Grow AFC reserve → update price index
      *   4. Burn the emitted ARO (ARO are transient — they exist only during the transaction)
      *
+     * Ledger steps 1-4 each run in their own LedgerService transaction (required for
+     * hash-chain integrity and pessimistic locking). Step 5 (supply snapshot) runs in
+     * the outer queryRunner so it rolls back if the snapshot write fails.
+     *
      * Returns the emission result for audit logging.
      */
     async processTransactionEmission(
@@ -93,6 +97,10 @@ export class EmissionService {
             `(Nodes=${result.nodeShare} AFC=${result.afcReserveShare})`,
         );
 
+        // Single base nonce per emission cycle — offsets +1/+2/+3 guarantee
+        // uniqueness across the four ledger entries from the same sender.
+        const baseNonce = Date.now();
+
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
@@ -105,7 +113,7 @@ export class EmissionService {
                 recipient: recipientAddress,
                 amount:    result.emissionAmount.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now(),
+                nonce:     baseNonce,
                 metadata:  { referenceId, operation: 'CANONICAL_1_1_EMISSION' },
             });
 
@@ -116,7 +124,7 @@ export class EmissionService {
                 recipient: this.NODE_POOL_ADDRESS,
                 amount:    result.nodeShare.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 1,
+                nonce:     baseNonce + 1,
                 metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: result.commissionRate },
             });
 
@@ -127,7 +135,7 @@ export class EmissionService {
                 recipient: this.AFC_RESERVE_ADDRESS,
                 amount:    result.afcReserveShare.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 2,
+                nonce:     baseNonce + 2,
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
             });
 
@@ -141,11 +149,11 @@ export class EmissionService {
                 recipient: this.BURN_ADDRESS,
                 amount:    result.emissionAmount.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 3,
+                nonce:     baseNonce + 3,
                 metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
             });
 
-            // Step 5 — Update supply snapshot
+            // Step 5 — Update supply snapshot (within outer queryRunner)
             await this.updateSupplySnapshot(queryRunner, referenceId, result);
 
             await queryRunner.commitTransaction();

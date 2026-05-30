@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { EmissionService } from './emission.service';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
@@ -41,12 +42,9 @@ describe('EmissionService', () => {
                 EmissionService,
                 { provide: getRepositoryToken(SupplySnapshot), useValue: mockSupplyRepo },
                 { provide: LedgerService, useValue: mockLedgerService },
-                { provide: 'DataSource', useValue: mockDataSource },
+                { provide: DataSource, useValue: mockDataSource },
             ],
-        })
-            .overrideProvider('DataSource')
-            .useValue(mockDataSource)
-            .compile();
+        }).compile();
 
         service = module.get<EmissionService>(EmissionService);
         jest.clearAllMocks();

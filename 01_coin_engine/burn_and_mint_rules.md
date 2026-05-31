@@ -2,16 +2,12 @@
 
 ## Purpose
 
-This document defines the **token lifecycle logic** for AROS Coin (ARO) through two key mechanisms:
+This document defines the **canonical token lifecycle** for AROS Coin (ARO):
 
-- **Minting** — controlled issuance of new ARO tokens.
-- **Burning** — irreversible removal of ARO tokens from circulation.
+- **Minting** — transient issuance of ARO tokens triggered exclusively by verified transactions.
+- **Burning** — immediate destruction of all minted ARO upon transaction completion.
 
-Both processes are essential for:
-
-- Ensuring deflationary and anti-inflation control,
-- Maintaining token demand equilibrium,
-- Supporting AST’s transactional economy without uncontrolled supply growth.
+Both operations execute atomically within a single database transaction (no partial states).
 
 ---
 
@@ -19,21 +15,23 @@ Both processes are essential for:
 
 ### ✅ When Minting is Allowed
 
-- When new fiat is tokenized via Tokenization Pipeline → an equal value of ARO is minted.
-- When system reserves fall below liquidity threshold, per `mintThreshold` config.
-- For technical airdrops or bounty issuance, authorized by The All-Seeing Eye.
+- When a transaction is verified by Proof-of-Transaction (PoT) — exactly `amount ARO` is minted to the recipient (1:1 ratio).
+- No pre-mining, no idle emission, no founder allocations.
 
 ### 🔒 Minting Constraints
 
-- Must be triggered via verified pipeline event.
-- All minting events are signed by validator group quorum (≥ 67%).
-- Daily hard-cap: configurable via `dailyMintLimit` parameter.
+- Minting is triggered **only** by a verified PoT transaction event.
+- Emission amount equals the transaction amount exactly — no multipliers.
+- The emission price index (`reserveIndex`) rises monotonically as the AFC reserve grows, making future emissions organically costlier.
+- `KILL_SWITCH=true` halts all mint transitions; read-only mode persists.
 
 ### 📦 Minting Mechanism
 
-- Mint contract accepts: `{ eventType, fiatValue, recipientWallet, mintNonce }`.
-- Auto-generates `mintProof` for audit log.
-- Tokens distributed to wallet or module per purpose.
+```
+SYSTEM_EMISSION_AUTHORITY → MINT emissionAmount → recipient
+```
+
+Canonical entry point: `EmissionService.processTransactionEmission(txAmount, recipient, refId)`
 
 ---
 
@@ -41,48 +39,77 @@ Both processes are essential for:
 
 ### ✅ When Burning is Triggered
 
-- Upon **Reverse Tokenization**: crypto is converted back to fiat.
-- When transactional fees are configured to include partial burn (per `feePolicy`).
-- In case of detected fraud, via special corrective governance vote.
+- **Immediately after transaction completion** — all emitted ARO for that cycle are burned (canonical burn).
+- The mint and burn occur in the **same atomic transaction**: net circulating supply change per canonical TX cycle = **0**.
 
 ### 🔥 Burn Mechanism
 
-- Burn contract receives: `{ burnAmount, originTxID, burnReason }`.
-- Updates `burnLedger` with full audit metadata.
-- Fee Distribution count adjusted and pushed to public index.
+```
+recipient → BURN emissionAmount → SYSTEM_BURN_VAULT_00000000000000000000
+```
+
+Supply audit trail:
+- `totalMinted` increases by `emissionAmount`
+- `totalBurned` increases by `emissionAmount`
+- `circulatingSupply` is unchanged
 
 ---
 
-## 3. Anti-Abuse Mechanisms
+## 3. Commission Split (per canonical TX cycle)
+
+```
+Commission   = Transaction Amount × rate    (default 0.5%)
+Node Share   = Commission × 0.75            (75% → SYSTEM_NODE_POOL)
+AFC Reserve  = Commission × 0.25            (25% → SYSTEM_AFC_RESERVE)
+```
+
+The 75/25 split applies at both per-transaction level (`EmissionService`) and epoch finalization (`FeeDistributionService`).
+
+---
+
+## 4. AFC Reserve Price Index
+
+As the AFC reserve accumulates, the emission price rises:
+
+```
+reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000
+```
+
+Sub-linear growth: stable at low volume, meaningful at scale. Acts as the organic supply throttle — no hard cap required.
+
+---
+
+## 5. Anti-Abuse Mechanisms
 
 | Scenario                    | Protection Mechanism                            |
 | --------------------------- | ----------------------------------------------- |
-| Excessive mint requests     | Rate-limiter per IP/wallet group                |
+| Emission without PoT proof  | `EmissionService` requires verified referenceId |
 | Reused mint/burn nonces     | Nonce replay detection, rejection with hash log |
 | Validator collusion attempt | Randomized quorum rotation every 24h            |
+| Protocol anomaly / exploit  | Multi-sig emergency brake (`KILL_SWITCH=true`)  |
 
 ---
 
-## 4. Fee Distribution Parameters
+## 6. Emergency Brake
 
-| Parameter          | Description                                     | Example Value     |
-| ------------------ | ----------------------------------------------- | ----------------- |
-| `dailyMintLimit`   | Max ARO that can be minted in 24h               | 250,000 ARO       |
-| `burnRate`         | % of fee to burn in each txn (configurable)     | 3% of txn fee     |
-| `mintThreshold`    | Minimum reserve balance before new mint allowed | 500,000 ARO       |
-| `fraudPenaltyBurn` | Amount burned in confirmed abuse cases          | 100% of stake     |
+`KILL_SWITCH=true` halts all mint and burn transitions. Multi-signature required from:
+- All-Seeing Eye
+- Oracle Committee
+- Founder Authority (if defined in initial config)
 
 ---
 
-## 5. Governance Hooks
+## 7. Summary
 
-- **The All-Seeing Eye** has override authority for emergency mint freeze or burn nullification.
-- Any mint/burn can be challenged within 12h via `ChallengeProtocol`.
-
----
-
-## 6. Summary
-
-AROS Coin’s burn/mint rules ensure **transparent, controlled, and demand-driven token supply** with clear governance and security oversight. These rules anchor ARO’s economic credibility and functional resilience.
+| Rule                    | Canonical Value                                  |
+|-------------------------|--------------------------------------------------|
+| Emission trigger        | Verified PoT transaction only                    |
+| Emission amount         | `= Transaction Amount` (1:1, no multiplier)      |
+| Commission rate         | 0.5% (governance-adjustable, bounded 0–100%)     |
+| Node pool share         | 75% of commission                                |
+| AFC reserve share       | 25% of commission                                |
+| Burn trigger            | After transaction completion (same atomic TX)    |
+| Net supply change / TX  | 0 (mint and burn cancel out)                     |
+| Supply cap              | None — bounded organically by transaction volume |
 
 ⸻

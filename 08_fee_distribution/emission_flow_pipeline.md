@@ -57,11 +57,12 @@ Based on one or more of the following:
 
 ### 🔹 5. Distribution Routing
 
-Token allocation performed using one of the following models:
-- Validator payment split (e.g., 60% to confirming node, 40% to treasury)
-- NodeChain round-based rotation
-- Governance treasury replenishment
-- Shard-local redistribution
+Token allocation follows the canonical 75/25 split:
+- **75%** → node pool (`SYSTEM_NODE_POOL`) — divided by PoT-normalized weight per active validator
+- **25%** → AFC reserve (`SYSTEM_AFC_RESERVE`) — drives emission price index upward
+
+> Earlier examples showed "60% confirming node / 40% treasury"; that model is superseded
+> by the canonical 75/25 split adopted in PR #72. See `01_coin_engine/payment_distribution.md`.
 
 ### 🔹 6. Finalization & Logging
 

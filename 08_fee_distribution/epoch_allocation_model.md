@@ -55,14 +55,16 @@ Example:
 
 ### **3. Allocation Slices**
 
-The emitted volume is subdivided by role:
+The emitted volume is subdivided using the canonical 75/25 split:
 
-| **Role** | **Allocation %** |
-| --- | --- |
-| Validator Payment | 60% |
-| Governance pool | 25% |
-| Ecosystem reserve | 10% |
-| Risk buffer | 5% |
+| **Role** | **Allocation %** | **Destination** |
+| --- | --- | --- |
+| Node Pool (validators by PoT weight) | 75% | `SYSTEM_NODE_POOL_00000000000000000000` |
+| AFC Reserve | 25% | `SYSTEM_AFC_RESERVE_000000000000000000` |
+
+> **Canonical split (PR #72)**: 75% node pool → 25% AFC reserve. Earlier docs showed
+> a 60/25/10/5 four-way split; that model is superseded. Governance bounties and ecosystem
+> grants are funded from the AFC reserve via separate governance votes.
 
 These ratios may evolve under governance consensus.
 

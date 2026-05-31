@@ -37,32 +37,36 @@ flowchart TD
     E --> F[Tokens Minted Proportionally to Workload]
 ```
 
-### **Formula (Simplified):**
+### **Canonical Formula:**
 
 ```
-tokens_to_mint = (transaction_fee * emission_ratio) * node_weight
+Emission   = Transaction Amount        (1:1 — no multiplier)
+Commission = Transaction Amount × rate (default 0.5%)
+Node Share = Commission × 0.75
+AFC Share  = Commission × 0.25
 ```
 
-Where:
+ARO tokens are minted 1:1 to the transaction amount and burned on transaction completion.
+The per-node reward comes from the **Node Share** distributed by PoT weight, not from
+a `node_weight` multiplier applied to the emission amount.
 
-- transaction_fee = fee paid by sender
-- emission_ratio = fixed or dynamic ratio defined by governance
-- node_weight = participation factor based on node’s share of processing
+> Earlier documentation showed `tokens_to_mint = (transaction_fee * emission_ratio) * node_weight`.
+> That formula is superseded by the canonical 1:1 model. See `src/token/emission.service.ts`.
 
 ---
 
 ## **Token Distribution at Issuance**
 
-Newly minted tokens are distributed as follows (default values):
+Commission from each transaction is split as follows (canonical values):
 
-| **Receiver** | **Percentage** |
-| --- | --- |
-| Processing Nodes | 60% |
-| Ecosystem Reserve | 25% |
-| Governance Pool | 10% |
-| Emergency Buffer | 5% |
+| **Receiver** | **Percentage** | **Destination** |
+| --- | --- | --- |
+| Node Pool (by PoT weight) | **75%** | `SYSTEM_NODE_POOL_00000000000000000000` |
+| AFC Reserve | **25%** | `SYSTEM_AFC_RESERVE_000000000000000000` |
 
-> Note: These values are tunable via DAO proposals or governance AI protocol.
+> **Canonical split (PR #72)**: 75% node pool → 25% AFC reserve. Earlier docs showed
+> a 60/25/10/5 four-way split; that model is superseded. Governance bounties and ecosystem
+> grants are funded separately from the AFC reserve via DAO votes, not from per-TX splits.
 > 
 
 ---

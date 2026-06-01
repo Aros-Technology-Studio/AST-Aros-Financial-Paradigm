@@ -21,16 +21,16 @@
 
 ---
 
-## 2. Bug Found and Fixed: Ledger Deficit in Burn Step
+## 2. Bugs Found and Fixed
 
-### Root cause
+### 2.1 Ledger Deficit in Burn Step (emission.service.ts)
 
-`EmissionService.processTransactionEmission()` Step 4 was burning `result.emissionAmount`
+**Root cause:** `EmissionService.processTransactionEmission()` Step 4 was burning `result.emissionAmount`
 (the full 10,000 ARO). By Step 4, the recipient had already paid commission in Steps 2a/2b,
 leaving only `emissionAmount − commission = 9,950 ARO`. Burning 10,000 from a balance of
 9,950 creates a **ledger deficit of −50 ARO per transaction**.
 
-### Corrected accounting ($10,000 TX, 0.5% commission)
+**Corrected accounting ($10,000 TX, 0.5% commission):**
 
 ```
 Step 1 MINT  +10,000  → recipient          (1:1 emission)
@@ -49,14 +49,21 @@ Supply impact per TX:
   circulatingSupply +=     50  (commission stays in node pool + AFC reserve)
 ```
 
-### Files changed in this pass
+**Fix:** Added `burnAmount = emission − commission` to `EmissionResult`; Step 4 burns `burnAmount` instead of `emissionAmount`; `updateSupplySnapshot()` corrected accordingly.
 
-| File | Change |
-|------|--------|
-| `src/token/emission.interfaces.ts` | Added `burnAmount: number` to `EmissionResult` |
-| `src/token/emission.service.ts` | `calculate()` computes `burnAmount = emission − commission`; Step 4 burns `burnAmount`; `updateSupplySnapshot()` tracks `totalBurned += burnAmount`, `circulatingSupply += commission` |
-| `01_coin_engine/burn_and_mint_rules.md` | Added §0 — Canonical Per-Transaction Burn Cycle: documents the automatic transient burn (with correct `burnAmount = emission − commission`), distinct from the governance-level operations described in §1–§5 |
-| `AGENT_CORE_REPORT.md` | This report |
+### 2.2 Missing Canonical HTTP Endpoint (token.controller.ts)
+
+**Root cause:** `TokenController` only exposed `POST /api/v1/token/mint` (legacy path via `TokenService.mint()`) which bypasses the canonical 1:1 emission lifecycle entirely. No HTTP caller could reach `mintForTransaction()`.
+
+**Fix:** Added two new endpoints:
+- `POST /api/v1/token/emit` — canonical emission entry point
+- `GET /api/v1/token/emission/price` — AFC reserve state and price index
+
+### 2.3 Wrong Price Source in TokenomicsService (tokenomics.service.ts)
+
+**Root cause:** `TokenomicsService.getCurrentPrice()` returned the **logarithmic** index from `ProcessReserveLedgerService` (`1.0 + log1p(totalVolume) / 100`), not the **canonical AFC sqrt** index from `EmissionService` (`1.0 + sqrt(totalAfcReserve) / 10_000`). Two different calculations over two different datasets — any caller reading price got a non-canonical value.
+
+**Fix:** `tokenomics.service.ts` now injects `EmissionService` (via `forwardRef`) and delegates `getCurrentPrice()` to `EmissionService.getCurrentEmissionPrice()`.
 
 ---
 
@@ -64,41 +71,32 @@ Supply impact per TX:
 
 ### 01_coin_engine — Status: Documentation only, NOT deprecated
 
-All documentation files align with the canonical model:
-
 | File | Status | Notes |
 |------|--------|-------|
-| `coin_emission_model.md` | ✅ Canonical | 1:1 formula, AFC index, worked example, all correct |
-| `aro_emission_protocol.md` | ✅ Canonical | Mermaid sequence diagram showing MINT→FEE×2→BURN flow |
+| `coin_emission_model.md` | ✅ Canonical | 1:1 formula, AFC index, worked example |
+| `aro_emission_protocol.md` | ✅ Canonical | Mermaid sequence diagram: MINT→FEE×2→BURN |
 | `payment_distribution.md` | ✅ Canonical | 75/25 split; historical 60/15/15/5/5 noted and superseded |
 | `burn_and_mint_rules.md` | ✅ Patched | Added §0 documenting automatic 1:1 transient burn cycle with correct `burnAmount = emission − commission` |
-| `README.md` | ✅ Non-contradictory | Architecture overview; no formula conflicts |
+| `README.md` | ✅ Non-contradictory | Architecture overview |
 | `AROS_Coin_TokenSpec.json` | ✅ Present | Machine-readable spec |
 
 **Module 01 is pure documentation.** The canonical source-of-truth code lives in `src/token/`.
 
 ### 10_proof_of_transaction_engine — Status: Documentation only
 
-Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
-Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic is defined here.
+Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.
+Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here.
 
 ### src/token/ — Status: Fixed and canonical ✅
 
-| File | Verified State |
-|------|---------------|
-| `emission.interfaces.ts` | ✅ `EmissionResult` now includes `burnAmount = emissionAmount − commission` |
-| `emission.service.ts` | ✅ Fixed: `burnAmount` computed in `calculate()`; Step 4 burns `burnAmount`; supply snapshot corrected |
-| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService` (canonical path) |
-| `tokenomics.service.ts` | ✅ `updateInternalValuation()` is deprecated no-op; `getCurrentPrice()` preserved for legacy callers |
-| `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
-| `entities/supply_snapshot.entity.ts` | ✅ Tracks `totalMinted`, `totalBurned`, `circulatingSupply` |
-
-### src/proof_of_transaction_engine/ — Status: Correct, unchanged
-
-| File | Notes |
-|------|-------|
-| `pot.service.ts` | PoT scoring `S_i = α·|TX_i| + β·F_i − δ·P_i`; weight normalization; role assignment — correct |
-| `process_reserve.service.ts` | Legacy process-volume ledger; `log1p` index — used only by legacy tokenomics path. Does not affect canonical emission |
+| File | Pre-patch state | Post-patch state |
+|------|----------------|-----------------|
+| `emission.interfaces.ts` | Missing `burnAmount` | ✅ Added `burnAmount: number` |
+| `emission.service.ts` | Burns `emissionAmount` (deficit bug) | ✅ Burns `burnAmount = emissionAmount − commission` |
+| `token.service.ts` | ✅ `mintForTransaction()` delegates to EmissionService | ✅ Unchanged |
+| `token.controller.ts` | ❌ No canonical endpoint; only legacy `mint()` | ✅ Added `POST /emit` + `GET /emission/price` |
+| `tokenomics.service.ts` | ❌ `getCurrentPrice()` = log1p index from ProcessReserve | ✅ Delegates to `EmissionService.getCurrentEmissionPrice()` |
+| `token.module.ts` | Minor ordering | ✅ Cleaned up; `EmissionService` declared before `TokenomicsService` |
 
 ### src/fee_distribution/ — Status: Canonical, fully compliant ✅
 
@@ -106,9 +104,16 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 - 75% → node pool (divided by PoT-normalized weight per active validator node)
 - 25% → `SYSTEM_AFC_RESERVE_000000000000000000`
 
+### src/proof_of_transaction_engine/ — Status: Correct, unchanged
+
+| File | Notes |
+|------|-------|
+| `pot.service.ts` | PoT scoring `S_i = α·|TX_i| + β·F_i − δ·P_i`; weight normalization; role assignment |
+| `process_reserve.service.ts` | Legacy process-volume ledger; log1p index — used only by legacy path |
+
 ---
 
-## 4. Canonical Model Verification Matrix
+## 4. Canonical Model Verification Matrix (post-patch)
 
 | Rule | Canonical | Code location | Status |
 |------|-----------|--------------|--------|
@@ -116,48 +121,42 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 | `commission = transactionAmount × rate` | default 0.5% | `EmissionService.calculate()` | ✅ |
 | `nodeShare = commission × 0.75` | 75% | `EmissionService.calculate()` | ✅ |
 | `afcShare = commission × 0.25` | 25% | `EmissionService.calculate()` | ✅ |
-| `burnAmount = emission − commission` | Yes | `EmissionService.calculate()` | ✅ **Fixed** |
-| MINT ledger record (1:1 to recipient) | Yes | `processTransactionEmission()` Step 1 | ✅ |
-| FEE_DISTRIBUTION nodeShare → NODE_POOL | Yes | `processTransactionEmission()` Step 2a | ✅ |
-| FEE_DISTRIBUTION afcShare → AFC_RESERVE | Yes | `processTransactionEmission()` Step 2b | ✅ |
-| AFC reserve update → index rises | Yes | `updateAfcReserve()`: `1.0 + sqrt(total)/10_000` | ✅ |
-| BURN `burnAmount` (no ledger deficit) | Yes | `processTransactionEmission()` Step 4 | ✅ **Fixed** |
-| All 4 steps atomic | Yes | Single `QueryRunner` transaction | ✅ |
-| `circulatingSupply += commission` per TX | Yes | `updateSupplySnapshot()` | ✅ **Fixed** |
-| `totalMinted − totalBurned == commission` | Yes | `updateSupplySnapshot()` | ✅ **Fixed** |
-| Epoch-level 75/25 | Yes | `FeeDistributionService.distributeRewards()` | ✅ |
-| `mintForTransaction()` as canonical entry | Yes | `TokenService.mintForTransaction()` | ✅ |
+| `burnAmount = emissionAmount − commission` | Correct balance | `EmissionService.calculate()` | ✅ Fixed |
+| ARO burn after TX | Atomic with mint | `EmissionService.processTransactionEmission()` Step 4 | ✅ Fixed |
+| AFC reserve grows → price rises | `1.0 + sqrt(R) / 10_000` | `EmissionService.updateAfcReserve()` | ✅ |
+| Epoch fees also 75/25 | Yes | `FeeDistributionService.distributeRewards()` | ✅ |
+| HTTP canonical endpoint | `POST /api/v1/token/emit` | `TokenController` | ✅ Added |
+| `getCurrentPrice()` = AFC sqrt index | Single source of truth | `TokenomicsService` → `EmissionService` | ✅ Fixed |
 
 ---
 
-## 5. Implementation Detail (post-fix)
-
-### EmissionService — Canonical lifecycle (`src/token/emission.service.ts`)
+## 5. Implementation Architecture
 
 ```
-processTransactionEmission(txAmount, recipient, refId, rate?)
-  │
-  ├─ calculate():
-  │    emissionAmount = txAmount             // 1:1
-  │    commission     = txAmount × rate      // 0.5% default
-  │    nodeShare      = commission × 0.75
-  │    afcShare       = commission × 0.25
-  │    burnAmount     = emission − commission // avoids ledger deficit
-  │
-  ├─ Ledger MINT:             emissionAmount → recipient
-  ├─ Ledger FEE_DISTRIBUTION: nodeShare      → SYSTEM_NODE_POOL
-  ├─ Ledger FEE_DISTRIBUTION: afcShare       → SYSTEM_AFC_RESERVE
-  ├─ updateAfcReserve(afcShare):
-  │    totalReserve  += afcShare
-  │    reserveIndex   = 1.0 + sqrt(totalReserve) / 10_000
-  ├─ Ledger BURN:             burnAmount     → SYSTEM_BURN_VAULT
-  └─ updateSupplySnapshot():
-       totalMinted       += emissionAmount
-       totalBurned       += burnAmount
-       circulatingSupply += commission
+POST /api/v1/token/emit
+  └─ TokenService.mintForTransaction()
+       └─ EmissionService.processTransactionEmission(txAmount, recipient, refId, rate?)
+            │
+            ├─ calculate():
+            │    emissionAmount = txAmount            // 1:1
+            │    commission     = txAmount × rate     // 0.5% default
+            │    nodeShare      = commission × 0.75
+            │    afcShare       = commission × 0.25
+            │    burnAmount     = emission − commission
+            │
+            ├─ Ledger MINT:             emissionAmount → recipient
+            ├─ Ledger FEE_DISTRIBUTION: nodeShare → SYSTEM_NODE_POOL
+            ├─ Ledger FEE_DISTRIBUTION: afcShare  → SYSTEM_AFC_RESERVE
+            ├─ updateAfcReserve(afcShare):
+            │    reserveIndex = 1.0 + sqrt(totalReserve) / 10_000
+            ├─ Ledger BURN:             burnAmount → SYSTEM_BURN_VAULT
+            └─ updateSupplySnapshot():
+                 totalMinted   += emissionAmount
+                 totalBurned   += burnAmount
+                 circulatingSupply += commission   (net: only commission stays in circulation)
 ```
 
-All four ledger operations execute atomically within a single `QueryRunner` transaction.
+All steps execute atomically within a single `QueryRunner` transaction.
 
 ### System Addresses
 
@@ -170,7 +169,7 @@ All four ledger operations execute atomically within a single `QueryRunner` tran
 
 ---
 
-## 6. Worked Example: $10,000 Transaction
+## 6. Example: $10,000 Transaction
 
 ```
 TX Amount      = 10,000 ARO
@@ -178,76 +177,37 @@ Emission       = 10,000 ARO  (1:1 mint → recipient)
 Commission     = 10,000 × 0.005 = 50 ARO
   Node pool    = 50 × 0.75  = 37.50 ARO  (split by PoT weight)
   AFC reserve  = 50 × 0.25  = 12.50 ARO  (locked in reserve)
-Burn Amount    =  9,950 ARO  (= 10,000 − 50; recipient burns what they hold)
+burnAmount     = 10,000 − 50 = 9,950 ARO  (recipient's remaining balance, burned)
 
 Supply impact:
   totalMinted       += 10,000
   totalBurned       +=  9,950
-  circulatingSupply +=     50  (commission stays in node pool + AFC reserve)
+  circulatingSupply +=     50  (node pool + AFC reserve remain)
 
-AFC reserve after this TX:
-  reserveIndex = 1.0 + sqrt(12.50) / 10_000 ≈ 1.0000354
-  → every subsequent emission is priced higher
+After 12.50 AFC accumulated:
+  reserveIndex = 1.0 + sqrt(12.50) / 10_000 = 1.0000353...
+  → next emission is priced higher
 ```
 
 ---
 
-## 7. Invariants
+## 7. Files Changed in This Pass
 
-1. `emissionAmount == transactionAmount` — enforced in `calculate()`, throws on `txAmount <= 0`
-2. `nodeShare + afcShare == commission` — exact 75/25, no rounding loss beyond float precision
-3. `burnAmount == emissionAmount - commission` — recipient can always cover the burn (no deficit)
-4. `totalMinted - totalBurned == commission` per TX cycle in `SupplySnapshot`
-5. `circulatingSupply` grows by exactly `commission` per canonical TX cycle
-6. `reserveIndex` monotonically non-decreasing (only `+=` on `totalReserve`, then sqrt)
-7. All four ledger steps succeed or all roll back — atomic `QueryRunner` transaction
-
----
-
-## 8. Module 01 — Deprecated? Conclusion
-
-**Module 01 is NOT deprecated.**  
-Pure documentation module. Source code was never intended to live there.  
-Canonical implementation: `src/token/emission.service.ts`.
+| File | Change |
+|------|--------|
+| `src/token/emission.interfaces.ts` | Added `burnAmount: number` to `EmissionResult` |
+| `src/token/emission.service.ts` | `calculate()` computes `burnAmount`; Step 4 burns `burnAmount`; supply snapshot tracks `burnAmount` |
+| `src/token/token.controller.ts` | Added `POST /api/v1/token/emit` and `GET /api/v1/token/emission/price` |
+| `src/token/tokenomics.service.ts` | `getCurrentPrice()` delegates to `EmissionService.getCurrentEmissionPrice()` |
+| `src/token/token.module.ts` | Provider ordering cleanup |
+| `01_coin_engine/burn_and_mint_rules.md` | Added §0 documenting automatic transient burn with correct `burnAmount` |
+| `AGENT_CORE_REPORT.md` | This document |
 
 ---
 
-## 9. Open Recommendations
+## 8. Remaining Recommendations
 
-| Priority | Item | Rationale |
-|----------|------|-----------|
-| High | Persist `AfcReserveState` to database | Currently in-memory; lost on restart. Add a dedicated entity with periodic snapshots. |
-| Medium | Wire `mintForTransaction()` into bridge/ingestion | Legacy `mint()` in `token.service.ts` bypasses the canonical lifecycle. Replace all call sites. |
-| Medium | Sync epoch AFC contribution to `EmissionService` | `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; in-memory index stays unsynced after epoch finalization. |
-| Low | Add unit tests for `EmissionService.calculate()` | Cover `burnAmount` correctness, dust amounts, max commission rate boundary, zero-amount guard. |
-| Low | Unify price index | `TokenomicsService.getCurrentPrice()` reads from `processReserve` (log1p); canonical price is `EmissionService.getCurrentEmissionPrice()` (sqrt). Deprecate the processReserve index path. |
-| Low | Backfill `supply_snapshots` | Historical rows used old net-zero logic. A migration should add `+commission` to each historical `circulatingSupply` row. |
-
----
-
-## 10. Re-verification Pass — 2026-06-01
-
-Independent re-audit against the canonical model spec. All previously reported fixes confirmed present and correct:
-
-| Check | Result |
-|-------|--------|
-| `burnAmount = emissionAmount − commission` in `calculate()` | ✅ Present |
-| Step 4 burns `result.burnAmount` (not `result.emissionAmount`) | ✅ Correct |
-| `updateSupplySnapshot()` increments `circulatingSupply += commission` | ✅ Correct |
-| `EmissionResult.burnAmount` field defined in interfaces | ✅ Present |
-| `FeeDistributionService` 75/25 split unchanged | ✅ Confirmed |
-| `01_coin_engine/` docs aligned with canonical model | ✅ Confirmed |
-| `burn_and_mint_rules.md` §0 canonical burn cycle documented | ✅ Patched |
-| Module 01 deprecated? | ✅ NOT deprecated — pure docs |
-
-No further code changes required.
-
----
-
-## 11. Sign-off
-
-Burn-amount ledger deficit bug identified and fixed in `src/token/emission.service.ts`.  
-All canonical emission rules now correctly implemented.  
-`burn_and_mint_rules.md` patched with §0 to document the automatic per-TX transient burn cycle.  
-Documentation in `01_coin_engine/` is fully aligned.  
-System is compliant with the canonical 1:1 emission model.
+- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add `AfcReserveEntity` table with periodic snapshots or rebuild from ledger on startup.
+- **Replace `mint()` calls in bridge/ingestion pipeline** with canonical `mintForTransaction()` — the legacy `mint()` does not apply commission splitting or correct burn.
+- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard, and invariant: `nodeShare + afcShare === commission`.
+- **Sync epoch AFC to `EmissionService`** — `FeeDistributionService` records AFC on ledger but does not call `EmissionService.updateAfcReserve()`; in-memory index only updates on per-TX emissions, not on epoch finalization.

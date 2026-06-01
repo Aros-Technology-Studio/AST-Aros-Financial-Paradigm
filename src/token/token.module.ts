@@ -16,10 +16,14 @@ import { PoTEngineModule } from '../proof_of_transaction_engine/pot_engine.modul
         LedgerModule,
         PoTEngineModule,
         forwardRef(() => BridgeModule),
-        IntegrationModule
+        IntegrationModule,
     ],
     controllers: [TokenController],
-    providers: [TokenService, TokenomicsService, EmissionService],
+    providers: [
+        TokenService,
+        EmissionService,
+        TokenomicsService,
+    ],
     exports: [TokenService, TokenomicsService, EmissionService],
 })
 export class TokenModule { }

@@ -202,6 +202,7 @@ After 12.50 AFC accumulated:
 | `src/token/token.module.ts` | Provider ordering cleanup |
 | `01_coin_engine/burn_and_mint_rules.md` | Added §0 documenting automatic transient burn with correct `burnAmount` |
 | `AGENT_CORE_REPORT.md` | This document |
+| `src/token/tokenomics.service.ts` (2026-06-01 pass) | Removed unused `ProcessReserveLedgerService` injection — now only injects `EmissionService` |
 
 ---
 

@@ -1,7 +1,6 @@
 
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ProcessingParams } from './tokenomics.interfaces';
-import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 import { EmissionService } from './emission.service';
 
 @Injectable()
@@ -9,7 +8,6 @@ export class TokenomicsService {
     private readonly logger = new Logger(TokenomicsService.name);
 
     constructor(
-        private readonly processReserve: ProcessReserveLedgerService,
         @Inject(forwardRef(() => EmissionService))
         private readonly emissionService: EmissionService,
     ) {}

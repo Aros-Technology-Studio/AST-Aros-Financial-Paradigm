@@ -19,3 +19,7 @@ Thumbs.db
 
 contracts/cache
 contracts/artifacts
+# Python
+__pycache__/
+*.pyc
+*.pyo

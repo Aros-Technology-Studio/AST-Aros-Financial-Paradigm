@@ -224,7 +224,25 @@ Canonical implementation: `src/token/emission.service.ts`.
 
 ---
 
-## 10. Sign-off
+## 10. Re-verification Pass — 2026-06-01
+
+Independent re-audit against the canonical model spec. All previously reported fixes confirmed present and correct:
+
+| Check | Result |
+|-------|--------|
+| `burnAmount = emissionAmount − commission` in `calculate()` | ✅ Present |
+| Step 4 burns `result.burnAmount` (not `result.emissionAmount`) | ✅ Correct |
+| `updateSupplySnapshot()` increments `circulatingSupply += commission` | ✅ Correct |
+| `EmissionResult.burnAmount` field defined in interfaces | ✅ Present |
+| `FeeDistributionService` 75/25 split unchanged | ✅ Confirmed |
+| `01_coin_engine/` docs aligned with canonical model | ✅ Confirmed |
+| Module 01 deprecated? | ✅ NOT deprecated — pure docs |
+
+No further code changes required.
+
+---
+
+## 11. Sign-off
 
 Burn-amount ledger deficit bug identified and fixed in `src/token/emission.service.ts`.  
 All canonical emission rules now correctly implemented.  

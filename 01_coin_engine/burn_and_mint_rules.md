@@ -15,6 +15,30 @@ Both processes are essential for:
 
 ---
 
+## 0. Canonical Per-Transaction Burn Cycle (Automatic)
+
+> **This section describes the automated canonical emission cycle.** The governance-level rules in §1–§5 apply to manual and exceptional operations. Every regular transaction goes through the following automatic lifecycle first.
+
+For every verified transaction of amount `A` (canonical path via `EmissionService`):
+
+```
+MINT  A ARO  → recipient                    (1:1 emission)
+DIST  A × 0.005 × 0.75 ARO → SYSTEM_NODE_POOL    (75% of 0.5% commission, by PoT weight)
+DIST  A × 0.005 × 0.25 ARO → SYSTEM_AFC_RESERVE  (25% of 0.5% commission)
+BURN  (A − A×0.005) ARO    → SYSTEM_BURN_VAULT   (burnAmount = emission − commission)
+```
+
+**Net supply change per TX cycle:**
+- `totalMinted += A`
+- `totalBurned += A − commission`
+- `circulatingSupply += commission` (commission stays in node pool + AFC reserve)
+
+The canonical entry point is `EmissionService.processTransactionEmission()` in `src/token/emission.service.ts`. All four steps execute atomically in a single `QueryRunner` database transaction; on failure all steps roll back.
+
+> **Note on burn amount:** The burn is `emissionAmount − commission`, *not* the full `emissionAmount`. After Steps 2a/2b the recipient’s balance is exactly `emissionAmount − commission`; burning the full emission would create a ledger deficit of `commission` per transaction.
+
+---
+
 ## 1. Minting Logic
 
 ### ✅ When Minting is Allowed

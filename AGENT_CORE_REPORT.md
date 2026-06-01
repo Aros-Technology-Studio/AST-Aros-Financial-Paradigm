@@ -55,6 +55,7 @@ Supply impact per TX:
 |------|--------|
 | `src/token/emission.interfaces.ts` | Added `burnAmount: number` to `EmissionResult` |
 | `src/token/emission.service.ts` | `calculate()` computes `burnAmount = emission − commission`; Step 4 burns `burnAmount`; `updateSupplySnapshot()` tracks `totalBurned += burnAmount`, `circulatingSupply += commission` |
+| `01_coin_engine/burn_and_mint_rules.md` | Added §0 — Canonical Per-Transaction Burn Cycle: documents the automatic transient burn (with correct `burnAmount = emission − commission`), distinct from the governance-level operations described in §1–§5 |
 | `AGENT_CORE_REPORT.md` | This report |
 
 ---
@@ -70,7 +71,7 @@ All documentation files align with the canonical model:
 | `coin_emission_model.md` | ✅ Canonical | 1:1 formula, AFC index, worked example, all correct |
 | `aro_emission_protocol.md` | ✅ Canonical | Mermaid sequence diagram showing MINT→FEE×2→BURN flow |
 | `payment_distribution.md` | ✅ Canonical | 75/25 split; historical 60/15/15/5/5 noted and superseded |
-| `burn_and_mint_rules.md` | ✅ Non-contradictory | Burn-on-completion policy aligned |
+| `burn_and_mint_rules.md` | ✅ Patched | Added §0 documenting automatic 1:1 transient burn cycle with correct `burnAmount = emission − commission` |
 | `README.md` | ✅ Non-contradictory | Architecture overview; no formula conflicts |
 | `AROS_Coin_TokenSpec.json` | ✅ Present | Machine-readable spec |
 
@@ -236,6 +237,7 @@ Independent re-audit against the canonical model spec. All previously reported f
 | `EmissionResult.burnAmount` field defined in interfaces | ✅ Present |
 | `FeeDistributionService` 75/25 split unchanged | ✅ Confirmed |
 | `01_coin_engine/` docs aligned with canonical model | ✅ Confirmed |
+| `burn_and_mint_rules.md` §0 canonical burn cycle documented | ✅ Patched |
 | Module 01 deprecated? | ✅ NOT deprecated — pure docs |
 
 No further code changes required.
@@ -246,5 +248,6 @@ No further code changes required.
 
 Burn-amount ledger deficit bug identified and fixed in `src/token/emission.service.ts`.  
 All canonical emission rules now correctly implemented.  
-Documentation in `01_coin_engine/` is aligned.  
+`burn_and_mint_rules.md` patched with §0 to document the automatic per-TX transient burn cycle.  
+Documentation in `01_coin_engine/` is fully aligned.  
 System is compliant with the canonical 1:1 emission model.

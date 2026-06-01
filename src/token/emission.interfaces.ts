@@ -4,6 +4,7 @@ export interface EmissionResult {
   commission: number;         // = transactionAmount * commissionRate
   nodeShare: number;          // = commission * 0.75
   afcReserveShare: number;    // = commission * 0.25
+  burnAmount: number;         // = emissionAmount - commission (avoids ledger deficit)
   commissionRate: number;
 }
 

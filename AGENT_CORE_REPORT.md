@@ -205,9 +205,27 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 8. Remaining Recommendations
+## 8. Test Coverage Added (2026-06-01)
 
-- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add `AfcReserveEntity` table with periodic snapshots or rebuild from ledger on startup.
-- **Replace `mint()` calls in bridge/ingestion pipeline** with canonical `mintForTransaction()` — the legacy `mint()` does not apply commission splitting or correct burn.
-- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard, and invariant: `nodeShare + afcShare === commission`.
-- **Sync epoch AFC to `EmissionService`** — `FeeDistributionService` records AFC on ledger but does not call `EmissionService.updateAfcReserve()`; in-memory index only updates on per-TX emissions, not on epoch finalization.
+File: `src/token/emission.service.spec.ts` (new)
+
+| Test group | Cases |
+|-----------|-------|
+| `calculate()` | 1:1 emission ratio; 0.5% default rate; 75/25 split; `burnAmount = emissionAmount − commission`; `burnAmount + commission = emissionAmount`; custom rate; guard for zero/negative; dust amounts |
+| `getAfcReserveState()` | Initial state (reserveIndex=1.0, totalReserve=0, transactionCount=0) |
+| `getCurrentEmissionPrice()` | Returns 1.0 before any transactions |
+| `updateCommissionRate()` | Updates rate and `burnAmount` correctly; throws for rate≤0; throws for rate≥1 |
+| `processTransactionEmission()` | 4 ledger calls in correct order (MINT, FEE, FEE, BURN); 1:1 mint; burns `burnAmount` not `emissionAmount`; 75/25 fee split; AFC index grows; monotonic index; rollback on failure; full `EmissionResult` fields |
+
+**Total: 20 test cases.**
+
+---
+
+## 9. Remaining Recommendations
+
+| Item | Priority | Status |
+|------|----------|--------|
+| Add unit tests for `EmissionService.calculate()` | High | ✅ **DONE** — `emission.service.spec.ts` added |
+| Persist `AfcReserveState` to database | High | ⚠️ Open — currently in-memory; lost on restart |
+| Replace `mint()` calls in ingestion pipeline with `mintForTransaction()` | Medium | ⚠️ Open — legacy path bypasses commission splitting |
+| Sync `EmissionService.updateAfcReserve()` after epoch finalization | Medium | ⚠️ Open — in-memory index does not update on epoch AFC deposits |

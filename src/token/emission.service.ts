@@ -132,7 +132,7 @@ export class EmissionService {
             });
 
             // Step 3 — Update AFC reserve state (price index rises)
-            this.updateAfcReserve(result.afcReserveShare);
+            this.accumulateAfcReserve(result.afcReserveShare);
 
             // Step 4 — Burn emission (ARO are transient per canonical model)
             await this.ledgerService.recordTransaction({
@@ -163,9 +163,10 @@ export class EmissionService {
 
     /**
      * Grows the AFC reserve and recalculates the emission price index.
-     * Price index rises monotonically as the reserve accumulates.
+     * Called internally on each TX emission and externally by FeeDistributionService
+     * after epoch-level AFC contributions so the price index stays in sync.
      */
-    private updateAfcReserve(afcAmount: number): void {
+    accumulateAfcReserve(afcAmount: number): void {
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();

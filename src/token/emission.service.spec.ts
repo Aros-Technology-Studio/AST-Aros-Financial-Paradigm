@@ -90,9 +90,7 @@ describe('EmissionService — canonical 1:1 model', () => {
         });
 
         it('index rises monotonically as AFC reserve accumulates', () => {
-            const before = service.getCurrentEmissionPrice();
-            // Simulate internal reserve growth via processTransactionEmission indirectly
-            // by calling updateAfcReserve through getAfcReserveState mutation checks
+            // Verified via processTransactionEmission test below; here confirm initial state
             const state1 = service.getAfcReserveState();
             expect(state1.reserveIndex).toBe(1.0);
         });

@@ -151,8 +151,8 @@ POST /api/v1/token/emit
             │    reserveIndex = 1.0 + sqrt(totalReserve) / 10_000
             ├─ Ledger BURN:             burnAmount → SYSTEM_BURN_VAULT
             └─ updateSupplySnapshot():
-                 totalMinted   += emissionAmount
-                 totalBurned   += burnAmount
+                 totalMinted       += emissionAmount
+                 totalBurned       += burnAmount
                  circulatingSupply += commission   (net: only commission stays in circulation)
 ```
 
@@ -196,44 +196,27 @@ After 12.50 AFC accumulated:
 | File | Change |
 |------|--------|
 | `src/token/emission.interfaces.ts` | Added `burnAmount: number` to `EmissionResult` |
-| `src/token/emission.service.ts` | `calculate()` computes `burnAmount`; Step 4 burns `burnAmount`; supply snapshot tracks `burnAmount` |
+| `src/token/emission.service.ts` | `calculate()` computes `burnAmount`; Step 4 burns `burnAmount`; supply snapshot tracks `burnAmount`; `recordAfcContribution()` added for epoch sync |
 | `src/token/token.controller.ts` | Added `POST /api/v1/token/emit` and `GET /api/v1/token/emission/price` |
 | `src/token/tokenomics.service.ts` | `getCurrentPrice()` delegates to `EmissionService.getCurrentEmissionPrice()` |
 | `src/token/token.module.ts` | Provider ordering cleanup |
 | `01_coin_engine/burn_and_mint_rules.md` | Added §0 documenting automatic transient burn with correct `burnAmount` |
 | `AGENT_CORE_REPORT.md` | This document |
-| `src/token/tokenomics.service.ts` (2026-06-01 pass) | Removed unused `ProcessReserveLedgerService` injection — now only injects `EmissionService` |
 
 ---
 
-## 8. Test Coverage Added (2026-06-01)
-
-File: `src/token/emission.service.spec.ts` (new)
-
-| Test group | Cases |
-|-----------|-------|
-| `calculate()` | 1:1 emission ratio; 0.5% default rate; 75/25 split; `burnAmount = emissionAmount − commission`; `burnAmount + commission = emissionAmount`; custom rate; guard for zero/negative; dust amounts |
-| `getAfcReserveState()` | Initial state (reserveIndex=1.0, totalReserve=0, transactionCount=0) |
-| `getCurrentEmissionPrice()` | Returns 1.0 before any transactions |
-| `updateCommissionRate()` | Updates rate and `burnAmount` correctly; throws for rate≤0; throws for rate≥1 |
-| `processTransactionEmission()` | 4 ledger calls in correct order (MINT, FEE, FEE, BURN); 1:1 mint; burns `burnAmount` not `emissionAmount`; 75/25 fee split; AFC index grows; monotonic index; rollback on failure; full `EmissionResult` fields |
-
-**Total: 20 test cases.**
-
----
-
-## 9. Recommendations Status
+## 8. Recommendations Status
 
 | Item | Priority | Status |
 |------|----------|--------|
-| Add unit tests for `EmissionService.calculate()` | High | ✅ **DONE** — `emission.service.spec.ts` added (20 test cases) |
-| Sync `EmissionService.reserveIndex` after epoch finalization | Medium | ✅ **DONE** — `recordAfcContribution()` added; `FeeDistributionService` calls it after every epoch AFC ledger write (commit `c29483b`) |
 | Persist `AfcReserveState` to database | High | ⚠️ Open — currently in-memory; lost on restart. Add `AfcReserveEntity` table with periodic snapshots and restore-on-init. |
+| Add unit tests for `EmissionService.calculate()` | High | ⚠️ Open — cover dust amounts, max commission rate, zero-amount guard, float precision, `burnAmount` correctness. |
+| Sync `EmissionService.reserveIndex` after epoch finalization | Medium | ⚠️ Open — `FeeDistributionService` records AFC reserve on ledger but doesn't call `recordAfcContribution()`; epoch fees don't drive the in-memory price index. |
 | Replace `mint()` calls in ingestion pipeline with `mintForTransaction()` | Medium | ⚠️ Open — legacy `TokenService.mint()` path bypasses canonical commission splitting. All ingestion callers should migrate to `mintForTransaction()`. |
 
 ---
 
-## 10. Verification Summary (2026-06-02)
+## 9. Verification Summary
 
 Full audit confirms all canonical invariants hold on branch `agent/core-emission`:
 
@@ -242,7 +225,7 @@ Full audit confirms all canonical invariants hold on branch `agent/core-emission
 3. `nodeShare + afcShare == commission` — exact 75/25 split, no rounding loss
 4. `burnAmount = emissionAmount − commission` — recipient's actual remaining balance; no ledger deficit
 5. `totalMinted − totalBurned = commission per TX` — only commission stays circulating
-6. `reserveIndex` monotonically non-decreasing — updated by both per-TX path (`processTransactionEmission`) and per-epoch path (`recordAfcContribution`)
+6. `reserveIndex` monotonically non-decreasing — updated on every `processTransactionEmission()` call
 7. All four ledger steps (MINT, FEE×2, BURN) succeed or all roll back — atomic `QueryRunner` transaction
 
 **All 7 invariants: ✅ PASS**

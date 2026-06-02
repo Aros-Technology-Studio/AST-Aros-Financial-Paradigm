@@ -103,7 +103,7 @@ export class EmissionService {
 
         try {
             // Step 1 — Mint ARO 1:1 to recipient
-            await this.ledgerService.recordTransaction({
+            const mintTx = await this.ledgerService.recordTransaction({
                 type:      TransactionType.MINT,
                 sender:    this.SYSTEM_EMISSION_AUTHORITY,
                 recipient: recipientAddress,
@@ -158,7 +158,7 @@ export class EmissionService {
             await queryRunner.commitTransaction();
             this.logger.log(`[Emission] TX=${referenceId} completed. AFC Reserve Index: ${this.afcReserveState.reserveIndex.toFixed(6)}`);
 
-            return result;
+            return { ...result, mintTxHash: mintTx.hash };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             this.logger.error(`[Emission] TX=${referenceId} failed: ${error.message}`);

@@ -13,9 +13,19 @@ import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
 const mockEmissionService = {
-    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
-    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
+    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125, burnAmount: 99.5 }),
+    processTransactionEmission: jest.fn().mockResolvedValue({
+        transactionAmount: 100,
+        emissionAmount: 100,
+        commission: 0.5,
+        nodeShare: 0.375,
+        afcReserveShare: 0.125,
+        burnAmount: 99.5,
+        commissionRate: 0.005,
+        mintTxHash: 'MINT_TX_HASH',
+    }),
     updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockTokenomicsService = {
@@ -122,6 +132,25 @@ describe('TokenService', () => {
                 .rejects.toThrow('Ledger Error');
 
             expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        });
+    });
+
+    describe('mintForTransaction (canonical 1:1)', () => {
+        it('should delegate to EmissionService and return emission result with mintTxHash', async () => {
+            const result = await service.mintForTransaction(10000, 'RECIPIENT_1', 'REF_TX_001');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10000, 'RECIPIENT_1', 'REF_TX_001', undefined,
+            );
+            expect(result.emissionAmount).toBe(100);
+            expect(result.mintTxHash).toBe('MINT_TX_HASH');
+        });
+
+        it('should throw BadRequestException for non-positive amount', async () => {
+            await expect(service.mintForTransaction(0, 'RECIPIENT_1', 'REF_1'))
+                .rejects.toThrow(BadRequestException);
+            await expect(service.mintForTransaction(-5, 'RECIPIENT_1', 'REF_2'))
+                .rejects.toThrow(BadRequestException);
         });
     });
 

@@ -127,6 +127,8 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | Epoch fees also 75/25 | Yes | `FeeDistributionService.distributeRewards()` | ✅ |
 | HTTP canonical endpoint | `POST /api/v1/token/emit` | `TokenController` | ✅ Added |
 | `getCurrentPrice()` = AFC sqrt index | Single source of truth | `TokenomicsService` → `EmissionService` | ✅ Fixed |
+| Bridge fiat deposit uses canonical emission | `mintForTransaction()` | `BridgeService.handleFiatDepositWebhook()` | ✅ Fixed |
+| `mintTxHash` returned to callers | Ledger traceability | `EmissionService.processTransactionEmission()` | ✅ Added |
 
 ---
 
@@ -195,11 +197,13 @@ After 12.50 AFC accumulated:
 
 | File | Change |
 |------|--------|
-| `src/token/emission.interfaces.ts` | Added `burnAmount: number` to `EmissionResult` |
-| `src/token/emission.service.ts` | `calculate()` computes `burnAmount`; Step 4 burns `burnAmount`; supply snapshot tracks `burnAmount`; `recordAfcContribution()` added for epoch sync |
+| `src/token/emission.interfaces.ts` | Added `burnAmount: number` and `mintTxHash?: string` to `EmissionResult` |
+| `src/token/emission.service.ts` | `calculate()` computes `burnAmount`; Step 4 burns `burnAmount`; supply snapshot tracks `burnAmount`; returns `mintTxHash` |
 | `src/token/token.controller.ts` | Added `POST /api/v1/token/emit` and `GET /api/v1/token/emission/price` |
 | `src/token/tokenomics.service.ts` | `getCurrentPrice()` delegates to `EmissionService.getCurrentEmissionPrice()` |
 | `src/token/token.module.ts` | Provider ordering cleanup |
+| `src/token/token.service.spec.ts` | Added `mintForTransaction` test block with positive and guard cases |
+| `src/bridge/bridge.service.ts` | `handleFiatDepositWebhook()` now calls `mintForTransaction()` instead of legacy `mint()` |
 | `01_coin_engine/burn_and_mint_rules.md` | Added §0 documenting automatic transient burn with correct `burnAmount` |
 | `AGENT_CORE_REPORT.md` | This document |
 
@@ -212,7 +216,7 @@ After 12.50 AFC accumulated:
 | Persist `AfcReserveState` to database | High | ⚠️ Open — currently in-memory; lost on restart. Add `AfcReserveEntity` table with periodic snapshots and restore-on-init. |
 | Add unit tests for `EmissionService.calculate()` | High | ⚠️ Open — cover dust amounts, max commission rate, zero-amount guard, float precision, `burnAmount` correctness. |
 | Sync `EmissionService.reserveIndex` after epoch finalization | Medium | ⚠️ Open — `FeeDistributionService` records AFC reserve on ledger but doesn't call `recordAfcContribution()`; epoch fees don't drive the in-memory price index. |
-| Replace `mint()` calls in ingestion pipeline with `mintForTransaction()` | Medium | ⚠️ Open — legacy `TokenService.mint()` path bypasses canonical commission splitting. All ingestion callers should migrate to `mintForTransaction()`. |
+| Replace `mint()` calls in ingestion pipeline with `mintForTransaction()` | Medium | ✅ Done — `BridgeService` migrated. Legacy `TokenService.mint()` still reachable via deprecated `POST /mint`; consider removing or restricting it. |
 
 ---
 

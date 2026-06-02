@@ -6,6 +6,7 @@ export interface EmissionResult {
   afcReserveShare: number;    // = commission * 0.25
   burnAmount: number;         // = emissionAmount - commission (avoids ledger deficit)
   commissionRate: number;
+  mintTxHash?: string;        // ledger hash of the MINT entry
 }
 
 export interface EmissionConfig {

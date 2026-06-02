@@ -189,6 +189,17 @@ export class EmissionService {
     }
 
     /**
+     * Records an AFC reserve contribution from an external source (e.g. epoch fee distribution).
+     * Keeps the in-memory reserveIndex in sync when AFC reserve grows outside of
+     * processTransactionEmission() — e.g. after FeeDistributionService finalizes an epoch.
+     */
+    recordAfcContribution(amount: number): void {
+        if (amount > 0) {
+            this.updateAfcReserve(amount);
+        }
+    }
+
+    /**
      * Returns the current AFC reserve state (read-only snapshot).
      */
     getAfcReserveState(): Readonly<AfcReserveState> {

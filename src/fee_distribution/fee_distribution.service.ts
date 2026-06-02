@@ -5,6 +5,7 @@ import { EpochEntity } from './epoch.entity';
 import { DistributionLogEntity } from './distribution_log.entity';
 import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
+import { EmissionService } from '../token/emission.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
 
@@ -25,9 +26,10 @@ export class FeeDistributionService {
         private readonly transactionRepo: Repository<Transaction>,
         private readonly potService: PoTService,
         private readonly tokenService: TokenService,
+        private readonly emissionService: EmissionService,
         private readonly nodeChainService: NodeChainService,
         private readonly smartContractService: SmartContractIntegration,
-        private readonly dataSource: DataSource, // For transactionality
+        private readonly dataSource: DataSource,
     ) { }
 
     /**
@@ -177,6 +179,10 @@ export class FeeDistributionService {
                 status:       TransactionStatus.CONFIRMED,
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
+
+            // Advance the emission price index — epoch AFC must raise reserveIndex
+            // just as per-TX emissions do, keeping the in-memory state consistent.
+            this.emissionService.recordAfcContribution(afcReserve);
 
             let distributedSum = 0;
 

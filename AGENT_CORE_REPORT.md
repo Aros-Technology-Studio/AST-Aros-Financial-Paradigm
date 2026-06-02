@@ -214,7 +214,7 @@ After 12.50 AFC accumulated:
 | Item | Priority | Status |
 |------|----------|--------|
 | Persist `AfcReserveState` to database | High | ⚠️ Open — currently in-memory; lost on restart. Add `AfcReserveEntity` table with periodic snapshots and restore-on-init. |
-| Add unit tests for `EmissionService.calculate()` | High | ⚠️ Open — cover dust amounts, max commission rate, zero-amount guard, float precision, `burnAmount` correctness. |
+| Add unit tests for `EmissionService.calculate()` | High | ✅ Done — `src/token/emission.service.spec.ts` added: 16 tests covering 1:1 ratio, 75/25 split, `burnAmount`, dust amounts, monotonic index, rollback, guard cases. |
 | Sync `EmissionService.reserveIndex` after epoch finalization | Medium | ⚠️ Open — `FeeDistributionService` records AFC reserve on ledger but doesn't call `recordAfcContribution()`; epoch fees don't drive the in-memory price index. |
 | Replace `mint()` calls in ingestion pipeline with `mintForTransaction()` | Medium | ✅ Done — `BridgeService` migrated. Legacy `TokenService.mint()` still reachable via deprecated `POST /mint`; consider removing or restricting it. |
 

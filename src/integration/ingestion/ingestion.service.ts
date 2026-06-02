@@ -1,30 +1,32 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { TokenService } from '../../token/token.service';
 
 @Injectable()
 export class IngestionService {
     private readonly logger = new Logger(IngestionService.name);
 
+    constructor(private readonly tokenService: TokenService) {}
+
     /**
-     * Simulate ingestion of external crypto assets (Module 09)
-     * This would interact with the Bridge/Oracle to verify and then trigger minting.
+     * Ingestion of external crypto assets (Module 09).
+     * Each ingestion triggers a canonical 1:1 ARO emission.
      */
     async ingestAsset(assetSymbol: string, amount: number, senderAddress: string): Promise<boolean> {
         this.logger.log(`Ingesting ${amount} ${assetSymbol} from ${senderAddress}...`);
 
-        // 1. Validate Asset Support
         if (!['WBTC', 'USDT', 'ETH'].includes(assetSymbol)) {
             this.logger.warn(`Asset ${assetSymbol} not supported for ingestion.`);
             return false;
         }
 
-        // 2. Oracle Check (Mock)
         const rate = this.getMockRate(assetSymbol);
-        const mintedAros = amount * rate;
+        const aroAmount = amount * rate;
+        const referenceId = `INGEST_${assetSymbol}_${senderAddress}_${Date.now()}`;
 
-        this.logger.log(`Swap Rate: 1 ${assetSymbol} = ${rate} AROS. Minting ${mintedAros} AROS...`);
+        this.logger.log(`Swap Rate: 1 ${assetSymbol} = ${rate} AROS. Triggering canonical emission of ${aroAmount} AROS...`);
 
-        // 3. Trigger Token Mint (In real system, call TokenService)
-        // this.tokenService.mint(senderAddress, mintedAros);
+        // Canonical 1:1 emission: mint ARO → 75/25 fee split → AFC reserve update → burn ARO
+        await this.tokenService.mintForTransaction(aroAmount, senderAddress, referenceId);
 
         return true;
     }

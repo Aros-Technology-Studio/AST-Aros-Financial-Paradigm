@@ -24,6 +24,26 @@ export class TokenController {
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
     }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Emits ARO = txAmount, collects 0.5% commission (75% nodes / 25% AFC), then burns emitted ARO.
+     * Prefer this over POST /mint for all transaction-driven emission.
+     */
+    @Post('emit')
+    async emitForTransaction(@Body() body: { txAmount: number; recipient: string; refId: string; commissionRate?: number }) {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.txAmount,
+                body.recipient,
+                body.refId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /** @deprecated Use POST /emit for canonical emission. */
     @Post('mint')
     async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
         try {

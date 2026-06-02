@@ -2,8 +2,8 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-02 (re-verified pass)  
-**Task:** Audit ArosCoin emission logic against the canonical model; fix any divergence
+**Date:** 2026-06-02  
+**Task:** Audit ArosCoin emission logic against the canonical model; align all code and documentation
 
 ---
 
@@ -82,10 +82,17 @@ Supply impact per TX:
 
 **Module 01 is pure documentation.** The canonical source-of-truth code lives in `src/token/`.
 
-### 10_proof_of_transaction_engine — Status: Documentation only
+### 10_proof_of_transaction_engine — Status: Fixed in this pass
 
-Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.
-Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here.
+| File | Pre-patch state | Action |
+|------|----------------|--------|
+| `pot_tx_incentive_distribution.md` | ❌ **60% validators / 30% attesters / 10% burn** — diverged from canonical 75/25 | **Rewritten** to canonical 75/25 + PoT weight formula + TypeScript reference |
+| `pot_engine_overview.md` | Non-conflicting | Left as-is |
+| `pot_tx_validation_logic.md` | Non-conflicting | Left as-is |
+| `pot_slashing_conditions.md` | Non-conflicting | Left as-is |
+| `pot_node_role_assignment.md` | Non-conflicting | Left as-is |
+
+Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic resides in Module 10.
 
 ### src/token/ — Status: Fixed and canonical ✅
 
@@ -205,6 +212,7 @@ After 12.50 AFC accumulated:
 | `src/token/token.service.spec.ts` | Added `mintForTransaction` test block with positive and guard cases |
 | `src/bridge/bridge.service.ts` | `handleFiatDepositWebhook()` now calls `mintForTransaction()` instead of legacy `mint()` |
 | `01_coin_engine/burn_and_mint_rules.md` | Added §0 documenting automatic transient burn with correct `burnAmount` |
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | Replaced divergent 60/30/10 split with canonical 75/25 + PoT weight formula + TypeScript reference |
 | `AGENT_CORE_REPORT.md` | This document |
 
 ---

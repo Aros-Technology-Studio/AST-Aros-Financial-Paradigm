@@ -1,39 +1,77 @@
 # PoT Transaction Incentive Distribution
 
 **Module:** AST PoT Engine  
-**Status:** Draft  
-**Date:** 2025-08-24  
+**Status:** Canonical  
+**Date:** 2026-06-02  
 
 ## 1. Purpose
-Distributes incentives (fees/emission) to validating nodes post-PoT confirmation in NodeChain.
+
+Distributes incentives (commission fees) to validating nodes post-PoT confirmation in NodeChain,
+following the canonical 75/25 split defined in `01_coin_engine/payment_distribution.md`.
 
 ## 2. Principles
-- Merit-Based: Proportional to weight/role in NodeChain.
-- Deflationary: Portion burned.
 
-## 3. Distribution Logic
-1. Collect fees from NodeChain TX.
-2. Allocate: 60% validators, 30% attesters, 10% burn.
-3. Disburse per weight.
+- **Merit-Based**: Each node's share of the 75% node pool is proportional to its PoT weight.
+- **Reserve-Building**: 25% of all fees flow to the AFC reserve, driving the emission price index upward.
+- **Net-Zero Emission**: Emitted ARO are burned after each TX cycle; incentives are sourced from commission, not new supply.
+
+## 3. Canonical Distribution Logic
+
+```
+Commission  = Transaction Amount × rate   (default 0.5%)
+Node Pool   = Commission × 0.75           (75% → split among nodes by PoT weight)
+AFC Reserve = Commission × 0.25           (25% → SYSTEM_AFC_RESERVE_000000000000000000)
+```
+
+Per-node reward from the node pool:
+
+```
+node_incentive = nodePool × (potScore(node) / Σ potScore(all_nodes))
+```
+
+PoT weight normalization ensures `Σ node_weight = 1.0`.
+
+### Epoch-Level Distribution
+
+At epoch finalization, `FeeDistributionService.distributeRewards()` applies the same 75/25 split
+to aggregate epoch fees and distributes the 75% node pool by PoT-normalized weights.
 
 ## 4. Formula
-Node Incentive = total_incentives * (node_weight / total_weights)
 
-## 5. Python Example
-```python
-def distribute(total_incentives: float, nodes: list[dict]) -> dict:
-    total_weight = sum(n['weight'] for n in nodes)
-    dist = {}
-    for node in nodes:
-        share = total_incentives * (node['weight'] / total_weight)
-        dist[node['id']] = share
-    return dist
+```
+nodePool    = totalFees × 0.75
+afcReserve  = totalFees × 0.25
+
+node_incentive_i = nodePool × weight_i
+weight_i         = potScore_i / Σ potScore_j
+potScore_i       = α·txCount_i + β·totalFees_i − δ·penaltyScore_i
+```
+
+## 5. Reference Implementation (TypeScript)
+
+```typescript
+// FeeDistributionService.distributeRewards() — src/fee_distribution/fee_distribution.service.ts
+const nodePool   = totalFees * 0.75;
+const afcReserve = totalFees * 0.25;
+
+for (const [nodeId, weight] of weights.entries()) {
+    const rewardAmount = nodePool * weight;
+    // record VALIDATOR_REWARD ledger entry for nodeId
+}
+// record FEE_DISTRIBUTION ledger entry for AFC_RESERVE_ADDRESS (afcReserve)
 ```
 
 ## 6. Dependencies
-- 01_coin_engine/payment_distribution.md (fee splits).
-- 08_emission_layer/epoch_allocation_model.md (emission tie-in).
+
+- `01_coin_engine/payment_distribution.md` — canonical 75/25 fee split definition.
+- `src/token/emission.service.ts` — per-TX canonical emission lifecycle.
+- `src/fee_distribution/fee_distribution.service.ts` — epoch-level distribution.
 
 ## 7. Notes
-- Epoch-End: Distribute at epoch close in NodeChain.
-- Audit: Feed to All-Seeing Eye for transparency.
+
+- Epoch-End: Distribute at epoch close in NodeChain via `FeeDistributionService.triggerEpochCycle()`.
+- Audit: All distribution events are recorded on the ledger and fed to The All-Seeing Eye.
+- **Deprecated split** (60% validators / 30% attesters / 10% burn) was superseded by the canonical
+  75/25 model (PR #72). The burn is now handled per-TX inside `EmissionService` — emitted ARO
+  are destroyed after every canonical TX cycle via `burnAmount = emissionAmount − commission`,
+  not from the commission pool.

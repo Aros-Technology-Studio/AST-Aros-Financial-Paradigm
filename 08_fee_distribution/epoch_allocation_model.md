@@ -55,16 +55,17 @@ Example:
 
 ### **3. Allocation Slices**
 
-The emitted volume is subdivided by role:
+Epoch fees are distributed using the canonical 75/25 split:
 
-| **Role** | **Allocation %** |
-| --- | --- |
-| Validator Payment | 60% |
-| Governance pool | 25% |
-| Ecosystem reserve | 10% |
-| Risk buffer | 5% |
+| **Role**       | **Allocation %** | **Address / Pool**                              |
+| -------------- | ---------------- | ----------------------------------------------- |
+| Node Pool      | **75%**          | `SYSTEM_NODE_POOL_00000000000000000000`         |
+| AFC Reserve    | **25%**          | `SYSTEM_AFC_RESERVE_000000000000000000`         |
 
-These ratios may evolve under governance consensus.
+The node pool is further sub-distributed by PoT-normalized weight per active validator.  
+Governance grants, ecosystem reserves, and risk buffers are funded from the AFC reserve via governance vote — not from the epoch fee split directly.
+
+These ratios align with the canonical emission model and may only evolve via governance consensus.
 
 ---
 

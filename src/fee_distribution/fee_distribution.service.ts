@@ -7,7 +7,7 @@ import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
-
+import { EmissionService } from '../token/emission.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 
 @Injectable()
@@ -27,7 +27,8 @@ export class FeeDistributionService {
         private readonly tokenService: TokenService,
         private readonly nodeChainService: NodeChainService,
         private readonly smartContractService: SmartContractIntegration,
-        private readonly dataSource: DataSource, // For transactionality
+        private readonly dataSource: DataSource,
+        private readonly emissionService: EmissionService,
     ) { }
 
     /**
@@ -163,7 +164,7 @@ export class FeeDistributionService {
                 `→ node pool=${nodePool.toFixed(8)} (75%) | AFC reserve=${afcReserve.toFixed(8)} (25%)`,
             );
 
-            // Record AFC reserve contribution
+            // Record AFC reserve contribution on ledger
             await this.transactionRepo.save({
                 hash:         `AFC_RESERVE_${epoch.epochNumber}`,
                 previousHash: 'SYSTEM',
@@ -177,6 +178,9 @@ export class FeeDistributionService {
                 status:       TransactionStatus.CONFIRMED,
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
+
+            // Sync AFC reserve into EmissionService so the in-memory price index reflects epoch contributions
+            this.emissionService.updateAfcReserve(afcReserve);
 
             let distributedSum = 0;
 

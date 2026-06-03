@@ -7,6 +7,32 @@ export class TokenController {
 
     constructor(private readonly tokenService: TokenService) { }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Replaces the legacy /mint for transaction-driven emission.
+     * Body: { transactionAmount, recipient, referenceId, commissionRate? }
+     */
+    @Post('emit')
+    async emitForTransaction(
+        @Body() body: {
+            transactionAmount: number;
+            recipient: string;
+            referenceId: string;
+            commissionRate?: number;
+        },
+    ) {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {
         // Institutional Interface: ArosCoinSettlementInterface

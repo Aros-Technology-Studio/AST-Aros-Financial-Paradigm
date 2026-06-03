@@ -41,7 +41,7 @@ export class TokenController {
     @Get('emission/price')
     getEmissionPrice() {
         return {
-            emissionPrice: this.emissionService.getCurrentEmissionPrice(),
+            emissionPrice:   this.emissionService.getCurrentEmissionPrice(),
             afcReserveState: this.emissionService.getAfcReserveState(),
         };
     }

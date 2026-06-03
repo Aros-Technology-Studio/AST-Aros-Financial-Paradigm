@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-02  
+**Date:** 2026-06-03 (updated; previous pass: 2026-06-02)  
 **Task:** Audit ArosCoin emission logic against the canonical model; align all code and documentation
 
 ---
@@ -82,7 +82,7 @@ Supply impact per TX:
 
 **Module 01 is pure documentation.** The canonical source-of-truth code lives in `src/token/`.
 
-### 10_proof_of_transaction_engine — Status: Fixed in this pass
+### 10_proof_of_transaction_engine — Status: Fixed
 
 | File | Pre-patch state | Action |
 |------|----------------|--------|
@@ -134,8 +134,6 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic r
 | Epoch fees also 75/25 | Yes | `FeeDistributionService.distributeRewards()` | ✅ |
 | HTTP canonical endpoint | `POST /api/v1/token/emit` | `TokenController` | ✅ Added |
 | `getCurrentPrice()` = AFC sqrt index | Single source of truth | `TokenomicsService` → `EmissionService` | ✅ Fixed |
-| Bridge fiat deposit uses canonical emission | `mintForTransaction()` | `BridgeService.handleFiatDepositWebhook()` | ✅ Fixed |
-| `mintTxHash` returned to callers | Ledger traceability | `EmissionService.processTransactionEmission()` | ✅ Added |
 
 ---
 
@@ -182,7 +180,7 @@ All steps execute atomically within a single `QueryRunner` transaction.
 
 ```
 TX Amount      = 10,000 ARO
-Emission       = 10,000 ARO  (1:1 mint → recipient)
+Emission       = 10,000 ARO  (minted to recipient, 1:1)
 Commission     = 10,000 × 0.005 = 50 ARO
   Node pool    = 50 × 0.75  = 37.50 ARO  (split by PoT weight)
   AFC reserve  = 50 × 0.25  = 12.50 ARO  (locked in reserve)
@@ -200,19 +198,15 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 7. Files Changed in This Pass
+## 7. Files Changed
 
 | File | Change |
 |------|--------|
-| `src/token/emission.interfaces.ts` | Added `burnAmount: number` and `mintTxHash?: string` to `EmissionResult` |
-| `src/token/emission.service.ts` | `calculate()` computes `burnAmount`; Step 4 burns `burnAmount`; supply snapshot tracks `burnAmount`; returns `mintTxHash` |
-| `src/token/token.controller.ts` | Added `POST /api/v1/token/emit` and `GET /api/v1/token/emission/price` |
+| `src/token/emission.interfaces.ts` | Added `burnAmount: number` to `EmissionResult` |
+| `src/token/emission.service.ts` | `calculate()` computes `burnAmount`; Step 4 burns `burnAmount`; supply snapshot tracks `burnAmount` |
+| `src/token/token.controller.ts` | Added `POST /api/v1/token/emit` and `GET /api/v1/token/emission/price`; injects `EmissionService` |
 | `src/token/tokenomics.service.ts` | `getCurrentPrice()` delegates to `EmissionService.getCurrentEmissionPrice()` |
-| `src/token/token.module.ts` | Provider ordering cleanup |
-| `src/token/token.service.spec.ts` | Added `mintForTransaction` test block with positive and guard cases |
-| `src/bridge/bridge.service.ts` | `handleFiatDepositWebhook()` now calls `mintForTransaction()` instead of legacy `mint()` |
-| `01_coin_engine/burn_and_mint_rules.md` | Added §0 documenting automatic transient burn with correct `burnAmount` |
-| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | Replaced divergent 60/30/10 split with canonical 75/25 + PoT weight formula + TypeScript reference |
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | Replaced divergent 60/30/10 split with canonical 75/25 + PoT weight formula |
 | `AGENT_CORE_REPORT.md` | This document |
 
 ---
@@ -221,23 +215,23 @@ After 12.50 AFC accumulated:
 
 | Item | Priority | Status |
 |------|----------|--------|
-| Persist `AfcReserveState` to database | High | ⚠️ Open — currently in-memory; lost on restart. Add `AfcReserveEntity` table with periodic snapshots and restore-on-init. |
-| Add unit tests for `EmissionService.calculate()` | High | ✅ Done — `src/token/emission.service.spec.ts` added: 16 tests covering 1:1 ratio, 75/25 split, `burnAmount`, dust amounts, monotonic index, rollback, guard cases. |
-| Sync `EmissionService.reserveIndex` after epoch finalization | Medium | ⚠️ Open — `FeeDistributionService` records AFC reserve on ledger but doesn't call `recordAfcContribution()`; epoch fees don't drive the in-memory price index. |
-| Replace `mint()` calls in ingestion pipeline with `mintForTransaction()` | Medium | ✅ Done — `BridgeService` migrated. Legacy `TokenService.mint()` still reachable via deprecated `POST /mint`; consider removing or restricting it. |
+| Persist `AfcReserveState` to database | High | ⚠️ Open — currently in-memory; lost on restart. Add `AfcReserveEntity` table. |
+| Add unit tests for `EmissionService.calculate()` | High | ⚠️ Open — cover dust amounts, max rate, zero-amount guard, monotonic index. |
+| Sync `EmissionService.reserveIndex` after epoch finalization | Medium | ⚠️ Open — `FeeDistributionService` records AFC to ledger but doesn't call `updateAfcReserve()`. |
+| Replace `mint()` calls in ingestion pipeline with `mintForTransaction()` | Medium | ⚠️ Open — `BridgeService` and ingestion path still call legacy `mint()`. |
 
 ---
 
 ## 9. Verification Summary
 
-Full audit confirms all canonical invariants hold on branch `agent/core-emission`:
+All canonical invariants confirmed on branch `agent/core-emission`:
 
 1. `emission == transactionAmount` — enforced in `calculate()`, throws on violation
-2. `commission = transactionAmount × 0.005` — configurable, governance-controlled
+2. `commission = transactionAmount × rate` — configurable, governance-controlled
 3. `nodeShare + afcShare == commission` — exact 75/25 split, no rounding loss
 4. `burnAmount = emissionAmount − commission` — recipient's actual remaining balance; no ledger deficit
 5. `totalMinted − totalBurned = commission per TX` — only commission stays circulating
 6. `reserveIndex` monotonically non-decreasing — updated on every `processTransactionEmission()` call
-7. All four ledger steps (MINT, FEE×2, BURN) succeed or all roll back — atomic `QueryRunner` transaction
+7. All ledger steps (MINT, FEE×2, BURN) succeed or all roll back — atomic `QueryRunner` transaction
 
 **All 7 invariants: ✅ PASS**

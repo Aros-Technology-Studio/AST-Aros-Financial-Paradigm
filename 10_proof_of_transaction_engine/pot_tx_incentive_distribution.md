@@ -2,7 +2,7 @@
 
 **Module:** AST PoT Engine  
 **Status:** Canonical  
-**Date:** 2026-06-02  
+**Date:** 2026-06-03  
 
 ## 1. Purpose
 
@@ -72,6 +72,5 @@ for (const [nodeId, weight] of weights.entries()) {
 - Epoch-End: Distribute at epoch close in NodeChain via `FeeDistributionService.triggerEpochCycle()`.
 - Audit: All distribution events are recorded on the ledger and fed to The All-Seeing Eye.
 - **Deprecated split** (60% validators / 30% attesters / 10% burn) was superseded by the canonical
-  75/25 model (PR #72). The burn is now handled per-TX inside `EmissionService` — emitted ARO
-  are destroyed after every canonical TX cycle via `burnAmount = emissionAmount − commission`,
-  not from the commission pool.
+  75/25 model. The burn is now handled per-TX inside `EmissionService` — emitted ARO
+  are destroyed after every canonical TX cycle, not from the commission pool.

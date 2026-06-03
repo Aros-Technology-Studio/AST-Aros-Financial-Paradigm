@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-03 (updated; previous pass: 2026-06-02)  
+**Last verified:** 2026-06-03  
 **Task:** Audit ArosCoin emission logic against the canonical model; align all code and documentation
 
 ---
@@ -235,3 +235,23 @@ All canonical invariants confirmed on branch `agent/core-emission`:
 7. All ledger steps (MINT, FEE×2, BURN) succeed or all roll back — atomic `QueryRunner` transaction
 
 **All 7 invariants: ✅ PASS**
+
+---
+
+## 10. Independent Re-Verification (2026-06-03)
+
+Full independent audit of `src/token/`, `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/fee_distribution/`, and `src/proof_of_transaction_engine/` confirms:
+
+| Check | Result |
+|-------|--------|
+| `01_coin_engine/` status | Documentation only, NOT deprecated |
+| Canonical logic location | `src/token/emission.service.ts` |
+| `burnAmount` fix present | ✅ `burnAmount = emissionAmount − commission` |
+| Canonical HTTP endpoint | ✅ `POST /api/v1/token/emit` in `TokenController` |
+| Price source unified | ✅ `TokenomicsService.getCurrentPrice()` → `EmissionService` |
+| Epoch 75/25 split | ✅ `FeeDistributionService.distributeRewards()` |
+| AFC contribution sync | ✅ `EmissionService.recordAfcContribution()` callable from epoch finalizer |
+| All code compiles | ✅ No TypeScript errors in changed files |
+
+**Conclusion: The canonical 1:1 emission model is fully implemented and verified. No further rewrites required.**

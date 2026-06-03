@@ -37,32 +37,29 @@ flowchart TD
     E --> F[Tokens Minted Proportionally to Workload]
 ```
 
-### **Formula (Simplified):**
+### **Canonical Formula:**
 
 ```
-tokens_to_mint = (transaction_fee * emission_ratio) * node_weight
+Emission   = Transaction Amount      (1:1)
+Commission = Transaction Amount × rate  (default 0.5%)
+Node Share = Commission × 0.75       (75% → node pool, split by PoT weight)
+AFC Share  = Commission × 0.25       (25% → AFC reserve)
+Burn       = Emission Amount         (ARO burned after TX completes)
 ```
-
-Where:
-
-- transaction_fee = fee paid by sender
-- emission_ratio = fixed or dynamic ratio defined by governance
-- node_weight = participation factor based on node’s share of processing
 
 ---
 
 ## **Token Distribution at Issuance**
 
-Newly minted tokens are distributed as follows (default values):
+Commission from each canonical transaction is distributed as follows:
 
-| **Receiver** | **Percentage** |
-| --- | --- |
-| Processing Nodes | 60% |
-| Ecosystem Reserve | 25% |
-| Governance Pool | 10% |
-| Emergency Buffer | 5% |
+| **Receiver**    | **Percentage** | **Address**                                  |
+| --------------- | -------------- | -------------------------------------------- |
+| Node Pool       | **75%**        | `SYSTEM_NODE_POOL_00000000000000000000`      |
+| AFC Reserve     | **25%**        | `SYSTEM_AFC_RESERVE_000000000000000000`      |
 
-> Note: These values are tunable via DAO proposals or governance AI protocol.
+> Ecosystem grants, governance bounties, and emergency buffers are funded separately from the AFC reserve via governance proposals — they are not slices of the per-TX commission.
+> Note: These ratios are tunable via governance within protocol-defined bounds.
 > 
 
 ---

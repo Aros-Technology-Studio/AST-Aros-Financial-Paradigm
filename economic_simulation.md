@@ -14,8 +14,9 @@ Simulate the ArosCoin economy to:
 - **Initial Supply**: 0 ARO (no pre-mine, per `01_coin_engine/coin_emission_model.md`).
 - **Transaction Volume**: 1,000 TX per epoch (default, adjustable for scenarios).
 - **Transaction Fee**: 0.05 ARO per TX (dynamic, based on network load).
-- **Fee Distribution Ratio**: 0.6 (60% of fees to nodes as new tokens).
-- **Burn Ratio**: 0.1 (10% of emitted tokens burned per epoch).
+- **Node Share Ratio**: 0.75 (75% of commission fees to node pool, per canonical 75/25 split).
+- **AFC Reserve Ratio**: 0.25 (25% of commission fees to AFC reserve).
+- **Burn**: All emitted ARO are burned after each canonical TX completes (net-zero circulating supply per TX cycle).
 - **Epoch Duration**: 7 days (configurable).
 - **Epochs Simulated**: 100 (700 days, ~2 years).
 - **Node Count**: 10 active validators per epoch (scalable).
@@ -37,46 +38,54 @@ import matplotlib.pyplot as plt
 def simulate_ast_economy(
     initial_supply: float = 0,
     tx_per_epoch: int = 1000,
-    fee: float = 0.05,
-    emission_ratio: float = 0.6,
-    burn_ratio: float = 0.1,
+    tx_amount: float = 1000.0,     # average TX size in ARO
+    commission_rate: float = 0.005, # 0.5% canonical default
+    node_share: float = 0.75,       # 75% of commission → node pool
+    afc_share: float = 0.25,        # 25% of commission → AFC reserve
     epochs: int = 100,
     node_count: int = 10
-) -> tuple[list[float], list[float]]:
+) -> tuple[list[float], list[float], list[float]]:
     """
-    Simulate ArosCoin supply and inflation over epochs.
-    
+    Simulate ArosCoin canonical economy over epochs.
+    Canonical model: Emission=TX amount (1:1); all emitted ARO burned after TX
+    completes (net-zero circulating supply per TX). Commission 75/25 split.
+
     Args:
-        initial_supply: Starting token supply (default 0, no pre-mine).
+        initial_supply: Starting circulating supply (default 0, no pre-mine).
         tx_per_epoch: Transactions per epoch (default 1000).
-        fee: Fee per transaction in ARO (default 0.05).
-        emission_ratio: Fraction of fees emitted as new tokens (default 0.6).
-        burn_ratio: Fraction of emission burned (default 0.1).
+        tx_amount: Average transaction size in ARO (default 1000).
+        commission_rate: Commission rate (default 0.005 = 0.5%).
+        node_share: Fraction of commission to node pool (default 0.75).
+        afc_share: Fraction of commission to AFC reserve (default 0.25).
         epochs: Number of epochs to simulate (default 100).
         node_count: Number of active validators (default 10).
-    
+
     Returns:
-        supply: List of supply values per epoch.
-        inflation_rates: List of inflation rates (%) per epoch.
+        supply: Circulating supply per epoch (net-zero per canonical TX cycle).
+        afc_reserve: Cumulative AFC reserve per epoch.
+        reserve_index: Emission price index per epoch.
     """
+    import math
     supply = [initial_supply]
-    inflation_rates = []
-    
+    afc_cumulative = 0.0
+    afc_reserve = [afc_cumulative]
+    reserve_index = [1.0]
+
     for _ in range(epochs):
-        # Calculate emission and burn
-        gross_emission = tx_per_epoch * fee * emission_ratio
-        burn = gross_emission * burn_ratio
-        net_emission = gross_emission - burn
-        
-        # Update supply
-        new_supply = supply[-1] + net_emission
+        epoch_commission = tx_per_epoch * tx_amount * commission_rate
+        epoch_afc = epoch_commission * afc_share
+
+        # Net circulating supply is unchanged per canonical TX cycle (mint == burn)
+        new_supply = supply[-1]
+
+        afc_cumulative += epoch_afc
+        idx = 1.0 + math.sqrt(afc_cumulative) / 10_000
+
         supply.append(new_supply)
-        
-        # Calculate inflation rate
-        inflation = (net_emission / new_supply * 100) if new_supply > 0 else 0
-        inflation_rates.append(inflation)
-    
-    return supply, inflation_rates
+        afc_reserve.append(afc_cumulative)
+        reserve_index.append(idx)
+
+    return supply, afc_reserve, reserve_index
 
 def plot_simulation(supply: list[float], inflation: list[float], filename: str = "ast_economy.png") -> None:
     """Plot supply and inflation over epochs."""
@@ -100,12 +109,12 @@ def plot_simulation(supply: list[float], inflation: list[float], filename: str =
     plt.close()
 
 # Run simulation
-supply, inflation = simulate_ast_economy()
-plot_simulation(supply, inflation)
+supply, afc_reserve, reserve_index = simulate_ast_economy()
+plot_simulation(afc_reserve, reserve_index)
 
 # Scenario: High TX volume
-supply_high, inflation_high = simulate_ast_economy(tx_per_epoch=5000)
-plot_simulation(supply_high, inflation_high, "ast_economy_high_tx.png")
+supply_high, afc_high, idx_high = simulate_ast_economy(tx_per_epoch=5000)
+plot_simulation(afc_high, idx_high, "ast_economy_high_tx.png")
 ```
 
 ## 5. Analysis of Results

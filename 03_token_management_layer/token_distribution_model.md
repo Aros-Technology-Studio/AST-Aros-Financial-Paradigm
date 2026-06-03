@@ -8,16 +8,14 @@ This document outlines the distribution logic of newly minted ArosCoins and the 
 
 ## Distribution Pools
 
-Upon issuance (triggered by the Dynamic Fee Distribution Formula `T_E = α·TV + β·U + γ`), tokens are distributed into the following allocations:
+Upon issuance, commission fees from each transaction are distributed using the canonical 75/25 split:
 
-| Pool Name           | Purpose                                             | Default Share |
-|---------------------|------------------------------------------------------|---------------|
-| **Processing Nodes**| Compensation for participating in transaction processing and encryption | 60% |
-| **Ecosystem Reserve** | Long-term project support, partnerships, grants     | 25%           |
-| **Governance Pool**  | Used by the All-Seeing Eye for protocol-level proposals and upgrades | 10% |
-| **Emergency Buffer** | Crisis fund for economic stabilization and extreme volatility | 5%            |
+| Pool Name           | Purpose                                                              | Canonical Share |
+|---------------------|----------------------------------------------------------------------|-----------------|
+| **Node Pool**       | Compensation for processing nodes, split by PoT-normalized weight   | **75%**         |
+| **AFC Reserve**     | Accumulates to drive emission price index; funds ecosystem grants    | **25%**         |
 
-> These proportions can be rebalanced through governance actions.
+> These ratios reflect the canonical model. Governance bounties, emergency buffers, and ecosystem grants are funded from the AFC reserve via governance vote — they are not separate per-TX commission slices.
 
 ---
 
@@ -25,10 +23,12 @@ Upon issuance (triggered by the Dynamic Fee Distribution Formula `T_E = α·TV +
 
 ```mermaid
 graph TD
-    Mint[New Tokens Minted] --> Nodes[Processing Nodes 60%]
-    Mint --> Ecosystem[Ecosystem Reserve 25%]
-    Mint --> Governance[Governance Pool 10%]
-    Mint --> Emergency[Emergency Buffer 5%]
+    Mint[New Tokens Minted] --> Burn[Burn Vault — POST TX]
+    Commission[Commission = TX × 0.5%] --> Nodes[Node Pool 75%]
+    Commission --> AFC[AFC Reserve 25%]
+    Nodes --> V1[Validator 1 — PoT weight]
+    Nodes --> V2[Validator 2 — PoT weight]
+    Nodes --> VN[Validator N — PoT weight]
 ```
 
 ---

@@ -218,7 +218,8 @@ After 12.50 AFC accumulated:
 | Persist `AfcReserveState` to database | High | ⚠️ Open — currently in-memory; lost on restart. Add `AfcReserveEntity` table. |
 | Add unit tests for `EmissionService.calculate()` | High | ⚠️ Open — cover dust amounts, max rate, zero-amount guard, monotonic index. |
 | Sync `EmissionService.reserveIndex` after epoch finalization | Medium | ⚠️ Open — `FeeDistributionService` records AFC to ledger but doesn't call `updateAfcReserve()`. |
-| Replace `mint()` calls in ingestion pipeline with `mintForTransaction()` | Medium | ⚠️ Open — `BridgeService` and ingestion path still call legacy `mint()`. |
+| Mark legacy `mint()` as `@deprecated` in `token.service.ts` | Medium | ✅ Done — JSDoc `@deprecated` added; callers redirected to `mintForTransaction()`. |
+| Replace remaining `mint()` calls in ingestion pipeline | Medium | ⚠️ Open — `BridgeService` and ingestion path still call legacy `mint()`; full migration pending. |
 
 ---
 

@@ -76,6 +76,12 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use {@link mintForTransaction} for the canonical 1:1 emission flow
+     * (commission split 75/25, burnAmount = emission − commission, AFC reserve index update).
+     * This method performs a raw MINT without commission or burn and is retained
+     * only for legacy fiat-deposit bridge flows pending full migration.
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

@@ -9,6 +9,17 @@ import { SmartContractIntegration } from '../integration/smart_contract.integrat
 import { DataSource } from 'typeorm';
 import { BadRequestException } from '@nestjs/common';
 import { EmissionService } from './emission.service';
+import { TokenomicsService } from './tokenomics.service';
+import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
+
+const mockTokenomicsService = {
+    getCurrentPrice: jest.fn().mockReturnValue(1.0),
+    updateInternalValuation: jest.fn(),
+};
+
+const mockProcessReserveService = {
+    recordTransactionVolume: jest.fn(),
+};
 
 const mockEmissionService = {
     calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125, burnAmount: 99.5 }),
@@ -79,7 +90,9 @@ describe('TokenService', () => {
                         emit: jest.fn(),
                     },
                 },
+                { provide: TokenomicsService, useValue: mockTokenomicsService },
                 { provide: EmissionService, useValue: mockEmissionService },
+                { provide: ProcessReserveLedgerService, useValue: mockProcessReserveService },
             ],
         }).compile();
 

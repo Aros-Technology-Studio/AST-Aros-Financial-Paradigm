@@ -1,5 +1,41 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
+---
+
+## Second Audit — 2026-06-04 (`agent/core-emission`)
+
+**Agent:** AGENT-CORE  
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Result:** Canonical model correctly implemented — minor cleanup applied
+
+### Findings
+
+| Check | Result |
+|---|---|
+| Module 01 deprecated? | Yes — `docs/architecture/Architecture_Overview.md`: *"Superseded by Module 08"* |
+| Canonical logic location | `src/token/emission.service.ts` — `EmissionService` |
+| Emission = TX Amount (1:1) | ✅ `emission = transactionAmount` |
+| Commission = Amount × 0.5% | ✅ `commission = transactionAmount * 0.005` |
+| 75% → nodes | ✅ `nodeShare = commission * 0.75` |
+| 25% → AFC reserve | ✅ `afcShare = commission * 0.25` |
+| Burn after TX | ✅ `BURN` ledger record for `emissionAmount` in atomic QueryRunner |
+| reserveIndex = 1.0 + √(reserve)/10000 | ✅ `updateAfcReserve()` |
+| Net circulating Δ = 0 | ✅ `SupplySnapshot`: totalMinted++ and totalBurned++ cancel out |
+
+### Code Changes Made (2026-06-04)
+
+**`src/token/token.service.ts`**
+
+1. Added `@deprecated` JSDoc to `mint()` — clearly marks it as a fiat-gateway deposit path (no post-TX burn, distinct from canonical emission), directing callers to `mintForTransaction()`.
+2. Removed dead `this.tokenomicsService.updateInternalValuation()` calls from both `mint()` and `burn()`. The method is an explicit no-op (`@deprecated` in `tokenomics.service.ts:47`); these calls had no effect and were misleading.
+3. Removed stale development comments from `mint()` that referenced superseded logic.
+
+No logic changes — only removal of dead code. All canonical emission flows unaffected.
+
+---
+
+## First Audit — 2026-05-12 (original record)
+
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
 **Last verified:** 2026-06-04  

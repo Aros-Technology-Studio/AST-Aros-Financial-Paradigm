@@ -2,6 +2,34 @@
 
 ---
 
+## Third Audit — 2026-06-04 (`agent/core-emission`) — AGENT-CORE
+
+**Agent:** AGENT-CORE  
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Date:** 2026-06-04  
+**Result:** All canonical invariants confirmed. No rewrites required.
+
+### Findings
+
+| Check | Result |
+|---|---|
+| Module 01 deprecated? | No — documentation only; canonical code in `src/token/` |
+| Canonical logic location | `src/token/emission.service.ts` — `EmissionService` |
+| Emission = TX Amount (1:1) | ✅ `emission = transactionAmount` in `calculate()` |
+| Commission = Amount × 0.5% | ✅ `commission = transactionAmount * defaultCommissionRate (0.005)` |
+| 75% → nodes | ✅ `nodeShare = commission * 0.75` |
+| 25% → AFC reserve | ✅ `afcShare = commission * 0.25` |
+| Burn after TX (correct amount) | ✅ `burnAmount = emissionAmount − commission`; no ledger deficit |
+| reserveIndex = 1.0 + √(reserve)/10000 | ✅ `updateAfcReserve()` |
+| Atomic execution | ✅ Single `QueryRunner` transaction; full rollback on failure |
+| HTTP canonical endpoint | ✅ `POST /api/v1/token/emit` in `TokenController` |
+| Price source unified | ✅ `TokenomicsService.getCurrentPrice()` → `EmissionService.getCurrentEmissionPrice()` |
+| Epoch-level 75/25 | ✅ `FeeDistributionService.distributeRewards()` |
+
+**All invariants: ✅ PASS — no code changes required in this pass.**
+
+---
+
 ## Second Audit — 2026-06-04 (`agent/core-emission`)
 
 **Agent:** AGENT-CORE  

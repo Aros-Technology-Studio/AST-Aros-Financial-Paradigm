@@ -7,6 +7,29 @@ export class TokenController {
 
     constructor(private readonly tokenService: TokenService) { }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Use this for every real transaction — not POST /mint.
+     *
+     * Body: { transactionAmount, recipient, referenceId, commissionRate? }
+     * Returns: EmissionResult (emissionAmount, commission, nodeShare, afcReserveShare)
+     */
+    @Post('emit')
+    async emitForTransaction(
+        @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+    ) {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {
         // Institutional Interface: ArosCoinSettlementInterface

@@ -2,6 +2,44 @@
 
 ---
 
+## Fifth Audit — 2026-06-04 (`agent/core-emission`) — AGENT-CORE
+
+**Agent:** AGENT-CORE
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`
+**Date:** 2026-06-04
+**Result:** Full independent re-audit. All invariants pass. No code changes required.
+
+### Files Examined
+
+| File | Status |
+|------|--------|
+| `01_coin_engine/aro_emission_protocol.md` | ✅ Canonical — 1:1 formula, Mermaid sequence, AFC index formula |
+| `01_coin_engine/coin_emission_model.md` | ✅ Canonical — worked $10k example matches code exactly |
+| `src/token/emission.interfaces.ts` | ✅ `burnAmount` field present; all types correct |
+| `src/token/emission.service.ts` | ✅ `burnAmount = emission − commission`; Step 4 burns `burnAmount`; `recordAfcContribution()` present |
+| `src/token/token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` @deprecated |
+| `src/token/token.controller.ts` | ✅ `POST /emit` + `GET /emission/price` wired to canonical path |
+| `src/token/tokenomics.service.ts` | ✅ `getCurrentPrice()` → `EmissionService.getCurrentEmissionPrice()` |
+
+### Canonical Model Compliance
+
+| Rule | Code | Status |
+|------|------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emissionAmount − commission` | `emission.service.ts:64` | ✅ |
+| Mint → Fee split → AFC update → Burn (atomic) | `emission.service.ts:100–161` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:182–183` | ✅ |
+| HTTP canonical entry point | `POST /api/v1/token/emit` | ✅ |
+| Price source of truth unified | `EmissionService.getCurrentEmissionPrice()` | ✅ |
+| Epoch-level 75/25 | `FeeDistributionService.distributeRewards()` | ✅ |
+
+**All invariants: ✅ PASS — no code changes required in this pass.**
+
+---
+
 ## Fourth Audit — 2026-06-04 (`agent/core-emission`) — AGENT-CORE
 
 **Agent:** AGENT-CORE  

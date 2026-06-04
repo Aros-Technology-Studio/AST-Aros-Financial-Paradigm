@@ -2,6 +2,31 @@
 
 ---
 
+## Sixth Audit — 2026-06-04 (`agent/core-emission`) — AGENT-CORE
+
+**Agent:** AGENT-CORE  
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Date:** 2026-06-04  
+**Result:** Full independent re-audit. All 7 canonical invariants pass. No code changes required.
+
+### Canonical Model Compliance
+
+| Rule | Code Location | Status |
+|------|--------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emissionAmount − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → AFC update → BURN (atomic) | `emission.service.ts:100–161` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:182–183` | ✅ |
+
+**Module 01 status:** Active documentation module — NOT deprecated. Canonical implementation lives in `src/token/emission.service.ts`.
+
+**All invariants: ✅ PASS — no code changes required in this pass.**
+
+---
+
 ## Fifth Audit — 2026-06-04 (`agent/core-emission`) — AGENT-CORE
 
 **Agent:** AGENT-CORE

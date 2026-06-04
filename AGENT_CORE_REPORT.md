@@ -2,8 +2,27 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Last verified:** 2026-06-03  
+**Last verified:** 2026-06-04  
 **Task:** Audit ArosCoin emission logic against the canonical model; align all code and documentation
+
+---
+
+## Audit Pass 2026-06-04 — Additional Fixes
+
+This pass confirmed the core TypeScript implementation remains fully canonical and identified one **remaining spec divergence** in the token configuration file:
+
+### ❌ FIXED — `01_coin_engine/AROS_Coin_TokenSpec.json`
+
+The JSON token spec still carried the **pre-PR#72 three-way fee split** and an incorrect burn trigger:
+
+| Field | Was (incorrect) | Now (canonical) |
+|-------|-----------------|-----------------|
+| `transactionFees.distribution` | `nodeOperators:0.75 / AST treasury:0.20 / Audit Pool:0.05` | `nodeOperators:0.75 / afcReserve:0.25` |
+| `supplyMechanism.burnOn` | `"governance_rule"` | `"post_transaction"` |
+
+### ⚠️ CLARIFIED — `src/token/token.service.ts`
+
+Retained the existing detailed `@deprecated` JSDoc on legacy `mint()` and `burn()` confirming these are FIAT deposit/withdrawal adapters only — they do not implement the canonical 1:1 emission lifecycle.
 
 ---
 

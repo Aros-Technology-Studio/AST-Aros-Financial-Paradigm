@@ -142,6 +142,10 @@ export class TokenService {
         }
     }
 
+    /**
+     * @deprecated FIAT-withdrawal only. Does NOT implement canonical post-TX burn.
+     * Canonical ARO burn is handled inside EmissionService.processTransactionEmission().
+     */
     async burn(amount: string, sender: string, bankDetailsId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

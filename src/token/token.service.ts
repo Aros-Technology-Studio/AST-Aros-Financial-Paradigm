@@ -7,7 +7,9 @@ import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { TokenomicsService } from './tokenomics.service';
 import { EmissionService } from './emission.service';
+import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 import { EmissionResult } from './emission.interfaces';
 
 @Injectable()
@@ -25,7 +27,9 @@ export class TokenService {
         private readonly bridgeService: BridgeService,
         private readonly smartContractService: SmartContractIntegration,
         private readonly eventEmitter: EventEmitter2,
+        private readonly tokenomicsService: TokenomicsService,
         private readonly emissionService: EmissionService,
+        private readonly processReserve: ProcessReserveLedgerService,
     ) { }
 
     /**
@@ -73,10 +77,9 @@ export class TokenService {
     }
 
     /**
-     * @deprecated Use {@link mintForTransaction} for the canonical 1:1 emission flow
-     * (commission split 75/25, burnAmount = emission − commission, AFC reserve index update).
-     * This method performs a raw MINT without commission or burn and is retained
-     * only for legacy fiat-deposit bridge flows pending full migration.
+     * @deprecated Legacy FIAT-gateway deposit. Does NOT follow the canonical 1:1 emission model
+     * (no fee split, no post-transaction burn, net-positive circulating supply).
+     * Use mintForTransaction() for all canonical emission flows.
      */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
@@ -86,7 +89,7 @@ export class TokenService {
         await queryRunner.startTransaction();
 
         try {
-            this.logger.log(`Initiating FIAT_DEPOSIT MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId})`);
+            this.logger.log(`[Legacy FIAT Deposit] MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId})`);
 
             const tx = await this.ledgerService.recordTransaction({
                 type: TransactionType.MINT,
@@ -98,7 +101,6 @@ export class TokenService {
             });
 
             await this.smartContractService.recordReference(referenceId, 'MINT', { amount: amount, recipient: recipient });
-
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
             await queryRunner.commitTransaction();
 
@@ -108,6 +110,10 @@ export class TokenService {
                 refId: referenceId,
                 txHash: tx.hash
             });
+
+            this.processReserve.recordTransactionVolume(parseFloat(amount));
+            // updateInternalValuation() is a no-op; AFC reserve index is owned by EmissionService.
+            this.tokenomicsService.updateInternalValuation();
 
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
@@ -119,10 +125,6 @@ export class TokenService {
         }
     }
 
-    /**
-     * @deprecated FIAT-withdrawal only. Does NOT implement canonical post-TX burn.
-     * Canonical ARO burn is handled inside EmissionService.processTransactionEmission().
-     */
     async burn(amount: string, sender: string, bankDetailsId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
@@ -160,7 +162,13 @@ export class TokenService {
             // Let's await it to ensure user gets feedback.
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            return { status: 'SUCCESS', txHash: tx.hash, message: 'Tokens burned. Fiat payout initiated via BB.', bankTxId };
+            // [NEW] Increment Price due to withdrawal activity?
+            // User strategy said "processing transaction... rises price".
+            // Withdrawal is a transaction. So yes.
+            this.processReserve.recordTransactionVolume(parseFloat(amount));
+            this.tokenomicsService.updateInternalValuation();
+
+            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

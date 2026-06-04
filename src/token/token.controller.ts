@@ -52,7 +52,7 @@ export class TokenController {
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
     }
 
-    /** @deprecated Use POST /emit for canonical flow. */
+    /** @deprecated Use POST /emit for canonical flow. Kept for FIAT_DEPOSIT custody flow only. */
     @Post('mint')
     async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
         try {

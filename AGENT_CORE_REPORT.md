@@ -2,6 +2,48 @@
 
 ---
 
+## Fourth Audit — 2026-06-04 (`agent/core-emission`) — AGENT-CORE
+
+**Agent:** AGENT-CORE  
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Date:** 2026-06-04  
+**Result:** Full audit against canonical model. All invariants pass. No rewrites required.
+
+### Module Status
+
+| Module | Status |
+|--------|--------|
+| `01_coin_engine/` | Active documentation. **Not deprecated.** Canonical spec — implementation lives in `src/token/`. |
+| `10_proof_of_transaction_engine/` | Active documentation. PoT validation spec. No emission logic. |
+| `src/token/emission.service.ts` | **Primary canonical emission engine.** Fully compliant. |
+
+### Canonical Model Compliance
+
+| Rule | Spec | Code | Status |
+|------|------|------|--------|
+| Emission = TX Amount | 1:1 | `calculate()`: `emission = transactionAmount` | ✅ |
+| Commission = Amount × 0.5% | default | `defaultCommissionRate: 0.005` | ✅ |
+| 75% fee → nodes | Yes | `nodeShareRatio: 0.75` | ✅ |
+| 25% fee → AFC reserve | Yes | `afcReserveRatio: 0.25` | ✅ |
+| ARO burn after TX | Yes | Step 4 BURN to `SYSTEM_BURN_VAULT` | ✅ |
+| AFC reserve → price rises | Yes | `reserveIndex = 1.0 + sqrt(total) / 10_000` | ✅ |
+| Price source of truth | EmissionService | `TokenomicsService.getCurrentPrice()` → `emissionService.getCurrentEmissionPrice()` | ✅ |
+| TokenService entry point | `mintForTransaction` | Delegates entirely to `EmissionService.processTransactionEmission()` | ✅ |
+| Legacy paths clearly separated | Yes | `mint()` / `burn()` annotated `@deprecated` (FIAT_DEPOSIT / FIAT_WITHDRAWAL only) | ✅ |
+| Atomic execution | Yes | Single `QueryRunner` wrapping all 4 ledger steps | ✅ |
+| Net circulating supply = 0 | Yes | `SupplySnapshot`: totalMinted++ and totalBurned++ cancel out | ✅ |
+| Epoch-level 75/25 | Yes | `FeeDistributionService.distributeRewards()` | ✅ |
+
+**All invariants: ✅ PASS — no code changes required in this pass.**
+
+### Remaining Minor Items (non-blocking)
+
+- `src/token/token.module.ts` still imports `PoTEngineModule` though nothing in the module injects `ProcessReserveLedgerService` anymore. Dead import — safe to remove in a future cleanup pass.
+- `src/token/tokenomics.service.ts` still exists on disk but is no longer registered in `TokenModule` providers. The file can be kept as a standalone utility or removed; it has no DI consumers.
+- `src/token/token.service.ts` `burn()` still contains stale async-vs-sync design-debate comments. These do not affect correctness.
+
+---
+
 ## Third Audit — 2026-06-04 (`agent/core-emission`) — AGENT-CORE
 
 **Agent:** AGENT-CORE  

@@ -7,7 +7,6 @@ import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
-import { TokenomicsService } from './tokenomics.service';
 import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 import { EmissionResult } from './emission.interfaces';
@@ -27,7 +26,6 @@ export class TokenService {
         private readonly bridgeService: BridgeService,
         private readonly smartContractService: SmartContractIntegration,
         private readonly eventEmitter: EventEmitter2,
-        private readonly tokenomicsService: TokenomicsService,
         private readonly emissionService: EmissionService,
         private readonly processReserve: ProcessReserveLedgerService,
     ) { }
@@ -112,8 +110,6 @@ export class TokenService {
             });
 
             this.processReserve.recordTransactionVolume(parseFloat(amount));
-            // updateInternalValuation() is a no-op; AFC reserve index is owned by EmissionService.
-            this.tokenomicsService.updateInternalValuation();
 
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
@@ -162,13 +158,7 @@ export class TokenService {
             // Let's await it to ensure user gets feedback.
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            // [NEW] Increment Price due to withdrawal activity?
-            // User strategy said "processing transaction... rises price".
-            // Withdrawal is a transaction. So yes.
-            this.processReserve.recordTransactionVolume(parseFloat(amount));
-            this.tokenomicsService.updateInternalValuation();
-
-            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
+            return { status: 'SUCCESS', txHash: tx.hash, message: 'Tokens burned. Fiat payout initiated via BB.', bankTxId };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

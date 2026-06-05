@@ -2,6 +2,50 @@
 
 ---
 
+## Tenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`
+**Result:** Full independent re-audit from clean checkout. All canonical invariants confirmed correct. No new deviations found.
+
+### Files verified
+
+| File | Status |
+|------|--------|
+| `emission.interfaces.ts` | ✅ `EmissionResult` includes `burnAmount` and optional `mintTxHash` |
+| `emission.service.ts` | ✅ `burnAmount = emissionAmount − commission`; Step 4 BURN uses `burnAmount`; `recordAfcContribution()` present; `mintTxHash` returned |
+| `token.service.ts` | ✅ `@deprecated` on legacy `mint()` / `burn()`; `TokenomicsService` removed from DI; no stale comments |
+
+### Canonical model verification
+
+| Rule | Code location | Status |
+|------|--------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emissionAmount − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → AFC update → BURN (atomic) | `emission.service.ts:103–162` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:179–180` | ✅ |
+| External AFC sync via `recordAfcContribution()` | `emission.service.ts:192–196` | ✅ |
+
+### $10,000 transaction example (verified)
+
+```
+txAmount   = 10,000
+emission   = 10,000 ARO  minted to recipient    (1:1)
+commission =     50 ARO  (0.5%)
+  nodeShare=  37.50 ARO → NODE_POOL             (75%)
+  afcShare =  12.50 ARO → AFC_RESERVE           (25%)
+burnAmount =  9,950 ARO  burned
+
+Net supply Δ = +50 ARO (commission stays in node pool / AFC reserve)
+reserveIndex = 1.0 + sqrt(12.50) / 10,000 ≈ 1.0000353
+```
+
+**Module 01 (`01_coin_engine/`) status:** Active specification documentation — NOT deprecated. Implementation source of truth: `src/token/emission.service.ts`.
+
+---
+
 ## Ninth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`

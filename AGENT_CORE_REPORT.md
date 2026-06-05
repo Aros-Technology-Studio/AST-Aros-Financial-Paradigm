@@ -2,6 +2,44 @@
 
 ---
 
+## Eleventh Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`, `tests/`  
+**Result:** Full independent re-audit from clean checkout. All canonical invariants confirmed correct. Added `tests/test_emission.py` (28 passing tests).
+
+### Summary
+
+| Area | Status |
+|------|--------|
+| `emission.service.ts` | ✅ `burnAmount = emissionAmount − commission`; atomic 4-step lifecycle; `recordAfcContribution()` public |
+| `emission.interfaces.ts` | ✅ `burnAmount` + optional `mintTxHash` present |
+| `token.service.ts` | ✅ `@deprecated` on legacy `mint()` / `burn()`; `mintForTransaction()` is canonical entry point |
+| `tests/test_emission.py` | **Added** — 28 unit tests covering all canonical formulas and invariants |
+
+### $10,000 transaction (verified by tests)
+
+```
+txAmount       = 10,000
+emission       = 10,000 ARO   minted to recipient    (1:1)
+commission     =     50 ARO   (0.5%)
+  nodeShare    =  37.50 ARO → NODE_POOL              (75%)
+  afcShare     =  12.50 ARO → AFC_RESERVE            (25%)
+burnAmount     =  9,950 ARO   burned (emissionAmount − commission)
+netSupply Δ    =    +50 ARO   (commission stays in node pool / AFC reserve)
+reserveIndex   = 1.0 + sqrt(12.50) / 10,000 ≈ 1.0000353
+```
+
+### Tests added (`tests/test_emission.py`)
+
+| Test class | Cases | What is verified |
+|---|---|---|
+| `TestCalculate` | 14 | 1:1 emission, 0.5% commission, 75/25 split, `burnAmount = emission − commission`, edge cases, guard clauses |
+| `TestNetSupply` | 3 | Net supply Δ = commission, `SupplySnapshot` invariant |
+| `TestAfcReserveIndex` | 8 | Known values, monotonic growth, sub-linear sqrt curve, accumulation over 100 TXs |
+| `TestCanonicalExample` | 3 | Full $10k reference example end-to-end |
+
+---
+
 ## Tenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`

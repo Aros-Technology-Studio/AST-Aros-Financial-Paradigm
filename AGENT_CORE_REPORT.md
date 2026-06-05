@@ -2,6 +2,45 @@
 
 ---
 
+## Twelfth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`
+**Result:** Independent re-audit from clean checkout. All canonical invariants confirmed correct. No code changes required.
+
+### Verified state
+
+| File | Status |
+|------|--------|
+| `src/token/emission.service.ts` | ✅ `burnAmount = emissionAmount − commission`; 4-step atomic lifecycle; `recordAfcContribution()` public for epoch sync |
+| `src/token/emission.interfaces.ts` | ✅ `burnAmount` + optional `mintTxHash` in `EmissionResult` |
+| `src/token/token.service.ts` | ✅ `mintForTransaction()` is canonical entry point; legacy `mint()` / `burn()` marked `@deprecated` |
+| `src/token/tokenomics.service.ts` | ✅ `updateInternalValuation()` is confirmed no-op; `getCurrentPrice()` delegates to reserve state |
+| `01_coin_engine/coin_emission_model.md` | ✅ Canonical formulas match code |
+| `tests/test_emission.py` | ✅ 28 passing tests cover all invariants |
+
+### Canonical invariants (all pass)
+
+| Rule | Code | Status |
+|------|------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.005` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emissionAmount − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → AFC update → BURN (atomic) | `emission.service.ts:100–169` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:183–184` | ✅ |
+| Module 01 is DEPRECATED (→ Module 08 active) | `docs/architecture/Module_Map.md` | ✅ confirmed |
+
+### Note on burn semantics
+
+`burnAmount = emissionAmount − commission = 9,950` for a $10,000 TX.
+After Step 1 the recipient holds 10,000 ARO. Steps 2a/2b debit 50 ARO as commission.
+The recipient then holds exactly 9,950, which is burned in Step 4.
+Net supply Δ = +50 ARO (commission remains in node pool / AFC reserve — economically justified).
+Burning 10,000 (the old approach) would require the recipient to hold 10,050 ARO — a 50 ARO ledger deficit — hence the corrected formula.
+
+---
+
 ## Eleventh Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`, `tests/`  

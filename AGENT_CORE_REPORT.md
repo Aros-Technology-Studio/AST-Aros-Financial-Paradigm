@@ -2,6 +2,34 @@
 
 ---
 
+## Ninth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`
+**Result:** One remaining deviation confirmed fixed in prior pass; one stale comment block cleaned up. All canonical invariants pass.
+
+### Summary of state found
+
+| File | Status |
+|------|--------|
+| `emission.interfaces.ts` | ✅ `burnAmount` + optional `mintTxHash` present |
+| `emission.service.ts` | ✅ `calculate()` returns `burnAmount = emissionAmount − commission`; BURN step uses `burnAmount`; supply snapshot updated correctly; `mintTxHash` returned |
+| `token.service.ts` | ✅ Fixed — removed stale `// [NEW]` annotation and multi-line deliberation comment from `burn()` |
+| `token.service.spec.ts` | ✅ Correct — `mintForTransaction` test validates `mintTxHash`; mock aligned |
+| `emission.service.spec.ts` | ✅ Correct — tests verify `burnAmount = 9,950` for a $10,000 TX |
+
+### Key invariant confirmed
+
+```
+emissionAmount (10,000) = burnAmount (9,950) + commission (50)
+totalMinted   += emissionAmount   (10,000)  — full issue for audit
+totalBurned   += burnAmount       (9,950)   — net destruction after fees paid
+circulatingSupply += commission    (50)     — fees remain in node pool / AFC reserve
+```
+
+Burning `emissionAmount` instead of `burnAmount` would create a ledger deficit equal to `commission` — the bug prior audits targeted. Implementation now matches spec tests exactly.
+
+---
+
 ## Eighth Audit — 2026-06-04 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  

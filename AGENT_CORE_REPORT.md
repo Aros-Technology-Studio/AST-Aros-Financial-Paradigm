@@ -2,6 +2,55 @@
 
 ---
 
+## Fourteenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Result:** Full independent re-audit from clean checkout. All canonical invariants confirmed. No code changes required.
+
+### Verified state
+
+| File | Status |
+|------|--------|
+| `src/token/emission.service.ts` | ✅ `burnAmount = emissionAmount − commission`; atomic 4-step lifecycle; `recordAfcContribution()` public; `mintTxHash` returned |
+| `src/token/emission.interfaces.ts` | ✅ `burnAmount` and optional `mintTxHash` present in `EmissionResult` |
+| `src/token/token.service.ts` | ✅ `mint()` fully delegates to `mintForTransaction()` → canonical `EmissionService` flow; `TokenomicsService` removed from DI |
+| `src/proof_of_transaction_engine/process_reserve.service.ts` | ✅ Uses canonical sqrt formula: `1.0 + sqrt(volume) / 10_000` |
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | ✅ `distribution` = 75% nodeOperators + 25% afcReserve; `burnOn` = `"post_transaction"` |
+| `01_coin_engine/aro_emission_protocol.md` | ✅ All formulas match code |
+
+### Canonical invariants (all pass)
+
+| Rule | Code location | Status |
+|------|--------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emissionAmount − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → AFC update → BURN (atomic) | `emission.service.ts:103–162` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:183–184` | ✅ |
+| `ProcessReserveLedger` uses same index formula | `process_reserve.service.ts:35` | ✅ |
+| `circulatingSupply += commission` per TX | `emission.service.ts:246` | ✅ |
+
+### $10,000 transaction example (verified)
+
+```
+txAmount       = 10,000
+emission       = 10,000 ARO  minted to recipient      (1:1)
+commission     =     50 ARO  (0.5%)
+  nodeShare    =  37.50 ARO → NODE_POOL               (75%)
+  afcShare     =  12.50 ARO → AFC_RESERVE             (25%)
+burnAmount     =  9,950 ARO  burned after TX           (emission − commission)
+circulatingΔ   =    +50 ARO  (commission stays: 37.50 in node pool + 12.50 in AFC reserve)
+reserveIndex   =  1.0 + sqrt(12.50) / 10,000 ≈ 1.0000353
+```
+
+### Module 01 status
+
+`01_coin_engine/` is documentation-only — not deprecated. Active canonical engine is `src/token/emission.service.ts`. All spec documents in Module 01 have been aligned with the code in prior audits.
+
+---
+
 ## Thirteenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`

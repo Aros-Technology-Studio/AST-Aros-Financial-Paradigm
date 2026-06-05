@@ -171,8 +171,9 @@ export class EmissionService {
     /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
+     * Called per-TX (internally) and per-epoch (from FeeDistributionService).
      */
-    private updateAfcReserve(afcAmount: number): void {
+    updateAfcReserve(afcAmount: number): void {
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();

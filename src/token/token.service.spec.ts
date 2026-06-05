@@ -13,9 +13,17 @@ import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
 const mockEmissionService = {
-    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
-    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
+    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125, commissionRate: 0.005, transactionAmount: 100 }),
+    processTransactionEmission: jest.fn().mockResolvedValue({
+        emissionAmount: 100,
+        commission: 0.5,
+        nodeShare: 0.375,
+        afcReserveShare: 0.125,
+        commissionRate: 0.005,
+        transactionAmount: 100,
+    }),
     updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockTokenomicsService = {
@@ -95,33 +103,35 @@ describe('TokenService', () => {
     });
 
     describe('mint', () => {
-        it('should mint tokens successfully', async () => {
+        it('should redirect to canonical emission flow', async () => {
             const amount = '100';
             const recipient = 'REC_1';
             const refId = 'REF_123';
 
-            mockLedgerService.recordTransaction.mockResolvedValue({
-                hash: 'TX_HASH',
-                amount: amount,
-                recipient: recipient
-            });
-            mockQueryRunner.manager.find.mockResolvedValue([]); // No previous snapshot
-
             const result = await service.mint(amount, recipient, refId);
 
-            expect(mockLedgerService.recordTransaction).toHaveBeenCalled();
+            // Canonical path: processTransactionEmission must be invoked
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(100, recipient, refId, undefined);
+            // On-chain reference still recorded for backward compat
             expect(mockSmartContractService.recordReference).toHaveBeenCalledWith(refId, 'MINT', expect.any(Object));
-            expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
             expect(result.status).toBe('SUCCESS');
+            // Must include canonical fields — no raw tx hash from legacy ledger call
+            expect(result.emissionAmount).toBeDefined();
+            expect(result.commission).toBeDefined();
         });
 
-        it('should rollback if ledger fails', async () => {
-            mockLedgerService.recordTransaction.mockRejectedValue(new Error('Ledger Error'));
+        it('should throw if amount is not positive', async () => {
+            await expect(service.mint('0', 'REC_1', 'REF_1'))
+                .rejects.toThrow(BadRequestException);
+
+            expect(mockEmissionService.processTransactionEmission).not.toHaveBeenCalled();
+        });
+
+        it('should propagate emission errors', async () => {
+            mockEmissionService.processTransactionEmission.mockRejectedValueOnce(new Error('Emission Error'));
 
             await expect(service.mint('100', 'REC_1', 'REF_1'))
-                .rejects.toThrow('Ledger Error');
-
-            expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+                .rejects.toThrow('Emission Error');
         });
     });
 

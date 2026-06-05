@@ -2,6 +2,43 @@
 
 ---
 
+## Fifteenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Result:** Full independent re-audit. All canonical invariants confirmed. No code changes required.
+
+### Verified state
+
+| File | Status |
+|------|--------|
+| `src/token/emission.service.ts` | ✅ `emission = txAmount` (1:1); `commission = txAmount × 0.5%`; `nodeShare × 0.75`; `afcShare × 0.25`; `burnAmount = emission − commission`; 4-step atomic lifecycle; `recordAfcContribution()` public |
+| `src/token/emission.interfaces.ts` | ✅ `burnAmount` and optional `mintTxHash` present in `EmissionResult` |
+| `src/token/token.service.ts` | ✅ `mintForTransaction()` is canonical entry; `mint()` `@deprecated` and fully delegates to `mintForTransaction()` |
+| `src/token/token.controller.ts` | ✅ `POST /emit` → canonical flow; `POST /mint` → delegates via `mint()` → canonical flow; `GET /emission/price` exposes AFC index |
+| `src/token/tokenomics.service.ts` | ✅ `updateInternalValuation()` confirmed no-op; `getCurrentPrice()` delegates to reserve state |
+| `src/proof_of_transaction_engine/process_reserve.service.ts` | ✅ Uses canonical sqrt formula `1.0 + sqrt(volume) / 10_000` |
+| `01_coin_engine/` | ✅ Documentation-only; all spec docs aligned with code in prior audits |
+
+### Canonical invariants (all pass)
+
+| Rule | Code location | Status |
+|------|--------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emissionAmount − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → AFC update → BURN (atomic) | `emission.service.ts:103–169` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:183–184` | ✅ |
+| `circulatingSupply += commission` per TX | `emission.service.ts:246` | ✅ |
+
+### Module 01 / Module 10 status
+
+- `01_coin_engine/` — documentation only; marked as spec reference, not deprecated code
+- `10_proof_of_transaction_engine/` — PoT consensus layer; `pot_tx_incentive_distribution.md` describes sub-distribution within the 75% node share (60% validators / 30% attesters / 10% burn) which does not conflict with the top-level 75/25 canonical split
+
+---
+
 ## Fourteenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  

@@ -110,8 +110,8 @@ See **Section 3** for full details.
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-04  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code
+**Date:** 2026-06-05  
+**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
 
 ---
 

@@ -2,6 +2,57 @@
 
 ---
 
+## Sixteenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`
+**Result:** Full independent re-audit from clean checkout. All canonical invariants confirmed. No code changes required.
+
+### Verified state
+
+| File | Status |
+|------|--------|
+| `src/token/emission.service.ts` | ✅ `emission = txAmount` (1:1); `burnAmount = emission − commission`; 5-step atomic lifecycle; `recordAfcContribution()` public for epoch sync |
+| `src/token/emission.interfaces.ts` | ✅ `burnAmount` and optional `mintTxHash` in `EmissionResult` |
+| `src/token/token.service.ts` | ✅ `mintForTransaction()` canonical entry; `mint()` `@deprecated` and delegates to `mintForTransaction()`; `TokenomicsService` removed from DI; no deprecated no-op calls |
+| `src/token/tokenomics.service.ts` | ✅ `updateInternalValuation()` is no-op with no active callers; `getCurrentPrice()` delegates to reserve index |
+| `src/proof_of_transaction_engine/process_reserve.service.ts` | ✅ Uses canonical sqrt formula `1.0 + sqrt(volume) / 10_000` |
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | ✅ `distribution = { nodeOperators: 0.75, afcReserve: 0.25 }`; `burnOn = "post_transaction"` |
+| `01_coin_engine/aro_emission_protocol.md` | ✅ All formulas match code |
+| `src/fee_distribution/fee_distribution.service.ts` | ✅ 75/25 epoch split; calls `emissionService.recordAfcContribution()` to keep in-memory index in sync |
+
+### Canonical invariants (all pass)
+
+| Rule | Code location | Status |
+|------|--------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emission − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → AFC update → BURN (atomic) | `emission.service.ts:104–168` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:183–184` | ✅ |
+| `circulatingSupply += commission` per TX | `emission.service.ts:246` | ✅ |
+
+### $10,000 transaction example (verified)
+
+```
+txAmount       = 10,000
+emission       = 10,000 ARO  minted to recipient      (1:1)
+commission     =     50 ARO  (0.5%)
+  nodeShare    =  37.50 ARO → NODE_POOL               (75%)
+  afcShare     =  12.50 ARO → AFC_RESERVE             (25%)
+burnAmount     =  9,950 ARO  burned post-TX            (emission − commission)
+circulatingΔ   =    +50 ARO  (commission stays in circulation)
+reserveIndex   =  1.0 + sqrt(12.50) / 10,000 ≈ 1.0000354
+```
+
+### Module 01 / Module 10 status
+
+- `01_coin_engine/` — documentation only; not deprecated; all spec docs aligned with code
+- `10_proof_of_transaction_engine/` — PoT consensus layer only; no emission logic; `pot_tx_incentive_distribution.md` describes sub-distribution within the 75% node share which does not conflict with the top-level 75/25 canonical split
+
+---
+
 ## Fifteenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  

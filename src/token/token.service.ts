@@ -14,7 +14,6 @@ import { EmissionResult } from './emission.interfaces';
 @Injectable()
 export class TokenService {
     private readonly logger = new Logger(TokenService.name);
-    private readonly MINT_ADDRESS = 'SYSTEM_MINT_AUTHORITY_000000000000000000';
     private readonly BURN_ADDRESS = 'SYSTEM_BURN_VAULT_00000000000000000000';
 
     constructor(
@@ -74,51 +73,26 @@ export class TokenService {
         return result;
     }
 
-    /**
-     * @deprecated Legacy FIAT-gateway deposit. Does NOT follow the canonical 1:1 emission model
-     * (no fee split, no post-transaction burn, net-positive circulating supply).
-     * Use mintForTransaction() for all canonical emission flows.
-     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
-        const queryRunner = this.dataSource.createQueryRunner();
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
+        this.logger.log(`[Canonical Mint] amount=${amount} recipient=${recipient} ref=${referenceId}`);
 
-        try {
-            this.logger.log(`[Legacy FIAT Deposit] MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId})`);
+        // Delegate to canonical 1:1 emission: mint → fee split (75/25) → burn
+        const result = await this.mintForTransaction(parseFloat(amount), recipient, referenceId);
 
-            const tx = await this.ledgerService.recordTransaction({
-                type: TransactionType.MINT,
-                sender: this.MINT_ADDRESS,
-                recipient: recipient,
-                amount: amount,
-                nonce: Date.now(),
-                metadata: { referenceId, operation: 'FIAT_DEPOSIT' }
-            });
+        // Record on-chain event for audit trail
+        await this.smartContractService.recordReference(referenceId, 'MINT', { amount, recipient });
 
-            await this.smartContractService.recordReference(referenceId, 'MINT', { amount: amount, recipient: recipient });
-            await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
-            await queryRunner.commitTransaction();
-
-            this.eventEmitter.emit('token.mint', {
-                amount: amount,
-                recipient: recipient,
-                refId: referenceId,
-                txHash: tx.hash
-            });
-
-            this.processReserve.recordTransactionVolume(parseFloat(amount));
-
-            return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
-        } catch (error) {
-            await queryRunner.rollbackTransaction();
-            this.logger.error(`Mint failed: ${error.message}`);
-            throw error;
-        } finally {
-            await queryRunner.release();
-        }
+        return {
+            status: 'SUCCESS',
+            referenceId,
+            emissionAmount: result.emissionAmount,
+            commission: result.commission,
+            nodeShare: result.nodeShare,
+            afcReserveShare: result.afcReserveShare,
+            emissionPrice: this.emissionService.getCurrentEmissionPrice(),
+        };
     }
 
     async burn(amount: string, sender: string, bankDetailsId: string): Promise<any> {

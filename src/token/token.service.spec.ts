@@ -98,33 +98,33 @@ describe('TokenService', () => {
     });
 
     describe('mint', () => {
-        it('should mint tokens successfully', async () => {
+        it('should execute canonical 1:1 emission and return emission breakdown', async () => {
             const amount = '100';
             const recipient = 'REC_1';
             const refId = 'REF_123';
 
-            mockLedgerService.recordTransaction.mockResolvedValue({
-                hash: 'TX_HASH',
-                amount: amount,
-                recipient: recipient
-            });
-            mockQueryRunner.manager.find.mockResolvedValue([]); // No previous snapshot
-
             const result = await service.mint(amount, recipient, refId);
 
-            expect(mockLedgerService.recordTransaction).toHaveBeenCalled();
+            // canonical path: delegates to EmissionService via mintForTransaction
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                100, recipient, refId, undefined,
+            );
+            // on-chain audit record
             expect(mockSmartContractService.recordReference).toHaveBeenCalledWith(refId, 'MINT', expect.any(Object));
-            expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
             expect(result.status).toBe('SUCCESS');
+            expect(result.emissionAmount).toBe(100);
+            expect(result.commission).toBe(0.5);
+            expect(result.nodeShare).toBe(0.375);
+            expect(result.afcReserveShare).toBe(0.125);
         });
 
-        it('should rollback if ledger fails', async () => {
-            mockLedgerService.recordTransaction.mockRejectedValue(new Error('Ledger Error'));
+        it('should propagate emission errors without swallowing them', async () => {
+            mockEmissionService.processTransactionEmission.mockRejectedValueOnce(
+                new Error('Emission Error'),
+            );
 
             await expect(service.mint('100', 'REC_1', 'REF_1'))
-                .rejects.toThrow('Ledger Error');
-
-            expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+                .rejects.toThrow('Emission Error');
         });
     });
 

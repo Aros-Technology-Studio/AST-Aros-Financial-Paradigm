@@ -2,6 +2,36 @@
 
 ---
 
+## Thirteenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`
+
+### Deviations found and fixed
+
+| # | File | Deviation | Fix |
+|---|------|-----------|-----|
+| 1 | `src/proof_of_transaction_engine/process_reserve.service.ts` | Used `1.0 + log1p(vol)/100` — diverges from canonical sub-linear sqrt formula | Changed to `1.0 + sqrt(vol)/10_000` |
+| 2 | `src/token/token.service.ts` — `mint()` | Legacy FIAT path minted without burning, without 75/25 fee split, and increased `circulatingSupply` permanently — violates "ARO burns after transaction completion" and net-zero invariant | Rewrote `mint()` to delegate to `mintForTransaction()` (canonical flow via `EmissionService`) |
+| 3 | `src/token/token.service.spec.ts` | Tests for `mint()` still verified old legacy ledger path | Updated to verify canonical delegation to `EmissionService` |
+
+**Status after fixes:** All three canonical invariants now satisfied across the full call chain.
+
+### Invariants confirmed
+
+| Rule | Code | Status |
+|------|------|--------|
+| `emission = transactionAmount` (1:1) | `EmissionService.calculate():58` | ✅ |
+| `commission = transactionAmount × 0.005` | `EmissionService.calculate():59` | ✅ |
+| `nodeShare = commission × 0.75` | `EmissionService.calculate():60` | ✅ |
+| `afcShare = commission × 0.25` | `EmissionService.calculate():61` | ✅ |
+| MINT → FEE×2 → AFC update → BURN (atomic) | `EmissionService.processTransactionEmission()` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `EmissionService.updateAfcReserve():175-176` | ✅ |
+| `ProcessReserveLedgerService` uses same formula | `process_reserve.service.ts` | ✅ (fixed) |
+| `TokenomicsService.getCurrentPrice()` → AFC index | `tokenomics.service.ts` | ✅ (from prior audit) |
+| `TokenService.mint()` runs full canonical cycle | `token.service.ts` | ✅ (fixed) |
+
+---
+
 ## Twelfth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`

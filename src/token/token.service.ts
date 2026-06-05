@@ -73,6 +73,11 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use mintForTransaction() for the canonical 1:1 emission cycle.
+     * This path is reserved for legacy fiat-deposit bridge operations only.
+     * It does NOT apply the canonical fee split or post-transaction burn.
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

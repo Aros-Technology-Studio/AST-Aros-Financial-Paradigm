@@ -448,3 +448,30 @@ After 12.50 AFC accumulated:
 - **Wire `mintForTransaction()` throughout ingestion pipeline** — replace all remaining `mint()` calls with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate boundary, zero-amount guard.
 - **Sync epoch AFC contribution to `EmissionService`** — ✅ Done via `recordAfcContribution()` in `FeeDistributionService`.
+
+---
+
+## Latest Audit — 2026-06-05 (branch: `agent/core-emission`)
+
+**Agent:** AGENT-CORE  
+**Purpose:** Independent re-audit of canonical 1:1 emission model.
+
+### Summary
+
+All canonical invariants confirmed correct. The codebase on this branch already reflects Audit 13 fixes:
+`mint()` fully delegates to `mintForTransaction()` → `EmissionService.processTransactionEmission()`.
+
+Added `@deprecated` JSDoc to `token.service.ts::mint()` for documentation clarity,
+confirming callers should prefer `mintForTransaction()` for canonical emission.
+
+### Canonical Model Compliance — Confirmed
+
+| Rule | Code location | Status |
+|------|--------------|--------|
+| Emission = Transaction Amount (1:1) | `emission.service.ts:58` | ✅ |
+| Fee = TX Amount × 0.5% | `emission.service.ts:59` | ✅ |
+| 75% to nodes | `emission.service.ts:60` | ✅ |
+| 25% to AFC reserve | `emission.service.ts:61` | ✅ |
+| ARO burn after TX | `emission.service.ts:138–146` | ✅ |
+| AFC reserve → price rises | `emission.service.ts:175–176` | ✅ |
+| `mint()` delegates to canonical flow | `token.service.ts:87–101` | ✅ |

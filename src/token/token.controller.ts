@@ -62,28 +62,6 @@ export class TokenController {
         }
     }
 
-    /**
-     * Canonical 1:1 emission endpoint.
-     * Emits ARO = txAmount, collects 0.5% commission (75% nodes / 25% AFC),
-     * burns the emitted ARO after completion. Net circulating change = 0.
-     * Use this for all intra-network payment transactions.
-     */
-    @Post('emit')
-    async emitForTransaction(
-        @Body() body: { amount: number; recipient: string; refId: string; commissionRate?: number },
-    ) {
-        try {
-            return await this.tokenService.mintForTransaction(
-                body.amount,
-                body.recipient,
-                body.refId,
-                body.commissionRate,
-            );
-        } catch (e) {
-            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
-        }
-    }
-
     @Post('burn')
     async burnTokens(@Body() body: { amount: string; sender: string; bankDetailsId: string }) {
         try {

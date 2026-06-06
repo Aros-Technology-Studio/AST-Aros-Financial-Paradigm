@@ -788,6 +788,14 @@ After 12.50 AFC accumulated:
 | Prior | `01_coin_engine/aro_emission_protocol.md` | Replaced complex load-index formula with canonical flow |
 | Prior | `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with 75/25 split |
 
+### Pass 2 (2026-06-06) — Machine-readable spec and code path disambiguation
+
+| File | Divergence found | Fix applied |
+|------|-----------------|-------------|
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | `distribution` listed `nodeOperators: 0.75, AST treasury: 0.20, Audit Pool: 0.05` — wrong recipients and wrong ratios | Updated to `nodeOperators: 0.75, AFCReserve: 0.25`; added `distributionNote` |
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | `burnOn: "governance_rule"` contradicts transient-token model | Changed to `burnOn: "transaction_completion"` |
+| `src/token/token.service.ts` — `mint()` | No distinction between bridge-deposit path and canonical emission — risk of callers using wrong path | Added `@deprecated` JSDoc + `logger.warn()` at runtime; legacy method preserved for BridgeService |
+
 ---
 
 ## 8. Recommendations (carried forward)

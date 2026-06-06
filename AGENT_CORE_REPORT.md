@@ -2,6 +2,73 @@
 
 ---
 
+## Twenty-First Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Result:** One persistent bug found and fixed — `updateAfcReserve()` was still called before `commitTransaction()`. All prior audits (1–20) confirmed invariants as passing but overlooked this timing hazard.
+
+### Bug fixed: AFC reserve state mutated before DB commit
+
+**File:** `src/token/emission.service.ts`, `processTransactionEmission()`
+
+Previous step order (audits 1–20, all reported as ✅ but incorrect):
+```
+Step 3: updateAfcReserve(afcShare)   ← mutates this.afcReserveState IN MEMORY
+Step 4: BURN ledger write            ← if this throws → DB rollback
+Step 5: updateSupplySnapshot         ← if this throws → DB rollback
+        commitTransaction()
+```
+
+If step 4 or 5 threw an exception: the database was rolled back (no records written), but `this.afcReserveState.totalReserve` and `this.afcReserveState.reserveIndex` were permanently incremented. Every subsequent emission was priced against a reserve value that had no on-chain backing. The bug would silently accumulate on any failed transaction.
+
+Fixed step order (this audit):
+```
+Step 3: BURN ledger write
+Step 4: updateSupplySnapshot
+        commitTransaction()          ← DB successfully persisted
+Step 5: updateAfcReserve(afcShare)   ← in-memory state updated ONLY on success
+```
+
+### Modules inspected
+
+| Directory | Status |
+|-----------|--------|
+| `01_coin_engine/` | Active docs; no code; spec aligned with implementation |
+| `10_proof_of_transaction_engine/` | PoT layer only; no emission logic |
+| `src/token/emission.service.ts` | **Fixed** — AFC reserve update moved post-commit |
+| `src/token/token.service.ts` | ✅ Unchanged; `mintForTransaction()` is canonical entry point |
+| `src/token/token.controller.ts` | ✅ `POST /emit`, `GET /emission/price` present; `POST /mint` deprecated |
+
+### Canonical invariants (all pass after fix)
+
+| Rule | Code location | Status |
+|------|---------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emission − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → BURN → SNAPSHOT → COMMIT → AFC update (atomic + safe) | `emission.service.ts` | ✅ Fixed |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts` | ✅ |
+| `circulatingSupply += commission` per TX | `emission.service.ts` | ✅ |
+| Recipient net balance = 0 | accounting | ✅ |
+
+### $10,000 transaction accounting (unchanged, verified)
+
+```
+txAmount       = 10,000
+emission       = 10,000 ARO  → minted to recipient   (1:1)
+commission     =     50 ARO  (0.5%)
+  nodeShare    =  37.50 ARO  recipient → NODE_POOL   (75%)
+  afcShare     =  12.50 ARO  recipient → AFC_RESERVE (25%)
+burnAmount     =  9,950 ARO  recipient → BURN_VAULT
+Recipient net  = +10,000 − 37.50 − 12.50 − 9,950 = 0  ✅
+circulatingΔ   = +50 ARO (commission stays)
+reserveIndex   ≈ 1.0000354 after first TX
+```
+
+---
+
 ## Twentieth Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  

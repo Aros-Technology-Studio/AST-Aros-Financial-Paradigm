@@ -135,10 +135,7 @@ export class EmissionService {
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
             });
 
-            // Step 3 — Update AFC reserve state (price index rises)
-            this.updateAfcReserve(result.afcReserveShare);
-
-            // Step 4 — Burn burnAmount (= emissionAmount − commission).
+            // Step 3 — Burn burnAmount (= emissionAmount − commission).
             // Recipient holds emissionAmount after Step 1, then pays commission in Steps 2a/2b,
             // leaving exactly burnAmount. Burning the full emissionAmount here would create
             // a ledger deficit equal to commission.
@@ -152,10 +149,17 @@ export class EmissionService {
                 metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
             });
 
-            // Step 5 — Update supply snapshot
+            // Step 4 — Update supply snapshot
             await this.updateSupplySnapshot(queryRunner, referenceId, result);
 
             await queryRunner.commitTransaction();
+
+            // Step 5 — Update AFC reserve AFTER successful DB commit.
+            // updateAfcReserve() mutates in-memory state only; if called before commitTransaction()
+            // and a later step throws, the DB rolls back but the in-memory index is already
+            // incremented — causing a permanent desync between on-chain records and the price index.
+            this.updateAfcReserve(result.afcReserveShare);
+
             this.logger.log(`[Emission] TX=${referenceId} completed. AFC Reserve Index: ${this.afcReserveState.reserveIndex.toFixed(6)}`);
 
             return { ...result, mintTxHash: mintTx.hash };

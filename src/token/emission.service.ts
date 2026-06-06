@@ -197,6 +197,14 @@ export class EmissionService {
     }
 
     /**
+     * Records an external AFC contribution (e.g. from bridge FIAT_DEPOSIT fees)
+     * and updates the emission price index accordingly.
+     */
+    contributeToAfcReserve(amount: number): void {
+        this.updateAfcReserve(amount);
+    }
+
+    /**
      * Allows governance to update the commission rate.
      */
     updateCommissionRate(newRate: number): void {

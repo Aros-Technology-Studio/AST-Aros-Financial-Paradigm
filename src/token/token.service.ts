@@ -8,7 +8,6 @@ import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 import { EmissionService } from './emission.service';
-import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 import { EmissionResult } from './emission.interfaces';
 
 @Injectable()
@@ -26,7 +25,6 @@ export class TokenService {
         private readonly smartContractService: SmartContractIntegration,
         private readonly eventEmitter: EventEmitter2,
         private readonly emissionService: EmissionService,
-        private readonly processReserve: ProcessReserveLedgerService,
     ) { }
 
     /**

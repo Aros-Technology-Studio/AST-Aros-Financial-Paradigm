@@ -2,6 +2,32 @@
 
 ---
 
+## Eighteenth Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Result:** Re-audit confirmed all canonical invariants pass. One dead-code issue fixed.
+
+### Change made
+
+`src/token/token.service.ts` — removed unused `ProcessReserveLedgerService` import and constructor injection.  
+The field `processReserve` was never referenced in the class body after prior audits routed `mint()` through `mintForTransaction()`. Leaving an injected but unused NestJS provider is a DI hygiene issue that also keeps a `PoTEngineModule` dependency alive in `TokenModule` unnecessarily.
+
+**No logic changes.** Canonical emission flow (`mintForTransaction` → `EmissionService.processTransactionEmission`) is unchanged and fully compliant.
+
+### Canonical invariants (all pass — unchanged from Audit 17)
+
+| Rule | Code location | Status |
+|------|--------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| ARO burned after TX completion | `emission.service.ts` BURN step | ✅ |
+| AFC reserve monotonically rises | `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | ✅ |
+| Atomic lifecycle (all steps or rollback) | `QueryRunner` transaction wrap | ✅ |
+
+---
+
 ## Seventeenth Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  

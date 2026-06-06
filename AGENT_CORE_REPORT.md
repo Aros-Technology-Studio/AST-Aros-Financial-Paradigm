@@ -46,7 +46,7 @@ Contains `.md` spec files for PoT validation, slashing, weighting, and incentive
 
 | File | Notes |
 |------|-------|
-| `process_reserve.service.ts` | Legacy volume ledger using `log1p`; used only by deprecated `tokenomics.service.ts` path |
+| `process_reserve.service.ts` | Volume ledger; formula corrected to canonical `sqrt / 10_000`; used only by deprecated `tokenomics.service.ts` path |
 | `pot.service.ts` | PoT scoring and weight normalization — correct and untouched |
 
 ---
@@ -202,4 +202,4 @@ and funds the AFC reserve.
 | Date | Branch | Changes |
 |------|--------|---------|
 | 2026-05-12 | `claude/inspiring-cannon-4qbjK` | Initial audit; rewrote `coin_emission_model.md`, `aro_emission_protocol.md`, `payment_distribution.md`; confirmed `emission.service.ts` canonical |
-| 2026-06-06 | `agent/core-emission` | Wired epoch AFC sync; added `POST /emit` endpoint; fixed PoT incentive doc (60/30/10→75/25); fixed TokenSpec (nodeOperators→nodePool, burnOn→transaction_completion); burn accounting clarified |
+| 2026-06-06 | `agent/core-emission` | Wired epoch AFC sync; added `POST /emit` endpoint; fixed PoT incentive doc (60/30/10→75/25); fixed TokenSpec (nodeOperators→nodePool, burnOn→transaction_completion); burn accounting clarified; corrected `process_reserve.service.ts` formula (`log1p/100` → `sqrt/10_000`) |

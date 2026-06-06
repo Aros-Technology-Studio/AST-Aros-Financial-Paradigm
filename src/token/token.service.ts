@@ -7,7 +7,6 @@ import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
-import { TokenomicsService } from './tokenomics.service';
 import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 import { EmissionResult } from './emission.interfaces';
@@ -27,7 +26,6 @@ export class TokenService {
         private readonly bridgeService: BridgeService,
         private readonly smartContractService: SmartContractIntegration,
         private readonly eventEmitter: EventEmitter2,
-        private readonly tokenomicsService: TokenomicsService,
         private readonly emissionService: EmissionService,
         private readonly processReserve: ProcessReserveLedgerService,
     ) { }
@@ -84,47 +82,65 @@ export class TokenService {
         await queryRunner.startTransaction();
 
         try {
-            const currentPrice = this.tokenomicsService.getCurrentPrice();
-            this.logger.log(`Initiating MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId}) @ Price ${currentPrice}`);
+            const txAmount = parseFloat(amount);
+            const fee = this.emissionService.calculate(txAmount);
 
-            // Logic: If amount is FIAT, we divide by Price. If amount is TOKENS, we just mint tokens.
-            // Assuming input 'amount' is TOKENS for now based on legacy logic, 
-            // BUT for dynamic pricing usually the input from Bank is FIAT.
-            // Let's assume the Bridge sends token amount calculated elsewhere OR we should change this to accept Fiat and calc Tokens.
-            // For minimal disruption: We assume Bridge calc or we just log the price.
-            // *CRITICAL*: User asked for price to rise. 
-            // We will trigger a price increment AFTER minting to simulate "Activity".
+            this.logger.log(
+                `[Bridge MINT] TX=${referenceId} amount=${amount} → ` +
+                `commission=${fee.commission.toFixed(8)} (nodes=${fee.nodeShare.toFixed(8)} AFC=${fee.afcReserveShare.toFixed(8)})`,
+            );
 
-
+            // Step 1 — Mint 1:1 to recipient
             const tx = await this.ledgerService.recordTransaction({
                 type: TransactionType.MINT,
                 sender: this.MINT_ADDRESS,
                 recipient: recipient,
                 amount: amount,
+                fee: '0',
                 nonce: Date.now(),
-                metadata: { referenceId, operation: 'FIAT_DEPOSIT' }
+                metadata: { referenceId, operation: 'FIAT_DEPOSIT' },
             });
 
-            // [NEW] Record On-Chain Event
-            await this.smartContractService.recordReference(referenceId, 'MINT', { amount: amount, recipient: recipient });
+            // Step 2 — Commission split: 75% → node pool, 25% → AFC reserve
+            await this.ledgerService.recordTransaction({
+                type: TransactionType.FEE_DISTRIBUTION,
+                sender: recipient,
+                recipient: 'SYSTEM_NODE_POOL_00000000000000000000',
+                amount: fee.nodeShare.toFixed(8),
+                fee: '0',
+                nonce: Date.now() + 1,
+                metadata: { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: fee.commissionRate },
+            });
 
+            await this.ledgerService.recordTransaction({
+                type: TransactionType.FEE_DISTRIBUTION,
+                sender: recipient,
+                recipient: 'SYSTEM_AFC_RESERVE_000000000000000000',
+                amount: fee.afcReserveShare.toFixed(8),
+                fee: '0',
+                nonce: Date.now() + 2,
+                metadata: { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: fee.commissionRate },
+            });
+
+            // Step 3 — Update AFC reserve index (drives future emission price upward)
+            this.emissionService.contributeToAfcReserve(fee.afcReserveShare);
+
+            // Step 4 — On-chain record + supply snapshot
+            await this.smartContractService.recordReference(referenceId, 'MINT', { amount, recipient });
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
             await queryRunner.commitTransaction();
 
-            // Emit event for The All-Seeing Eye
             this.eventEmitter.emit('token.mint', {
-                amount: amount,
-                recipient: recipient,
+                amount,
+                recipient,
                 refId: referenceId,
-                txHash: tx.hash
+                txHash: tx.hash,
+                commission: fee.commission,
+                nodeShare: fee.nodeShare,
+                afcReserveShare: fee.afcReserveShare,
             });
 
-            // [NEW] Increment Price due to economic activity
-            // REPLACED: this.tokenomicsService.incrementPrice(1);
-            // NOW: Record volume and update based on Reserve
-            this.processReserve.recordTransactionVolume(parseFloat(amount));
-            this.tokenomicsService.updateInternalValuation();
-
+            this.processReserve.recordTransactionVolume(txAmount);
 
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
@@ -173,13 +189,9 @@ export class TokenService {
             // Let's await it to ensure user gets feedback.
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            // [NEW] Increment Price due to withdrawal activity?
-            // User strategy said "processing transaction... rises price".
-            // Withdrawal is a transaction. So yes.
             this.processReserve.recordTransactionVolume(parseFloat(amount));
-            this.tokenomicsService.updateInternalValuation();
 
-            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
+            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.emissionService.getCurrentEmissionPrice().toFixed(6)}. Fiat payout initiated via BB.`, bankTxId };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

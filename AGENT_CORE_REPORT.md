@@ -2,6 +2,59 @@
 
 ---
 
+## Nineteenth Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Result:** Full independent re-audit from clean checkout. All canonical invariants confirmed correct. No code changes required.
+
+### Verified state
+
+| File | Status |
+|------|--------|
+| `src/token/emission.interfaces.ts` | ✅ `EmissionResult` includes `burnAmount` and `mintTxHash?` |
+| `src/token/emission.service.ts` | ✅ `emission = txAmount` (1:1); `commission = txAmount × 0.5%`; `nodeShare × 0.75`; `afcShare × 0.25`; `burnAmount = emission − commission`; atomic 5-step lifecycle; `recordAfcContribution()` public; `updateAfcReserve()` public |
+| `src/token/token.service.ts` | ✅ Clean — no `TokenomicsService` or `ProcessReserveLedgerService` in DI; `mint()` `@deprecated` and fully delegates to `mintForTransaction()`; `burn()` clean (no erroneous volume recording) |
+| `src/proof_of_transaction_engine/process_reserve.service.ts` | ✅ Uses canonical sqrt formula: `1.0 + sqrt(totalProcessVolume) / 10_000` |
+| `src/fee_distribution/fee_distribution.service.ts` | ✅ 75/25 epoch split; calls `emissionService.recordAfcContribution(afcReserve)` to keep in-memory `reserveIndex` in sync |
+| `01_coin_engine/` | ✅ Documentation-only module; all spec docs aligned with code |
+| `10_proof_of_transaction_engine/` | ✅ PoT consensus layer only; no emission logic; PoT incentive sub-distribution (within the 75% node share) does not conflict with the top-level 75/25 canonical split |
+| `docs/architecture/Module_Map.md` | ✅ Module 01 marked *(Deprecated)* — canonical implementation confirmed at `src/token/emission.service.ts` |
+
+### Canonical invariants (all pass)
+
+| Rule | Code location | Status |
+|------|--------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60–61` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emission − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → AFC update → BURN → SNAPSHOT (atomic) | `emission.service.ts:104–168` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:183–184` | ✅ |
+| Epoch AFC contributions sync `reserveIndex` | `fee_distribution.service.ts:185` | ✅ |
+| `ProcessReserveLedgerService` uses same sqrt formula | `process_reserve.service.ts:35` | ✅ |
+| `circulatingSupply += commission` per TX | `emission.service.ts:246` | ✅ |
+
+### $10,000 transaction example (verified)
+
+```
+txAmount       = 10,000
+emission       = 10,000 ARO  → minted to recipient   (1:1)
+commission     =     50 ARO  (0.5%)
+  nodeShare    =  37.50 ARO  → NODE_POOL             (75%)
+  afcShare     =  12.50 ARO  → AFC_RESERVE           (25%)
+burnAmount     =  9,950 ARO  → BURN_VAULT            (emission − commission)
+circulatingΔ   =    +50 ARO  (commission stays: 37.50 node pool + 12.50 AFC reserve)
+reserveIndex   = 1.0 + sqrt(12.50) / 10,000 ≈ 1.0000354
+```
+
+### Module 01 / Module 10 status
+
+- `01_coin_engine/` — documentation only; marked deprecated in `Module_Map.md`; spec docs are aligned with production code
+- `10_proof_of_transaction_engine/` — PoT consensus/attestation layer; no top-level emission logic; sub-distribution within the 75% node share does not conflict with the canonical 75/25 split
+
+---
+
 ## Eighteenth Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  

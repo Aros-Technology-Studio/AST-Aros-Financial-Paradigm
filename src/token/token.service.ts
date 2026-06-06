@@ -76,6 +76,10 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use mintForTransaction() for canonical 1:1 emission with fee split and burn.
+     * This method is a legacy fiat-deposit path that does not follow the canonical emission model.
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
@@ -87,15 +91,6 @@ export class TokenService {
             const currentPrice = this.tokenomicsService.getCurrentPrice();
             this.logger.log(`Initiating MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId}) @ Price ${currentPrice}`);
 
-            // Logic: If amount is FIAT, we divide by Price. If amount is TOKENS, we just mint tokens.
-            // Assuming input 'amount' is TOKENS for now based on legacy logic, 
-            // BUT for dynamic pricing usually the input from Bank is FIAT.
-            // Let's assume the Bridge sends token amount calculated elsewhere OR we should change this to accept Fiat and calc Tokens.
-            // For minimal disruption: We assume Bridge calc or we just log the price.
-            // *CRITICAL*: User asked for price to rise. 
-            // We will trigger a price increment AFTER minting to simulate "Activity".
-
-
             const tx = await this.ledgerService.recordTransaction({
                 type: TransactionType.MINT,
                 sender: this.MINT_ADDRESS,
@@ -105,13 +100,11 @@ export class TokenService {
                 metadata: { referenceId, operation: 'FIAT_DEPOSIT' }
             });
 
-            // [NEW] Record On-Chain Event
             await this.smartContractService.recordReference(referenceId, 'MINT', { amount: amount, recipient: recipient });
 
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
             await queryRunner.commitTransaction();
 
-            // Emit event for The All-Seeing Eye
             this.eventEmitter.emit('token.mint', {
                 amount: amount,
                 recipient: recipient,
@@ -119,12 +112,7 @@ export class TokenService {
                 txHash: tx.hash
             });
 
-            // [NEW] Increment Price due to economic activity
-            // REPLACED: this.tokenomicsService.incrementPrice(1);
-            // NOW: Record volume and update based on Reserve
             this.processReserve.recordTransactionVolume(parseFloat(amount));
-            this.tokenomicsService.updateInternalValuation();
-
 
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
@@ -173,11 +161,7 @@ export class TokenService {
             // Let's await it to ensure user gets feedback.
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            // [NEW] Increment Price due to withdrawal activity?
-            // User strategy said "processing transaction... rises price".
-            // Withdrawal is a transaction. So yes.
             this.processReserve.recordTransactionVolume(parseFloat(amount));
-            this.tokenomicsService.updateInternalValuation();
 
             return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
         } catch (error) {

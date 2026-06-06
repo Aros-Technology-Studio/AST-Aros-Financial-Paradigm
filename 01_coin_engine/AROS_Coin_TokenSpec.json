@@ -24,14 +24,17 @@
       "feeType": "variable",
       "calculation": "transactionAmount * commissionRate (default 0.5%)",
       "distribution": {
-        "nodeOperators": 0.75,
+        "nodePool": 0.75,
         "afcReserve": 0.25
       },
-      "distributionNote": "Canonical 75/25 split: 75% to processing nodes (PoT-weighted), 25% to AFC reserve."
+      "distributionNote": "Canonical 75/25 split: 75% to node pool (PoT-weighted, SYSTEM_NODE_POOL_00000000000000000000), 25% to AFC reserve (SYSTEM_AFC_RESERVE_000000000000000000)."
     },
     "compatibility": {
       "blockchain": "AST_NodeChain",
-      "wallets": ["AST Wallet", "CrossChainWrapper"],
+      "wallets": [
+        "AST Wallet",
+        "CrossChainWrapper"
+      ],
       "bridgeable": true
     },
     "security": {

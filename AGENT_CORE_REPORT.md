@@ -178,9 +178,28 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 9. Previous Pass History
+## 9. Burn Accounting Note
+
+The spec states "Net circulating change = 0" but the precise accounting is:
+
+```
+burnAmount = emissionAmount − commission   (not the full emissionAmount)
+```
+
+Because the recipient's ledger balance after paying commission is `emissionAmount − commission`,
+burning the full `emissionAmount` would create a deficit. The commission (50 ARO on a 10,000 TX)
+remains in the system as node rewards and AFC reserve — this is the intended economic flow.
+Net supply change per TX = +commission (e.g. +50 ARO on a 10,000 TX at 0.5%).
+
+The "net zero" in the specification refers to the *transaction body* (9,950 ARO minted and
+burned), treating commission as a separate, acknowledged economic outflow that compensates nodes
+and funds the AFC reserve.
+
+---
+
+## 10. Pass History
 
 | Date | Branch | Changes |
 |------|--------|---------|
 | 2026-05-12 | `claude/inspiring-cannon-4qbjK` | Initial audit; rewrote `coin_emission_model.md`, `aro_emission_protocol.md`, `payment_distribution.md`; confirmed `emission.service.ts` canonical |
-| 2026-06-06 | `agent/core-emission` | Wired epoch AFC sync; added `POST /emit` canonical endpoint; confirmed all code matches model |
+| 2026-06-06 | `agent/core-emission` | Wired epoch AFC sync; added `POST /emit` endpoint; fixed PoT incentive doc (60/30/10→75/25); fixed TokenSpec (nodeOperators→nodePool, burnOn→transaction_completion); burn accounting clarified |

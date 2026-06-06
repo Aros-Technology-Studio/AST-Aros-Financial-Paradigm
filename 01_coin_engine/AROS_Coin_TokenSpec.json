@@ -4,12 +4,12 @@
       "name": "AROS Coin",
       "symbol": "ARO",
       "decimals": 8,
-      "totalSupply": "dynamic", 
+      "totalSupply": "dynamic",
       "supplyMechanism": {
         "type": "transaction-fee-based",
         "initialSupply": 0,
         "mintOn": "verified_transaction",
-        "burnOn": "governance_rule"
+        "burnOn": "transaction_completion"
       }
     },
     "governance": {
@@ -22,12 +22,12 @@
     },
     "transactionFees": {
       "feeType": "variable",
-      "calculation": "gasless_weighted + time_priority + load_balance",
+      "calculation": "transactionAmount * commissionRate (default 0.5%)",
       "distribution": {
         "nodeOperators": 0.75,
-        "AST treasury": 0.20,
-        "Audit Pool": 0.05
-      }
+        "afcReserve": 0.25
+      },
+      "distributionNote": "Canonical 75/25 split: 75% to processing nodes (PoT-weighted), 25% to AFC reserve."
     },
     "compatibility": {
       "blockchain": "AST_NodeChain",
@@ -41,7 +41,7 @@
     },
     "metadata": {
       "version": "1.0.0",
-      "lastUpdated": "2025-06-20",
+      "lastUpdated": "2026-06-06",
       "contractRef": "contracts/aros_token_mainnet.sol"
     }
   }

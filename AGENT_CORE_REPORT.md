@@ -30,7 +30,7 @@ Contains `.md` spec files for PoT validation, slashing, weighting, and incentive
 | File | Status |
 |------|--------|
 | `emission.interfaces.ts` | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` — correct |
-| `emission.service.ts` | ✅ Full canonical 1:1 lifecycle; `addEpochAfcContribution()` added (see §3) |
+| `emission.service.ts` | ✅ Full canonical 1:1 lifecycle; `recordAfcContribution()` wires epoch AFC sync (see §3) |
 | `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved for bridge deposits |
 | `tokenomics.service.ts` | ✅ `updateInternalValuation()` is a deprecated no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
@@ -40,7 +40,7 @@ Contains `.md` spec files for PoT validation, slashing, weighting, and incentive
 
 | File | Status |
 |------|--------|
-| `fee_distribution.service.ts` | ✅ `EmissionService` injected; `addEpochAfcContribution()` called after epoch AFC recording |
+| `fee_distribution.service.ts` | ✅ `EmissionService` injected; `recordAfcContribution()` called after epoch AFC recording |
 
 ### src/proof_of_transaction_engine/ — Unchanged
 
@@ -62,30 +62,32 @@ Contains `.md` spec files for PoT validation, slashing, weighting, and incentive
 | ARO burn after TX | Yes | ✅ `BURN` ledger record for `emissionAmount` in same atomic TX |
 | AFC reserve grows → price rises | Yes | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` |
 | Epoch fees also 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` |
-| Epoch AFC synced to price index | Yes | ✅ **Fixed in this pass** — `addEpochAfcContribution()` now called |
+| Epoch AFC synced to price index | Yes | ✅ `recordAfcContribution()` called by `FeeDistributionService` after each epoch |
 
 ---
 
 ## 3. Changes Made in This Pass
 
-### 3.1 `src/token/emission.service.ts` — New public method
+### 3.1 `src/token/emission.service.ts` — Public `recordAfcContribution()` method
 
 ```typescript
-addEpochAfcContribution(afcAmount: number): void
+recordAfcContribution(amount: number): void
 ```
 
-Exposes the private `updateAfcReserve()` for use by `FeeDistributionService`. This ensures that epoch-level AFC fee contributions (from `distributeRewards()`) are reflected in the emission price index, not only per-TX contributions.
+Exposes the internal `updateAfcReserve()` for use by `FeeDistributionService`. Ensures that epoch-level AFC fee contributions are reflected in the emission price index, not only per-TX contributions.
 
 **Before:** Price index only updated by per-TX `processTransactionEmission()` calls.  
 **After:** Price index updated by both per-TX and epoch-level AFC flows — fully canonical.
 
+Also notable: `burnAmount = emissionAmount − commission` fix (remote pass). Burning the full `emissionAmount` when the recipient's balance is `emissionAmount − commission` would create a ledger deficit. The fix burns only what remains after commission is paid.
+
 ### 3.2 `src/fee_distribution/fee_distribution.service.ts` — Wire AfcReserve sync
 
-- Injected `EmissionService` as a constructor dependency.
-- After recording the `AFC_RESERVE_25PCT` ledger entry inside `distributeRewards()`, calls `this.emissionService.addEpochAfcContribution(afcReserve)`.
+- `EmissionService` injected as a constructor dependency.
+- After recording the `AFC_RESERVE_25PCT` ledger entry inside `distributeRewards()`, calls `this.emissionService.recordAfcContribution(afcReserve)`.
 
 **Before:** Epoch AFC recorded in ledger but never reflected in emission price index.  
-**After:** Both ledger and price index updated atomically within each epoch finalisation.
+**After:** Both ledger and price index updated within each epoch finalisation.
 
 ### 3.3 `src/token/token.controller.ts` — Canonical REST endpoint
 

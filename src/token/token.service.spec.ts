@@ -8,23 +8,27 @@ import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 import { DataSource } from 'typeorm';
 import { BadRequestException } from '@nestjs/common';
-import { TokenomicsService } from './tokenomics.service';
 import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
-const mockEmissionService = {
-    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
-    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
-    updateAfcReserve: jest.fn().mockResolvedValue(undefined),
-};
-
-const mockTokenomicsService = {
-    getCurrentPrice: jest.fn().mockReturnValue(1.0),
-    updateInternalValuation: jest.fn(),
-};
-
 const mockProcessReserveService = {
     recordTransactionVolume: jest.fn(),
+};
+
+const mockEmissionService = {
+    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125, burnAmount: 99.5 }),
+    processTransactionEmission: jest.fn().mockResolvedValue({
+        transactionAmount: 100,
+        emissionAmount: 100,
+        commission: 0.5,
+        nodeShare: 0.375,
+        afcReserveShare: 0.125,
+        burnAmount: 99.5,
+        commissionRate: 0.005,
+        mintTxHash: 'MINT_TX_HASH',
+    }),
+    updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockSupplyRepo = {
@@ -80,7 +84,6 @@ describe('TokenService', () => {
                         emit: jest.fn(),
                     },
                 },
-                { provide: TokenomicsService, useValue: mockTokenomicsService },
                 { provide: EmissionService, useValue: mockEmissionService },
                 { provide: ProcessReserveLedgerService, useValue: mockProcessReserveService },
             ],
@@ -95,33 +98,52 @@ describe('TokenService', () => {
     });
 
     describe('mint', () => {
-        it('should mint tokens successfully', async () => {
+        it('should execute canonical 1:1 emission and return emission breakdown', async () => {
             const amount = '100';
             const recipient = 'REC_1';
             const refId = 'REF_123';
 
-            mockLedgerService.recordTransaction.mockResolvedValue({
-                hash: 'TX_HASH',
-                amount: amount,
-                recipient: recipient
-            });
-            mockQueryRunner.manager.find.mockResolvedValue([]); // No previous snapshot
-
             const result = await service.mint(amount, recipient, refId);
 
-            expect(mockLedgerService.recordTransaction).toHaveBeenCalled();
+            // canonical path: delegates to EmissionService via mintForTransaction
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                100, recipient, refId, undefined,
+            );
+            // on-chain audit record
             expect(mockSmartContractService.recordReference).toHaveBeenCalledWith(refId, 'MINT', expect.any(Object));
-            expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
             expect(result.status).toBe('SUCCESS');
+            expect(result.emissionAmount).toBe(100);
+            expect(result.commission).toBe(0.5);
+            expect(result.nodeShare).toBe(0.375);
+            expect(result.afcReserveShare).toBe(0.125);
         });
 
-        it('should rollback if ledger fails', async () => {
-            mockLedgerService.recordTransaction.mockRejectedValue(new Error('Ledger Error'));
+        it('should propagate emission errors without swallowing them', async () => {
+            mockEmissionService.processTransactionEmission.mockRejectedValueOnce(
+                new Error('Emission Error'),
+            );
 
             await expect(service.mint('100', 'REC_1', 'REF_1'))
-                .rejects.toThrow('Ledger Error');
+                .rejects.toThrow('Emission Error');
+        });
+    });
 
-            expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    describe('mintForTransaction (canonical 1:1)', () => {
+        it('should delegate to EmissionService and return emission result with mintTxHash', async () => {
+            const result = await service.mintForTransaction(10000, 'RECIPIENT_1', 'REF_TX_001');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10000, 'RECIPIENT_1', 'REF_TX_001', undefined,
+            );
+            expect(result.emissionAmount).toBe(100);
+            expect(result.mintTxHash).toBe('MINT_TX_HASH');
+        });
+
+        it('should throw BadRequestException for non-positive amount', async () => {
+            await expect(service.mintForTransaction(0, 'RECIPIENT_1', 'REF_1'))
+                .rejects.toThrow(BadRequestException);
+            await expect(service.mintForTransaction(-5, 'RECIPIENT_1', 'REF_2'))
+                .rejects.toThrow(BadRequestException);
         });
     });
 

@@ -29,7 +29,7 @@ export class FeeDistributionService {
         private readonly emissionService: EmissionService,
         private readonly nodeChainService: NodeChainService,
         private readonly smartContractService: SmartContractIntegration,
-        private readonly dataSource: DataSource, // For transactionality
+        private readonly dataSource: DataSource,
     ) { }
 
     /**
@@ -180,9 +180,9 @@ export class FeeDistributionService {
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
 
-            // Sync epoch AFC contribution into EmissionService so the price index
-            // stays accurate across both per-TX and epoch-level fee sources.
-            this.emissionService.addEpochAfcContribution(afcReserve);
+            // Advance the emission price index — epoch AFC must raise reserveIndex
+            // just as per-TX emissions do, keeping the in-memory state consistent.
+            this.emissionService.recordAfcContribution(afcReserve);
 
             let distributedSum = 0;
 

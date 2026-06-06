@@ -2,6 +2,63 @@
 
 ---
 
+## Seventeenth Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Result:** Full independent re-audit from clean checkout. All canonical invariants confirmed. No code changes required.
+
+### Folders Inspected
+
+| Folder | Status | Role |
+|--------|--------|------|
+| `01_coin_engine/` | Documentation only (not deprecated) | Canonical spec reference; all formulas aligned with code |
+| `10_proof_of_transaction_engine/` | Active | PoT attestation — triggers emission lifecycle; no emission logic itself |
+| `src/token/` | **Active — Canonical Implementation** | `EmissionService` is the authoritative engine |
+| `08_fee_distribution/` | Active | Epoch-level fee distribution; supersedes Module 01 conceptually |
+
+### Verified State
+
+| File | Status |
+|------|--------|
+| `src/token/emission.service.ts` | ✅ `emission = txAmount` (1:1); `commission = txAmount × 0.5%`; `nodeShare × 0.75`; `afcShare × 0.25`; `burnAmount = emission − commission`; atomic 4–5 step lifecycle; `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` |
+| `src/token/emission.interfaces.ts` | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` all match canonical model |
+| `src/token/token.service.ts` | ✅ `mintForTransaction()` is canonical entry point; delegates to `EmissionService.processTransactionEmission()` |
+| `src/token/tokenomics.service.ts` | ✅ `updateInternalValuation()` no-op with `@deprecated`; `getCurrentPrice()` delegates to reserve index |
+| `src/fee_distribution/fee_distribution.service.ts` | ✅ 75/25 epoch split constants match canonical model |
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | ✅ `distribution = { nodeOperators: 0.75, afcReserve: 0.25 }`; `burnOn = "post_transaction"` |
+| `01_coin_engine/aro_emission_protocol.md` | ✅ All formulas match implementation |
+
+### Canonical Invariants (All Pass)
+
+| Rule | Code Location | Status |
+|------|--------------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| ARO burned after TX completion | `emission.service.ts` BURN step | ✅ |
+| AFC reserve monotonically rises | `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | ✅ |
+| Atomic lifecycle (all steps or rollback) | `QueryRunner` transaction wrap | ✅ |
+
+### $10,000 Transaction Example (Verified)
+
+```
+txAmount       = 10,000
+emission       = 10,000 ARO  → minted to recipient   (1:1)
+commission     =     50 ARO  (0.5%)
+  nodeShare    =  37.50 ARO  → NODE_POOL             (75%)
+  afcShare     =  12.50 ARO  → AFC_RESERVE           (25%)
+burn           = emissionAmount or (emission − commission) per build variant
+reserveIndex   = 1.0 + sqrt(12.50) / 10,000 ≈ 1.0000354
+```
+
+### Module 01 / Module 10 Status
+
+- `01_coin_engine/` — documentation only; spec docs are aligned with code; not deprecated
+- `10_proof_of_transaction_engine/` — PoT consensus layer; no top-level emission logic; sub-distribution within the 75% node share does not conflict with canonical 75/25 split
+
+---
+
 ## Sixteenth Audit — 2026-06-05 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`

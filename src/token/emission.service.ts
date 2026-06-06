@@ -197,6 +197,17 @@ export class EmissionService {
     }
 
     /**
+     * Records an epoch-level AFC reserve contribution so the price index stays
+     * in sync with fee distributions performed by FeeDistributionService.
+     * Must be called after each epoch finalisation that routes fees to AFC reserve.
+     */
+    addEpochAfcContribution(afcAmount: number): void {
+        if (afcAmount <= 0) return;
+        this.updateAfcReserve(afcAmount);
+        this.logger.log(`[AFC Reserve] Epoch contribution +${afcAmount.toFixed(4)} applied to price index`);
+    }
+
+    /**
      * Allows governance to update the commission rate.
      */
     updateCommissionRate(newRate: number): void {

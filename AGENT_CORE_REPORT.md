@@ -2,6 +2,63 @@
 
 ---
 
+## Twentieth Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
+
+**Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  
+**Result:** Independent full re-audit from clean checkout. All canonical invariants confirmed correct. No code changes required.
+
+### Directories inspected
+
+| Directory | Status | Role |
+|---|---|---|
+| `01_coin_engine/` | Active docs — no DEPRECATED marker | Canonical spec reference: formulas, burn/mint rules, token spec JSON |
+| `10_proof_of_transaction_engine/` | Active docs — PoT only | Attestation/validation layer; no emission logic |
+| `src/token/` | **Active implementation** | `EmissionService` is the authoritative engine |
+| `src/fee_distribution/` | Active | Epoch-level fee aggregation with same 75/25 split |
+
+**Note on Module 01:** Not deprecated in the directory itself. `docs/architecture/Module_Map.md` marks it deprecated to clarify that the canonical runtime lives in `src/token/`, not here.
+
+### Verified state
+
+| File | Status |
+|---|---|
+| `src/token/emission.interfaces.ts` | ✅ `EmissionResult` includes `burnAmount` (= emission − commission) and optional `mintTxHash` |
+| `src/token/emission.service.ts` | ✅ Approach B: recipient pays commission (steps 2a/2b from `recipientAddress`), burns `burnAmount`; net recipient balance = 0; `circulatingSupply += commission` per TX |
+| `src/token/token.service.ts` | ✅ `mintForTransaction()` is canonical entry point; delegates to `EmissionService.processTransactionEmission()` |
+| `src/token/tokenomics.service.ts` | ✅ `updateInternalValuation()` `@deprecated` no-op |
+| `src/fee_distribution/fee_distribution.service.ts` | ✅ 75/25 epoch split; calls `emissionService.recordAfcContribution()` to sync in-memory reserveIndex |
+
+### Canonical invariants (all pass)
+
+| Rule | Code location | Status |
+|---|---|---|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.5%` | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| `burnAmount = emission − commission` | `emission.service.ts:64` | ✅ |
+| MINT → FEE×2 → AFC update → BURN → SNAPSHOT (atomic) | `emission.service.ts:104–168` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:183–184` | ✅ |
+| `circulatingSupply += commission` per TX | `emission.service.ts:246` | ✅ |
+| Recipient net balance = 0 | accounting verified below | ✅ |
+
+### $10,000 transaction accounting (verified)
+
+```
+txAmount       = 10,000
+emission       = 10,000 ARO  → minted to recipient   (1:1)        step 1
+commission     =     50 ARO  (0.5%)
+  nodeShare    =  37.50 ARO  recipient → NODE_POOL                step 2a
+  afcShare     =  12.50 ARO  recipient → AFC_RESERVE              step 2b
+burnAmount     =  9,950 ARO  recipient → BURN_VAULT               step 4
+
+Recipient balance:  +10,000 − 37.50 − 12.50 − 9,950 = 0  ✅
+circulatingΔ   = +50 ARO (commission stays in node pool + AFC reserve)
+reserveIndex   = 1.0 + sqrt(12.50) / 10,000 ≈ 1.0000354  (rises each TX)
+```
+
+---
+
 ## Nineteenth Audit — 2026-06-06 (`agent/core-emission`) — AGENT-CORE
 
 **Scope:** `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`  

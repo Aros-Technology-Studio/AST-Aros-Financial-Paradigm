@@ -8,7 +8,6 @@ import { TokenService } from '../token/token.service';
 import { EmissionService } from '../token/emission.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
-
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 
 @Injectable()

@@ -137,7 +137,58 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 7. Recommendations
+---
+
+## 7. Addendum — Re-audit 2026-06-06
+
+**Scope:** Full re-audit against canonical model after branch `claude/inspiring-cannon-ylvz1`.
+
+### 7.1 Core Engine — Confirmed Correct
+
+`emission.service.ts` re-verified line by line:
+
+| Check | Code | Status |
+|-------|------|--------|
+| `emission = transactionAmount` (1:1) | `const emission = transactionAmount;` | ✅ |
+| `commission = amount × rate` (0.5%) | `const commission = transactionAmount * rate;` | ✅ |
+| `nodeShare = commission × 0.75` | `commission * this.config.nodeShareRatio` (`nodeShareRatio: 0.75`) | ✅ |
+| `afcShare = commission × 0.25` | `commission * this.config.afcReserveRatio` (`afcReserveRatio: 0.25`) | ✅ |
+| Burn after TX | `TransactionType.BURN → BURN_VAULT` (Step 4 of lifecycle) | ✅ |
+| AFC reserve grows | `updateAfcReserve(afcShare)` called in Step 3 | ✅ |
+| Price index = `1 + sqrt(reserve)/10000` | `1.0 + Math.sqrt(totalReserve) / 10_000` | ✅ |
+| Atomic (all 4 steps) | Single `queryRunner` with rollback | ✅ |
+| Net-zero supply | `circulatingSupply = prevSupply.toFixed(8)` (unchanged) | ✅ |
+
+**`emission.service.ts` is canonical and requires no changes.**
+
+### 7.2 Discrepancy Found and Fixed — `01_coin_engine/AROS_Coin_TokenSpec.json`
+
+The machine-readable token spec diverged from both the canonical model and the running implementation.
+
+| Field | Before | After | Issue |
+|-------|--------|-------|-------|
+| `supplyMechanism.burnOn` | `"governance_rule"` | `"post_transaction"` | ARO burns automatically after every TX, not only on governance action |
+| `transactionFees.distribution.nodeOperators` | `0.75` | `0.75` | Correct, unchanged |
+| `transactionFees.distribution.AST treasury` | `0.20` | removed | Not part of canonical model (no such allocation) |
+| `transactionFees.distribution.Audit Pool` | `0.05` | removed | Not part of canonical model (no such allocation) |
+| `transactionFees.distribution.AFCReserve` | missing | `0.25` | Canonical: 25% of commission → AFC reserve |
+| `transactionFees.defaultCommissionRate` | missing | `0.005` | Aligns spec with `EmissionService` default (0.5%) |
+| `transactionFees.calculation` | `"gasless_weighted + time_priority + load_balance"` | `"transactionAmount * commissionRate"` | Matches actual `EmissionService.calculate()` formula |
+
+**File committed and pushed on branch `claude/inspiring-cannon-ylvz1`.**
+
+### 7.3 Module 01 Status
+
+`01_coin_engine/` is marked `*(Deprecated)*` in the main README for executable code purposes.  
+Reference documents (`coin_emission_model.md`, `aro_emission_protocol.md`) are still valid after the corrections made in the previous pass.
+
+### 7.4 No Further Code Changes Required
+
+The emission engine is canonical. The only outstanding discrepancy was the token spec file, now corrected.
+
+---
+
+## 8. Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.

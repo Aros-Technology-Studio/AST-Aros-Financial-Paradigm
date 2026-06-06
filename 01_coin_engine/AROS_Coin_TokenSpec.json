@@ -9,7 +9,7 @@
         "type": "transaction-fee-based",
         "initialSupply": 0,
         "mintOn": "verified_transaction",
-        "burnOn": "governance_rule"
+        "burnOn": "post_transaction"
       }
     },
     "governance": {
@@ -22,11 +22,11 @@
     },
     "transactionFees": {
       "feeType": "variable",
-      "calculation": "gasless_weighted + time_priority + load_balance",
+      "defaultCommissionRate": 0.005,
+      "calculation": "transactionAmount * commissionRate",
       "distribution": {
         "nodeOperators": 0.75,
-        "AST treasury": 0.20,
-        "Audit Pool": 0.05
+        "AFCReserve": 0.25
       }
     },
     "compatibility": {

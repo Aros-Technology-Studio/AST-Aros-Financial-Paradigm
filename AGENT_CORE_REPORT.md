@@ -328,3 +328,38 @@ Full independent re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/
 | File | Change |
 |---|---|
 | `AGENT_CORE_REPORT.md` | Append this section (audit confirmation, no code changes) |
+
+---
+
+## 12. Eighth-Pass Audit — 2026-06-07 (AGENT-CORE, branch `agent/core-emission`)
+
+### Summary
+
+Independent full-read audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, and `src/token/` confirming all prior passes remain intact.
+
+| Check | File | Verdict |
+|-------|------|---------|
+| Module 01 deprecated? | `01_coin_engine/README.md` | No — active specification layer |
+| Canonical implementation location | `src/token/emission.service.ts` | ✅ |
+| 1:1 emission ratio | `emission.service.ts:58` | ✅ `const emission = transactionAmount` |
+| 0.5% commission rate | `emission.service.ts:29,57,59` | ✅ `defaultCommissionRate: 0.005` |
+| 75% node share | `emission.service.ts:60` | ✅ `nodeShare = commission * 0.75` |
+| 25% AFC share | `emission.service.ts:61` | ✅ `afcShare = commission * 0.25` |
+| `burnAmount = emission − commission` | `emission.service.ts:64` | ✅ no ledger deficit |
+| AFC index formula | `emission.service.ts:175–176` | ✅ `1.0 + sqrt(totalReserve) / 10_000` |
+| Atomic 4-step lifecycle | `emission.service.ts:96–162` | ✅ single `QueryRunner` transaction |
+| `updateAfcReserve` after commit | `emission.service.ts` | ✅ in-memory desync prevented |
+| `mintForTransaction()` entry point | `token.service.ts:45–77` | ✅ delegates to `EmissionService` |
+| Legacy `mint()` canonical | `token.service.ts` | ✅ delegates to `mintForTransaction()` |
+| Deprecated calls removed | `token.service.ts` | ✅ no `updateInternalValuation()` calls |
+| Token spec 75/25 | `01_coin_engine/AROS_Coin_TokenSpec.json` | ✅ `nodePool: 0.75 / afcReserve: 0.25` |
+| `burn_mechanism.md` canonical | `01_coin_engine/burn_mechanism.md` | ✅ no legacy 15% fee-burn |
+| Epoch distribution correct | `fee_distribution.service.ts` | ✅ node pool → individual nodes; AFC settled per-TX |
+
+**Verdict: full conformance confirmed. No code changes required in this pass.**
+
+### Files changed in this pass
+
+| File | Change |
+|---|---|
+| `AGENT_CORE_REPORT.md` | Append this section (eighth-pass audit confirmation) |

@@ -170,6 +170,33 @@ After 12.50 AFC accumulated:
 
 ---
 
+## 9. Fourth-Pass Verification — 2026-06-07 (AGENT-CORE re-audit)
+
+### Summary
+
+Full re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, and `src/token/` against the canonical spec.  
+**Verdict: all code conforms to the canonical model. No rewrites required.**
+
+| Check | Result |
+|-------|--------|
+| Module 01 deprecated? | No — active specification documentation |
+| Emission logic location | `src/token/emission.service.ts` (`EmissionService`) |
+| 1:1 emission ratio | ✅ `emissionAmount = transactionAmount` |
+| 0.5% commission | ✅ `commission = transactionAmount * 0.005` |
+| 75% node share | ✅ `nodeShare = commission * 0.75` |
+| 25% AFC share | ✅ `afcShare = commission * 0.25` |
+| Burn = emission − commission | ✅ `burnAmount = emission - commission` (no ledger deficit) |
+| AFC index formula | ✅ `1.0 + sqrt(totalReserve) / 10_000` |
+| Atomic 4-step cycle | ✅ Single `QueryRunner` transaction |
+| `tests/test_emission.py` | ✅ 28/28 tests passing |
+
+### Previously open recommendation: unit tests
+Section 7 noted "Add unit tests for `EmissionService.calculate()`" — now fulfilled:
+`tests/test_emission.py` contains 28 tests covering all canonical formulas,
+edge cases, net supply accounting, and the AFC reserve index.
+
+---
+
 ## 8. Third-Pass Audit — 2026-06-07 (branch `agent/core-emission`)
 
 ### Remaining bug fixed: `calculateTotalFees()` queried the wrong column

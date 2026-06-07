@@ -9,7 +9,13 @@ import { SmartContractIntegration } from '../integration/smart_contract.integrat
 import { DataSource } from 'typeorm';
 import { BadRequestException } from '@nestjs/common';
 import { EmissionService } from './emission.service';
+import { TokenomicsService } from './tokenomics.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
+
+const mockTokenomicsService = {
+    getCurrentPrice: jest.fn().mockReturnValue(1.0),
+    updateInternalValuation: jest.fn(),
+};
 
 const mockProcessReserveService = {
     recordTransactionVolume: jest.fn(),
@@ -84,6 +90,7 @@ describe('TokenService', () => {
                         emit: jest.fn(),
                     },
                 },
+                { provide: TokenomicsService, useValue: mockTokenomicsService },
                 { provide: EmissionService, useValue: mockEmissionService },
                 { provide: ProcessReserveLedgerService, useValue: mockProcessReserveService },
             ],
@@ -97,34 +104,32 @@ describe('TokenService', () => {
         expect(service).toBeDefined();
     });
 
-    describe('mint', () => {
-        it('should execute canonical 1:1 emission and return emission breakdown', async () => {
+    describe('mint (legacy FIAT_DEPOSIT bridge path)', () => {
+        it('should mint tokens successfully via direct ledger path', async () => {
             const amount = '100';
             const recipient = 'REC_1';
             const refId = 'REF_123';
 
+            mockLedgerService.recordTransaction.mockResolvedValue({
+                hash: 'TX_HASH', amount, recipient,
+            });
+            mockQueryRunner.manager.find.mockResolvedValue([]);
+
             const result = await service.mint(amount, recipient, refId);
 
-            // canonical path: delegates to EmissionService via mintForTransaction
-            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
-                100, recipient, refId, undefined,
-            );
-            // on-chain audit record
+            expect(mockLedgerService.recordTransaction).toHaveBeenCalled();
             expect(mockSmartContractService.recordReference).toHaveBeenCalledWith(refId, 'MINT', expect.any(Object));
+            expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
             expect(result.status).toBe('SUCCESS');
-            expect(result.emissionAmount).toBe(100);
-            expect(result.commission).toBe(0.5);
-            expect(result.nodeShare).toBe(0.375);
-            expect(result.afcReserveShare).toBe(0.125);
         });
 
-        it('should propagate emission errors without swallowing them', async () => {
-            mockEmissionService.processTransactionEmission.mockRejectedValueOnce(
-                new Error('Emission Error'),
-            );
+        it('should rollback and rethrow if ledger fails', async () => {
+            mockLedgerService.recordTransaction.mockRejectedValueOnce(new Error('Ledger Error'));
 
             await expect(service.mint('100', 'REC_1', 'REF_1'))
-                .rejects.toThrow('Emission Error');
+                .rejects.toThrow('Ledger Error');
+
+            expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
         });
     });
 

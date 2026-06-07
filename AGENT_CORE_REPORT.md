@@ -16,6 +16,7 @@
 | `coin_emission_model.md` | ✅ Canonical 1:1 model correctly documented |
 | `aro_emission_protocol.md` | ✅ Canonical formulas + Mermaid flow diagram |
 | `payment_distribution.md` | ✅ 75/25 split with historical note re: superseded 60/15/15/5/5 |
+| `burn_mechanism.md` | ⚠️ Legacy 15% fee-burn — **Fixed (Fifth Pass, 2026-06-07)** |
 | `burn_and_mint_rules.md` | ✅ Burn-on-completion policy aligned |
 | `README.md` | ✅ Architecture overview |
 
@@ -101,6 +102,17 @@ Contains `.md` spec files for PoT validation, slashing, weighting, and incentive
 - `POST /api/v1/token/emit` — canonical emission lifecycle (mintForTransaction).
 - `GET /api/v1/token/emission/price` — returns current `reserveIndex` and full `AfcReserveState`.
 - `EmissionService` injected directly into controller for price reads.
+
+### `01_coin_engine/burn_mechanism.md` — Legacy 15% fee-burn (Fifth Pass, 2026-06-07)
+
+**Before (conflicting with canonical model):**
+Section III.1 described a `burn_rate = 15%` applied to the transaction fee, with the remainder to validators:
+```
+fee = 2.00 ARO, burn_rate = 15% → 0.30 ARO burned, 1.70 ARO to validators
+```
+This contradicts the canonical model: the commission is split 75%/25% (nodes/AFC) with no burn from the fee, and the post-TX burn is 100% of `emissionAmount − commission`.
+
+**After:** Section III.1 now documents the canonical post-TX burn. Parameters table updated (`emission_ratio=1:1`, `node_share=75%`, `afc_reserve=25%`, `post_tx_burn=100% of burnAmount`). Flowchart corrected to match `EmissionService` execution flow.
 
 ---
 

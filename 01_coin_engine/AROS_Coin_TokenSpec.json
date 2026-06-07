@@ -9,7 +9,7 @@
         "type": "transaction-fee-based",
         "initialSupply": 0,
         "mintOn": "verified_transaction",
-        "burnOn": "transaction_completion"
+        "burnOn": "post_transaction_canonical_burn"
       }
     },
     "governance": {
@@ -23,6 +23,7 @@
     "transactionFees": {
       "feeType": "variable",
       "calculation": "transactionAmount * commissionRate (default 0.5%)",
+      "commissionRate": 0.005,
       "distribution": {
         "nodePool": 0.75,
         "afcReserve": 0.25
@@ -44,7 +45,7 @@
     },
     "metadata": {
       "version": "1.0.0",
-      "lastUpdated": "2026-06-06",
+      "lastUpdated": "2026-06-07",
       "contractRef": "contracts/aros_token_mainnet.sol"
     }
   }

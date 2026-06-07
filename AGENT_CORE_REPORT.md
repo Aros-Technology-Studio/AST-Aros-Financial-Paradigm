@@ -18,6 +18,7 @@
 | `payment_distribution.md` | ✅ 75/25 split with historical note re: superseded 60/15/15/5/5 |
 | `burn_mechanism.md` | ⚠️ Legacy 15% fee-burn — **Fixed (Fifth Pass, 2026-06-07)** |
 | `burn_and_mint_rules.md` | ✅ Burn-on-completion policy aligned |
+| `AROS_Coin_TokenSpec.json` | ✅ Canonical 75/25 distribution — **Fixed (Sixth Pass, 2026-06-07)** |
 | `README.md` | ✅ Architecture overview |
 
 Module 01 README notes these are conceptual/economic specifications. The canonical runtime implementation lives in `src/token/emission.service.ts`.
@@ -182,33 +183,6 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 9. Fourth-Pass Verification — 2026-06-07 (AGENT-CORE re-audit)
-
-### Summary
-
-Full re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, and `src/token/` against the canonical spec.  
-**Verdict: all code conforms to the canonical model. No rewrites required.**
-
-| Check | Result |
-|-------|--------|
-| Module 01 deprecated? | No — active specification documentation |
-| Emission logic location | `src/token/emission.service.ts` (`EmissionService`) |
-| 1:1 emission ratio | ✅ `emissionAmount = transactionAmount` |
-| 0.5% commission | ✅ `commission = transactionAmount * 0.005` |
-| 75% node share | ✅ `nodeShare = commission * 0.75` |
-| 25% AFC share | ✅ `afcShare = commission * 0.25` |
-| Burn = emission − commission | ✅ `burnAmount = emission - commission` (no ledger deficit) |
-| AFC index formula | ✅ `1.0 + sqrt(totalReserve) / 10_000` |
-| Atomic 4-step cycle | ✅ Single `QueryRunner` transaction |
-| `tests/test_emission.py` | ✅ 28/28 tests passing |
-
-### Previously open recommendation: unit tests
-Section 7 noted "Add unit tests for `EmissionService.calculate()`" — now fulfilled:
-`tests/test_emission.py` contains 28 tests covering all canonical formulas,
-edge cases, net supply accounting, and the AFC reserve index.
-
----
-
 ## 8. Third-Pass Audit — 2026-06-07 (branch `agent/core-emission`)
 
 ### Remaining bug fixed: `calculateTotalFees()` queried the wrong column
@@ -244,4 +218,74 @@ The epoch-level 75/25 re-split was removed because re-crediting AFC at epoch lev
 | File | Change |
 |---|---|
 | `src/fee_distribution/fee_distribution.service.ts` | Fix `calculateTotalFees()` + remove epoch-level AFC re-split in `distributeRewards()` |
+| `AGENT_CORE_REPORT.md` | Append this section |
+
+---
+
+## 9. Fourth-Pass Verification — 2026-06-07 (AGENT-CORE re-audit)
+
+### Summary
+
+Full re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, and `src/token/` against the canonical spec.
+**Verdict: all code conforms to the canonical model. No rewrites required.**
+
+| Check | Result |
+|-------|--------|
+| Module 01 deprecated? | No — active specification documentation |
+| Emission logic location | `src/token/emission.service.ts` (`EmissionService`) |
+| 1:1 emission ratio | ✅ `emissionAmount = transactionAmount` |
+| 0.5% commission | ✅ `commission = transactionAmount * 0.005` |
+| 75% node share | ✅ `nodeShare = commission * 0.75` |
+| 25% AFC share | ✅ `afcShare = commission * 0.25` |
+| Burn = emission − commission | ✅ `burnAmount = emission - commission` (no ledger deficit) |
+| AFC index formula | ✅ `1.0 + sqrt(totalReserve) / 10_000` |
+| Atomic 4-step cycle | ✅ Single `QueryRunner` transaction |
+| `tests/test_emission.py` | ✅ 28/28 tests passing |
+
+### Previously open recommendation: unit tests
+Section 7 noted "Add unit tests for `EmissionService.calculate()`" — now fulfilled:
+`tests/test_emission.py` contains 28 tests covering all canonical formulas,
+edge cases, net supply accounting, and the AFC reserve index.
+
+---
+
+## 10. Sixth-Pass Audit — 2026-06-07 (AGENT-CORE, branch `agent/core-emission`)
+
+### Bug fixed: `AROS_Coin_TokenSpec.json` stale fee distribution
+
+The machine-readable token specification still carried the pre-PR #72 multi-actor split:
+
+```json
+// BEFORE — stale, non-canonical (pre-PR #72)
+"distribution": {
+  "nodeOperators": 0.75,
+  "AST treasury": 0.20,
+  "Audit Pool": 0.05
+},
+"burnOn": "governance_rule"
+```
+
+`AST treasury` and `Audit Pool` are **not** recipients in the canonical emission model.  
+`burnOn: "governance_rule"` incorrectly implied burns are governance-triggered; they are automatic post-TX.
+
+```json
+// AFTER — canonical
+"commissionRate": 0.005,
+"distribution": {
+  "nodePool": 0.75,
+  "afcReserve": 0.25
+},
+"distributionNote": "Canonical 75/25 split: 75% to node pool (PoT-weighted, SYSTEM_NODE_POOL_00000000000000000000), 25% to AFC reserve (SYSTEM_AFC_RESERVE_000000000000000000).",
+"burnOn": "post_transaction_canonical_burn"
+```
+
+### `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` — no change needed
+
+Shows `60% validators / 30% attesters / 10% burn` — this is the **internal sub-distribution** of the 75% node pool share among node roles. It operates at a different layer from the emission-level 75/25 commission split and does not contradict it.
+
+### Files changed in this pass
+
+| File | Change |
+|---|---|
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | Replace stale `0.75/0.20/0.05` distribution with canonical `0.75/0.25`; fix `burnOn`; add `commissionRate` field |
 | `AGENT_CORE_REPORT.md` | Append this section |

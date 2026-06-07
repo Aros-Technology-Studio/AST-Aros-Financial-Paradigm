@@ -5,6 +5,10 @@
 **Date:** 2026-06-07
 **Task:** Full audit of ArosCoin emission logic against the canonical model and alignment of all code
 
+> **Re-audit note (2026-06-07):** Full re-verification pass against canonical model spec.
+> Previous audit: 2026-05-12, branch `claude/inspiring-cannon-4qbjK`, PR #72.
+> Result: **no code changes required** — all canonical rules remain correctly implemented.
+
 ---
 
 ## 1. Directory Audit

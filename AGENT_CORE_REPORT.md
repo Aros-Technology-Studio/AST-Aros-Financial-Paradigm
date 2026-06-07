@@ -289,3 +289,38 @@ Shows `60% validators / 30% attesters / 10% burn` — this is the **internal sub
 |---|---|
 | `01_coin_engine/AROS_Coin_TokenSpec.json` | Replace stale `0.75/0.20/0.05` distribution with canonical `0.75/0.25`; fix `burnOn`; add `commissionRate` field |
 | `AGENT_CORE_REPORT.md` | Append this section |
+
+---
+
+## 11. Seventh-Pass Audit — 2026-06-07 (AGENT-CORE, branch `agent/core-emission`)
+
+### Summary
+
+Full independent re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, and `src/token/` against the canonical emission spec. All prior fixes from Passes 1–6 verified intact.
+
+| Check | File | Verdict |
+|-------|------|---------|
+| Module 01 deprecated? | `01_coin_engine/README.md` | No — active specification layer |
+| Emission logic location | `src/token/emission.service.ts` | ✅ `EmissionService` is canonical source of truth |
+| 1:1 emission ratio | `emission.service.ts:58` | ✅ `const emission = transactionAmount` |
+| 0.5% commission | `emission.service.ts:57,59` | ✅ `defaultCommissionRate: 0.005` |
+| 75% node share | `emission.service.ts:60` | ✅ `nodeShare = commission * 0.75` |
+| 25% AFC share | `emission.service.ts:61` | ✅ `afcShare = commission * 0.25` |
+| `burnAmount = emission − commission` | `emission.service.ts:64` | ✅ no ledger deficit |
+| AFC index formula | `emission.service.ts:175–176` | ✅ `1.0 + sqrt(totalReserve) / 10_000` |
+| `updateAfcReserve` after commit | `emission.service.ts` | ✅ in-memory index updated post-commit only |
+| All 4 ledger ops atomic | `emission.service.ts:96–162` | ✅ single `QueryRunner` |
+| `mintForTransaction()` as canonical entry | `token.service.ts:45–77` | ✅ delegates to `EmissionService` |
+| Legacy `mint()` fixed | `token.service.ts` | ✅ now delegates to canonical flow |
+| Epoch distribution correct | `fee_distribution.service.ts:151–227` | ✅ 75% node pool → individual nodes; AFC settled per-TX, not re-split |
+| `calculateTotalFees()` correct | `fee_distribution.service.ts` | ✅ queries `FEE_DISTRIBUTION` → `NODE_POOL_ADDRESS` amount |
+| `burn_mechanism.md` canonical | `01_coin_engine/burn_mechanism.md` | ✅ no legacy 15% fee-burn |
+| `AROS_Coin_TokenSpec.json` canonical | `01_coin_engine/AROS_Coin_TokenSpec.json` | ✅ 75/25 split, `burnOn: post_transaction_canonical_burn` |
+
+**Verdict: implementation fully conforms to the canonical 1:1 emission model. No code changes required in this pass.**
+
+### Files changed in this pass
+
+| File | Change |
+|---|---|
+| `AGENT_CORE_REPORT.md` | Append this section (audit confirmation, no code changes) |

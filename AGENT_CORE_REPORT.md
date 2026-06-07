@@ -111,19 +111,24 @@ POST /api/v1/token/emit  →  TokenService.mintForTransaction()
   →  EmissionService.processTransactionEmission(txAmount, recipient, refId)
         │
         ├─ calculate():
-        │    emissionAmount = txAmount          // 1:1
-        │    commission     = txAmount × 0.005  // 0.5% default
+        │    emissionAmount = txAmount                    // 1:1
+        │    commission     = txAmount × 0.005            // 0.5% default
         │    nodeShare      = commission × 0.75
         │    afcShare       = commission × 0.25
+        │    burnAmount     = emissionAmount − commission  // avoids ledger deficit
         │
-        ├─ Ledger MINT:              emissionAmount → recipient
-        ├─ Ledger FEE_DISTRIBUTION:  nodeShare (75%) → SYSTEM_NODE_POOL
-        ├─ Ledger FEE_DISTRIBUTION:  afcShare  (25%) → SYSTEM_AFC_RESERVE
-        ├─ Ledger BURN:              emissionAmount → SYSTEM_BURN_VAULT
-        ├─ commitTransaction()       ← all four ops atomic
+        ├─ Ledger MINT:             emissionAmount → recipient          [Step 1]
+        ├─ Ledger FEE_DISTRIBUTION: nodeShare (75%) → SYSTEM_NODE_POOL [Step 2a]
+        ├─ Ledger FEE_DISTRIBUTION: afcShare  (25%) → SYSTEM_AFC_RESERVE [Step 2b]
+        ├─ Ledger BURN:             burnAmount → SYSTEM_BURN_VAULT      [Step 3]
+        ├─ commitTransaction()      ← all four ops atomic
         └─ updateAfcReserve(afcShare) ← AFTER commit (prevents in-memory desync)
              reserveIndex = 1.0 + sqrt(totalReserve) / 10_000
 ```
+
+**Note on burn amount:** The recipient holds `emissionAmount` after Step 1, then pays
+`commission` to nodes/AFC in Steps 2a/2b, leaving exactly `burnAmount = emissionAmount −
+commission`. Burning the full `emissionAmount` would overdraft the recipient by `commission`.
 
 ---
 
@@ -135,8 +140,8 @@ Emission       = 10,000 ARO  (1:1 mint → recipient)
 Commission     = 10,000 × 0.005 = 50 ARO
   Node pool    = 50 × 0.75  = 37.50 ARO  (distributed by PoT weight)
   AFC reserve  = 50 × 0.25  = 12.50 ARO  (locked in reserve)
-Burn           = 10,000 ARO  (ARO destroyed after TX)
-Net circulating supply change ≈ 0 (transient ARO)
+Burn amount    =  9,950 ARO  (= emissionAmount − commission; avoids ledger deficit)
+Net circulating supply change = +50 ARO (= commission; stays with nodes/AFC)
 
 After 12.50 AFC accumulated:
   reserveIndex = 1.0 + sqrt(12.50) / 10_000 = 1.0000353...
@@ -149,10 +154,11 @@ After 12.50 AFC accumulated:
 
 1. `emissionAmount == transactionAmount` (enforced in `calculate()`, throws on violation)
 2. `nodeShare + afcShare == commission` (exact split)
-3. ARO are transient — burned in the same atomic TX they are minted
+3. `burnAmount = emissionAmount − commission` — prevents ledger deficit; commission stays with nodes/AFC
 4. `reserveIndex` is monotonically non-decreasing
 5. All four ledger steps succeed or all roll back (atomic QueryRunner transaction)
 6. `updateAfcReserve()` called only after successful `commitTransaction()`
+7. `circulatingSupply` increases by `commission` per TX cycle (node/AFC rewards are non-transient)
 
 ---
 

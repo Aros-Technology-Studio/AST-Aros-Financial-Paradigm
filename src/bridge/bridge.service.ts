@@ -52,20 +52,21 @@ export class BridgeService {
         await this.bridgeRepo.save(request);
 
         try {
-            // 4. Выполняем эмиссию (Mint) через TokenService
-            const mintResult = await this.tokenService.mint(
-                request.amount,
+            // 4. Canonical 1:1 emission via EmissionService (mint → fee split → burn)
+            await this.tokenService.mintForTransaction(
+                parseFloat(request.amount),
                 request.targetWallet,
-                request.externalReference
+                request.externalReference,
             );
 
             // 5. Обновляем статус на SUCCESS
             request.status = BridgeRequestStatus.PROCESSED;
-            request.relatedTxHash = mintResult.txHash;
+            // EmissionResult carries no txHash; the externalReference IS the canonical reference
+            request.relatedTxHash = request.externalReference;
             await this.bridgeRepo.save(request);
 
-            this.logger.log(`Deposit processed via Bridge. Ref: ${transactionId}, TX: ${mintResult.txHash}`);
-            return { success: true, txHash: mintResult.txHash };
+            this.logger.log(`Deposit processed via Bridge. Ref: ${transactionId}, TX: ${request.externalReference}`);
+            return { success: true, txHash: request.externalReference };
 
         } catch (error) {
             // 6. Обработка ошибок

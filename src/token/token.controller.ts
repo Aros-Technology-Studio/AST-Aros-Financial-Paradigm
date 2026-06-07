@@ -27,7 +27,11 @@ export class TokenController {
     @Post('mint')
     async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
         try {
-            return await this.tokenService.mint(body.amount, body.recipient, body.refId);
+            return await this.tokenService.mintForTransaction(
+                parseFloat(body.amount),
+                body.recipient,
+                body.refId,
+            );
         } catch (e) {
             throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
         }

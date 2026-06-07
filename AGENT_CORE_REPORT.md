@@ -167,3 +167,42 @@ After 12.50 AFC accumulated:
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add an `AfcReserveEntity` table restored on boot from the last snapshot.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard, and `recordAfcContribution()`.
 - **Remove `ProcessReserveLedgerService` mock** from `token.service.spec.ts` — it is no longer injected by `TokenService`, so the mock is unused (harmless but misleading).
+
+---
+
+## 8. Third-Pass Audit — 2026-06-07 (branch `agent/core-emission`)
+
+### Remaining bug fixed: `calculateTotalFees()` queried the wrong column
+
+All prior fixes were correct. One residual bug remained in `fee_distribution.service.ts`:
+
+```typescript
+// BEFORE — tx.fee is always '0'; epoch distribution silently never ran
+SUM(CAST(tx.fee AS DECIMAL)) WHERE createdAt BETWEEN start AND end
+// → always returns 0 → distributeRewards() never called → nodes never paid
+```
+
+```typescript
+// AFTER — query FEE_DISTRIBUTION entries to NODE_POOL_ADDRESS (the 75% node share)
+SUM(CAST(tx.amount AS DECIMAL))
+WHERE tx.type = FEE_DISTRIBUTION
+  AND tx.recipient = SYSTEM_NODE_POOL_00000000000000000000
+  AND tx.createdAt BETWEEN start AND end
+```
+
+`distributeRewards()` was also corrected to remove the epoch-level 75/25 re-split:
+
+| Layer | Who gets what | When |
+|---|---|---|
+| Per-transaction (EmissionService) | 75% → NODE_POOL_ADDRESS (accumulates) | On each TX |
+| Per-transaction (EmissionService) | 25% → AFC_RESERVE_ADDRESS (immediate, final) | On each TX |
+| Per-epoch (FeeDistributionService) | 100% of NODE_POOL balance → individual nodes (by PoT weight) | Epoch finalization |
+
+The epoch-level 75/25 re-split was removed because re-crediting AFC at epoch level would double-count the reserve that is already settled per-transaction. The `recordAfcContribution()` call inside `distributeRewards()` was removed for the same reason (AFC state is already updated per-transaction by `EmissionService`).
+
+### Files changed in this pass
+
+| File | Change |
+|---|---|
+| `src/fee_distribution/fee_distribution.service.ts` | Fix `calculateTotalFees()` + remove epoch-level AFC re-split in `distributeRewards()` |
+| `AGENT_CORE_REPORT.md` | Append this section |

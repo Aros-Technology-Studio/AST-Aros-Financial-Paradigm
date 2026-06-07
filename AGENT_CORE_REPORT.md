@@ -1,25 +1,31 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
+**Branch:** `claude/inspiring-cannon-EmbzH`  
+**Date:** 2026-06-07 (updated audit — prior run: 2026-05-12)  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
 
 ---
 
 ## 1. Directory Audit
 
-### 01_coin_engine — Status: Documentation only (no source code)
+### 01_coin_engine — Status: DEPRECATED/Reference (per `docs/architecture/Architecture_Overview.md`)
 
-| File | Pre-patch content | Action taken |
-|------|------------------|--------------|
-| `coin_emission_model.md` | Described `E = F / N` (fee ÷ nodes) — diverged from canonical 1:1 | **Rewritten** to canonical model |
-| `aro_emission_protocol.md` | `EMISSION_AMOUNT = Σ(load × index × ratio)` — diverged | **Rewritten** to canonical formulas |
-| `payment_distribution.md` | 60/15/15/5/5 multi-actor split — diverged from canonical 75/25 | **Rewritten** to 75/25 |
-| `burn_and_mint_rules.md` | Correct general burn-on-withdrawal policy; no 1:1 mention | Left as-is (non-contradictory) |
-| `README.md` | Architecture overview; no formula conflicts | Left as-is |
+Module 01 is **officially deprecated** as the active implementation reference. It is superseded by
+Module 08 (`08_fee_distribution/`) and `src/token/emission.service.ts`.
+The markdown files serve as conceptual specification only.
 
-**Module 01 is NOT deprecated** — it is pure documentation. The canonical source code lives in `src/token/`.
+Prior audit pass (2026-05-12) rewrote docs to match canonical model:
+
+| File | Action (2026-05-12) | Current state (2026-06-07) |
+|------|--------------------|-----------------------------|
+| `coin_emission_model.md` | Rewritten to canonical 1:1 formulas | ✅ Correct — references `EmissionService` as canonical impl |
+| `aro_emission_protocol.md` | Replaced complex load-index with canonical 1:1 + burn flow | ✅ Correct |
+| `payment_distribution.md` | Replaced 60/15/15/5/5 with canonical 75/25 | ✅ Correct |
+| `burn_and_mint_rules.md` | Left as-is | ✅ Non-contradictory |
+| `README.md` | Left as-is | ✅ No formula conflicts |
+
+The canonical source code lives in `src/token/`. Module 01 is reference documentation only.
 
 ### 10_proof_of_transaction_engine — Status: Documentation only
 
@@ -127,7 +133,9 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Documentation Changes Made in This Pass
+## 6. Documentation Changes Made
+
+### Pass 1 (2026-05-12)
 
 | File | Change |
 |------|--------|
@@ -135,11 +143,36 @@ After 12.50 AFC accumulated:
 | `01_coin_engine/aro_emission_protocol.md` | Replaced complex load-index formula with canonical 1:1 + 75/25 + burn flow |
 | `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split; added validator weight formula |
 
+### Pass 2 (2026-06-07 — this run)
+
+| File | Change |
+|------|--------|
+| `AGENT_CORE_REPORT.md` | Updated: corrected Module 01 deprecation status; added 2026-06-07 audit verification |
+
+**No source code changes were required** — `emission.service.ts` and `fee_distribution.service.ts` are fully aligned with the canonical model.
+
 ---
 
-## 7. Recommendations
+## 7. Secondary Issues Noted (No Blockers)
 
-- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
+| # | Issue | File | Severity |
+|---|-------|------|----------|
+| 1 | `AfcReserveState` is in-memory only; lost on restart | `emission.service.ts:34-39` | Medium |
+| 2 | Legacy `mint()` skips canonical emission cycle (no fee split, no burn) | `token.service.ts:79` | Low (fiat-deposit path only) |
+| 3 | `FeeDistributionService` does not call `EmissionService.updateAfcReserve()` after epoch | `fee_distribution.service.ts:157-160` | Low |
+| 4 | `tests/test_emission.py` is empty | `tests/test_emission.py` | Low |
+| 5 | Dual indexing: AFC index (sqrt) vs ProcessReserve index (log1p) — different formulas | `emission.service.ts` vs `process_reserve.service.ts` | Low |
+
+---
+
+## 8. Recommendations
+
+- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add an `AfcReserveEntity` table with periodic snapshots.
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
-- **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+- **Epoch AFC sync** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; sync the in-memory index after each epoch finalization.
+- **Populate `tests/test_emission.py`** — add Python-level formula assertions for the canonical calculation.
+
+---
+
+*Report generated and updated by AGENT-CORE. Last audit: 2026-06-07.*

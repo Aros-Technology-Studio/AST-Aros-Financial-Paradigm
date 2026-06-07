@@ -76,6 +76,10 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated FIAT_DEPOSIT bridge path only. Does NOT follow the canonical 1:1 emission cycle.
+     * For canonical ARO emission use mintForTransaction().
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

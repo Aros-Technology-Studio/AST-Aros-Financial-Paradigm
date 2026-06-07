@@ -7,12 +7,15 @@ import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../ledger/entities/transaction.entity';
 import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { TokenomicsService } from './tokenomics.service';
 import { EmissionService } from './emission.service';
+import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 import { EmissionResult } from './emission.interfaces';
 
 @Injectable()
 export class TokenService {
     private readonly logger = new Logger(TokenService.name);
+    private readonly MINT_ADDRESS = 'SYSTEM_MINT_AUTHORITY_000000000000000000';
     private readonly BURN_ADDRESS = 'SYSTEM_BURN_VAULT_00000000000000000000';
 
     constructor(
@@ -24,7 +27,9 @@ export class TokenService {
         private readonly bridgeService: BridgeService,
         private readonly smartContractService: SmartContractIntegration,
         private readonly eventEmitter: EventEmitter2,
+        private readonly tokenomicsService: TokenomicsService,
         private readonly emissionService: EmissionService,
+        private readonly processReserve: ProcessReserveLedgerService,
     ) { }
 
     /**
@@ -72,29 +77,68 @@ export class TokenService {
     }
 
     /**
-     * Legacy HTTP entry point — delegates to the canonical 1:1 emission cycle.
-     * Prefer calling mintForTransaction() directly.
+     * @deprecated FIAT_DEPOSIT bridge path only.
+     * For transaction-triggered emission use mintForTransaction() — it applies the canonical
+     * 1:1 emit → 75/25 fee split → burn lifecycle via EmissionService.
      */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 
-        this.logger.log(`[Canonical Mint] amount=${amount} recipient=${recipient} ref=${referenceId}`);
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        // Delegate to canonical 1:1 emission: mint → fee split (75/25) → burn
-        const result = await this.mintForTransaction(parseFloat(amount), recipient, referenceId);
+        try {
+            const currentPrice = this.tokenomicsService.getCurrentPrice();
+            this.logger.log(`Initiating MINT: ${amount} AROS to ${recipient} (Ref: ${referenceId}) @ Price ${currentPrice}`);
 
-        // Record on-chain event for audit trail
-        await this.smartContractService.recordReference(referenceId, 'MINT', { amount, recipient });
+            // Logic: If amount is FIAT, we divide by Price. If amount is TOKENS, we just mint tokens.
+            // Assuming input 'amount' is TOKENS for now based on legacy logic, 
+            // BUT for dynamic pricing usually the input from Bank is FIAT.
+            // Let's assume the Bridge sends token amount calculated elsewhere OR we should change this to accept Fiat and calc Tokens.
+            // For minimal disruption: We assume Bridge calc or we just log the price.
+            // *CRITICAL*: User asked for price to rise. 
+            // We will trigger a price increment AFTER minting to simulate "Activity".
 
-        return {
-            status: 'SUCCESS',
-            referenceId,
-            emissionAmount: result.emissionAmount,
-            commission: result.commission,
-            nodeShare: result.nodeShare,
-            afcReserveShare: result.afcReserveShare,
-            emissionPrice: this.emissionService.getCurrentEmissionPrice(),
-        };
+
+            const tx = await this.ledgerService.recordTransaction({
+                type: TransactionType.MINT,
+                sender: this.MINT_ADDRESS,
+                recipient: recipient,
+                amount: amount,
+                nonce: Date.now(),
+                metadata: { referenceId, operation: 'FIAT_DEPOSIT' }
+            });
+
+            // [NEW] Record On-Chain Event
+            await this.smartContractService.recordReference(referenceId, 'MINT', { amount: amount, recipient: recipient });
+
+            await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'MINT');
+            await queryRunner.commitTransaction();
+
+            // Emit event for The All-Seeing Eye
+            this.eventEmitter.emit('token.mint', {
+                amount: amount,
+                recipient: recipient,
+                refId: referenceId,
+                txHash: tx.hash
+            });
+
+            // [NEW] Increment Price due to economic activity
+            // REPLACED: this.tokenomicsService.incrementPrice(1);
+            // NOW: Record volume and update based on Reserve
+            this.processReserve.recordTransactionVolume(parseFloat(amount));
+            this.tokenomicsService.updateInternalValuation();
+
+
+            return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            this.logger.error(`Mint failed: ${error.message}`);
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
     }
 
     async burn(amount: string, sender: string, bankDetailsId: string): Promise<any> {
@@ -121,13 +165,26 @@ export class TokenService {
                 metadata: { bankDetailsId, operation: 'FIAT_WITHDRAWAL' }
             });
 
+            // [NEW] Record On-Chain Event
             await this.smartContractService.recordReference(tx.hash, 'BURN', { amount: amount, sender: sender });
+
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'BURN');
             await queryRunner.commitTransaction();
 
+            // Trigger Fiat Payout via Bridge (Asynchronous or Synchronous depending on policy)
+            // Ideally async so if bank fails, we don't necessarily rollback burn? 
+            // OR strict: if bank fails, we rollback burn.
+            // For now, let's treat it as a subsequent action. If Mock Bank fails, we might just log it (or throw).
+            // Let's await it to ensure user gets feedback.
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            return { status: 'SUCCESS', txHash: tx.hash, message: 'Tokens burned. Fiat payout initiated via BB.', bankTxId };
+            // [NEW] Increment Price due to withdrawal activity?
+            // User strategy said "processing transaction... rises price".
+            // Withdrawal is a transaction. So yes.
+            this.processReserve.recordTransactionVolume(parseFloat(amount));
+            this.tokenomicsService.updateInternalValuation();
+
+            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

@@ -17,7 +17,7 @@
 | `aro_emission_protocol.md` | ✅ Canonical lifecycle documented (rewritten in prior pass) |
 | `payment_distribution.md` | ✅ 75/25 split documented (rewritten in prior pass) |
 | `burn_and_mint_rules.md` | ✅ Consistent — no conflicts |
-| `README.md` | ✅ Architecture overview — no conflicts |
+| `README.md` | **FIXED** (this pass): Sections 5, 7, 8, 9 still described old model (`BaseSchedule × Multiplier × ComplianceFactor`, 3-way pool split, `EMISSION_DECAY` env var, old API signatures) — rewritten to canonical 1:1 |
 
 **Module 01 is NOT deprecated.** It is pure specification documentation. Canonical source code lives in `src/token/`.
 
@@ -171,6 +171,7 @@ After 12.50 ARO accumulated in AFC:
 - `01_coin_engine/payment_distribution.md` — replaced 60/15/15/5/5 table with 75/25 split
 
 ### This pass (2026-06-08)
+- `01_coin_engine/README.md` — replaced old emission formula (BaseSchedule × Multiplier), 3-way pool split, decay env vars, and old API shape with canonical 1:1 model description, 75/25 split, correct env vars, and canonical API
 - `src/token/token.controller.ts` — added `POST /emit` canonical HTTP endpoint and `GET /emission/price`
 - `src/token/emission.service.ts` — added `burnAmount` field; burn now correctly burns `emissionAmount − commission` (not full `emissionAmount`); `updateAfcReserve` moved to after `commitTransaction` to prevent in-memory/DB desync on rollback; added public `recordAfcContribution()` for deposit path
 - `src/token/emission.service.spec.ts` — 239-line test suite added

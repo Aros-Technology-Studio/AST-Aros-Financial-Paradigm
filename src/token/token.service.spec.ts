@@ -22,7 +22,7 @@ const mockProcessReserveService = {
 };
 
 const mockEmissionService = {
-    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125, burnAmount: 99.5 }),
+    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125, burnAmount: 99.5, commissionRate: 0.005 }),
     processTransactionEmission: jest.fn().mockResolvedValue({
         transactionAmount: 100,
         emissionAmount: 100,
@@ -33,7 +33,7 @@ const mockEmissionService = {
         commissionRate: 0.005,
         mintTxHash: 'MINT_TX_HASH',
     }),
-    updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    recordAfcContribution: jest.fn(),
     getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
@@ -121,6 +121,19 @@ describe('TokenService', () => {
             expect(mockSmartContractService.recordReference).toHaveBeenCalledWith(refId, 'MINT', expect.any(Object));
             expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
             expect(result.status).toBe('SUCCESS');
+        });
+
+        it('applies canonical 75/25 commission split (3 ledger records)', async () => {
+            const amount = '100';
+            mockLedgerService.recordTransaction.mockResolvedValue({ hash: 'TX_HASH', amount, recipient: 'REC_1' });
+            mockQueryRunner.manager.find.mockResolvedValue([]);
+
+            await service.mint(amount, 'REC_1', 'REF_FEE');
+
+            // MINT + FEE_DISTRIBUTION (node 75%) + FEE_DISTRIBUTION (AFC 25%)
+            expect(mockLedgerService.recordTransaction).toHaveBeenCalledTimes(3);
+            expect(mockEmissionService.calculate).toHaveBeenCalledWith(100, undefined);
+            expect(mockEmissionService.recordAfcContribution).toHaveBeenCalledWith(0.125);
         });
 
         it('should rollback and rethrow if ledger fails', async () => {

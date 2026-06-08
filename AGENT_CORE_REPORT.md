@@ -1,9 +1,9 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+**Branch:** `agent/core-emission`  
+**Date:** 2026-06-08 (re-verification pass; prior audit 2026-05-12 → PR #72)  
+**Task:** Full re-audit of ArosCoin emission logic against canonical model; confirm all corrections from prior pass remain intact
 
 ---
 
@@ -143,3 +143,43 @@ After 12.50 AFC accumulated:
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## 8. Re-verification Pass — 2026-06-08
+
+**Trigger:** AGENT-CORE re-audit requested on branch `agent/core-emission`.
+
+### Files inspected
+
+| File | Lines verified | Status |
+|------|---------------|--------|
+| `src/token/emission.service.ts` | 1–231 | ✅ Canonical — all formulas intact |
+| `src/token/emission.interfaces.ts` | 1–21 | ✅ Interfaces correct |
+| `src/token/token.service.ts` | 1–221 | ✅ `mintForTransaction()` delegates to `EmissionService` |
+| `src/token/tokenomics.service.ts` | 1–52 | ✅ `updateInternalValuation()` is deprecated no-op |
+| `01_coin_engine/coin_emission_model.md` | 1–85 | ✅ Spec matches implementation |
+
+### 2026-06-08 canonical rule check
+
+| Rule | Expected | Actual (code) | Result |
+|------|----------|---------------|--------|
+| `emission = txAmount` | 1:1 | `const emission = transactionAmount` (line 58) | PASS |
+| `commission = txAmount × 0.005` | 0.5% | `transactionAmount * rate` (rate defaults to 0.005) | PASS |
+| `nodeShare = commission × 0.75` | 75% | `commission * this.config.nodeShareRatio` (0.75) | PASS |
+| `afcShare = commission × 0.25` | 25% | `commission * this.config.afcReserveRatio` (0.25) | PASS |
+| MINT to recipient | Yes | `TransactionType.MINT`, recipient (lines 102–110) | PASS |
+| FEE_DISTRIBUTION 75% → NODE_POOL | Yes | Lines 113–121 | PASS |
+| FEE_DISTRIBUTION 25% → AFC_RESERVE | Yes | Lines 124–132 | PASS |
+| AFC index = `1.0 + sqrt(reserve) / 10_000` | Yes | Lines 175–176 | PASS |
+| BURN emissionAmount post-TX | Yes | Lines 138–146 | PASS |
+| Net supply Δ = 0 | Yes | `circulatingSupply = prevSupply` (line 226) | PASS |
+| Atomic rollback on error | Yes | Single QueryRunner, `rollbackTransaction()` on catch | PASS |
+
+**Conclusion: all 11 canonical rules pass. No corrections required. Implementation is compliant.**
+
+### Module 01 deprecation status (re-confirmed)
+
+`01_coin_engine/` remains documentation-only as of this pass. `coin_emission_model.md` correctly references `src/token/emission.service.ts` as the implementation authority. No orphaned code found in Module 01.
+
+*Re-verification completed by AGENT-CORE. No code changes made.*

@@ -3,7 +3,9 @@
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
 **Date:** 2026-06-08  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code
+**Task:** Audit ArosCoin emission logic against the canonical model and align all code and specifications
+
+> Previous report: 2026-05-12 on `claude/inspiring-cannon-4qbjK` — see §6/§7 for cumulative change log.
 
 ---
 
@@ -184,4 +186,5 @@ After 12.50 ARO accumulated in AFC:
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add an `AfcReserveEntity` table with a snapshot on each emission.
 - **Epoch AFC sync** — `FeeDistributionService` records AFC reserve to the ledger but does not call `EmissionService.recordAfcContribution()`; the in-memory reserve index does not reflect epoch distributions. Sync via `recordAfcContribution()` after `finalizeEpoch()`.
-- **Bridge `BridgeService`** — still calls legacy `tokenService.mint()` without explicit `commissionRate`. No code change required (default 0.5% applies), but consider adding explicit rate parameter to the webhook handler for governance-driven adjustments.
+- **Bridge `BridgeService`** — still calls `tokenService.mint()` without explicit `commissionRate`. No code change required (default 0.5% applies), but consider adding an explicit rate parameter to the webhook handler for governance-driven adjustments.
+- **Merge `ProcessReserveLedgerService.reserveIndex` and `EmissionService.afcReserveState.reserveIndex`** — two parallel in-memory state stores exist. A single source of truth reduces drift risk; `processReserve` volume ledger is still injected into `TokenService` but its `recordTransactionVolume()` calls have been removed from all token paths.

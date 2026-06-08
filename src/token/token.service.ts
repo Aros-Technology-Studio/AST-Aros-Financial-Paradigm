@@ -145,8 +145,6 @@ export class TokenService {
                 afcReserveShare: emissionResult.afcReserveShare,
             });
 
-            this.processReserve.recordTransactionVolume(numAmount);
-
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
             await queryRunner.rollbackTransaction();
@@ -181,22 +179,14 @@ export class TokenService {
                 metadata: { bankDetailsId, operation: 'FIAT_WITHDRAWAL' }
             });
 
-            // [NEW] Record On-Chain Event
             await this.smartContractService.recordReference(tx.hash, 'BURN', { amount: amount, sender: sender });
 
             await this.updateSupplySnapshot(queryRunner, tx.hash, amount, 'BURN');
             await queryRunner.commitTransaction();
 
-            // Trigger Fiat Payout via Bridge (Asynchronous or Synchronous depending on policy)
-            // Ideally async so if bank fails, we don't necessarily rollback burn? 
-            // OR strict: if bank fails, we rollback burn.
-            // For now, let's treat it as a subsequent action. If Mock Bank fails, we might just log it (or throw).
-            // Let's await it to ensure user gets feedback.
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            this.processReserve.recordTransactionVolume(parseFloat(amount));
-
-            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
+            return { status: 'SUCCESS', txHash: tx.hash, message: 'Tokens burned. Fiat payout initiated via Bridge.', bankTxId };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

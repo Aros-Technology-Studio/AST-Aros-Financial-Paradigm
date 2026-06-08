@@ -119,12 +119,7 @@ export class TokenService {
                 txHash: tx.hash
             });
 
-            // [NEW] Increment Price due to economic activity
-            // REPLACED: this.tokenomicsService.incrementPrice(1);
-            // NOW: Record volume and update based on Reserve
             this.processReserve.recordTransactionVolume(parseFloat(amount));
-            this.tokenomicsService.updateInternalValuation();
-
 
             return { status: 'SUCCESS', txHash: tx.hash, amount: tx.amount, recipient: tx.recipient };
         } catch (error) {
@@ -173,13 +168,9 @@ export class TokenService {
             // Let's await it to ensure user gets feedback.
             const bankTxId = await this.bridgeService.requestFiatPayout(amount, bankDetailsId);
 
-            // [NEW] Increment Price due to withdrawal activity?
-            // User strategy said "processing transaction... rises price".
-            // Withdrawal is a transaction. So yes.
             this.processReserve.recordTransactionVolume(parseFloat(amount));
-            this.tokenomicsService.updateInternalValuation();
 
-            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned at Price ${this.tokenomicsService.getCurrentPrice()}. Fiat payout initiated via BB.`, bankTxId };
+            return { status: 'SUCCESS', txHash: tx.hash, message: `Tokens burned. Fiat payout initiated via BB.`, bankTxId };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

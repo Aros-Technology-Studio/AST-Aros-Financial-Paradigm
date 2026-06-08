@@ -76,6 +76,13 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated FIAT BRIDGE ONLY — does NOT implement the canonical 1:1 emission model.
+     * This method is a raw mint for fiat-deposit bridge flows (FIAT_DEPOSIT).
+     * It does NOT burn after completion and does NOT route commission via 75/25 split.
+     *
+     * For canonical transaction emission use: mintForTransaction()
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

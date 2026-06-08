@@ -246,3 +246,76 @@ top-level 75/25 canonical split. Flagged for governance review before the docume
 `01_coin_engine/` remains documentation-only. `aro_emission_protocol.md` and `coin_emission_model.md`
 correctly reference `src/token/emission.service.ts` as the implementation authority.
 No orphaned code found in Module 01.
+
+---
+
+## 9. Final Re-Audit Pass — 2026-06-08 (agent/core-emission)
+
+**Scope:** Full end-to-end re-audit against canonical model. Corrects stale claims in prior report sections.
+
+### Stale claims found in this report and corrected below
+
+| Section | Stale claim | Actual current code |
+|---------|-------------|---------------------|
+| §2 "ARO burn after TX" | ✅ `BURN emissionAmount` | ✅ `BURN burnAmount` = `emissionAmount − commission` |
+| §3 flow diagram | `BURN emissionAmount → BURN_VAULT` | `BURN burnAmount → BURN_VAULT` |
+| §4 example | `Burn = 10,000 ARO` | `Burn = 9,950 ARO` (= 10,000 − 50 commission) |
+| §5 invariant 3 | `totalMinted == totalBurned` | `totalMinted > totalBurned` by `commission`; `circulatingSupply += commission` |
+| §8 canonical rule "Net supply Δ = 0" | PASS | **Revised:** net Δ = +commission (nodes + AFC hold it in circulation) |
+
+These discrepancies arose because §2–§5 and §8 were written against an earlier code version.
+**The current code (remote `agent/core-emission`) is correct and more accurate.**
+
+### Corrected canonical accounting (current implementation)
+
+```
+TX Amount  = 10,000 ARO
+Emission   = 10,000 ARO  →  MINT to recipient           (1:1)
+Commission = 50 ARO
+  Node fee = 37.50 ARO  →  SYSTEM_NODE_POOL            (75%)
+  AFC fee  = 12.50 ARO  →  SYSTEM_AFC_RESERVE           (25%)
+Burn       =  9,950 ARO  →  SYSTEM_BURN_VAULT           (= emission − commission)
+
+SupplySnapshot per canonical TX:
+  totalMinted        += 10,000   (full emission recorded)
+  totalBurned        +=  9,950   (burn of recipient remainder)
+  circulatingSupply  +=     50   (commission stays in circulation: nodes + AFC hold it)
+```
+
+`burnAmount = emissionAmount − commission` prevents a ledger deficit that would arise
+if the recipient tried to burn the full `emissionAmount` after having paid `commission`.
+
+### Test suite confirmation (23 tests, all PASS)
+
+| Suite | Tests | Result |
+|-------|-------|--------|
+| `calculate()` | 10 | ✅ PASS |
+| `getAfcReserveState()` | 1 | ✅ PASS |
+| `getCurrentEmissionPrice()` | 1 | ✅ PASS |
+| `updateCommissionRate()` | 3 | ✅ PASS |
+| `processTransactionEmission()` | 8 | ✅ PASS |
+| **Total** | **23** | **✅ All PASS** |
+
+### Updated invariants (replaces §5)
+
+1. `emissionAmount == transactionAmount` — enforced in `calculate()`, throws on violation
+2. `nodeShare + afcShare == commission` — exact 75/25 split
+3. `burnAmount = emissionAmount − commission` — prevents ledger deficit
+4. `totalMinted = totalBurned + commission` — commission stays in circulation
+5. `circulatingSupply` grows by `commission` per TX cycle (node pool + AFC share)
+6. `reserveIndex` is monotonically non-decreasing — only `updateAfcReserve()` mutates it
+7. All four ledger steps atomic — single QueryRunner; full rollback on any failure
+8. `updateAfcReserve()` called after `commitTransaction()` — prevents in-memory/DB desync
+
+### Files confirmed in this pass
+
+| File | Status |
+|------|--------|
+| `src/token/emission.service.ts` | ✅ Canonical — burnAmount fix, AFC updated post-commit |
+| `src/token/emission.interfaces.ts` | ✅ `burnAmount: number` and `mintTxHash?: string` added |
+| `src/token/emission.service.spec.ts` | ✅ 23 unit tests — all PASS |
+| `src/token/token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService` |
+| `src/fee_distribution/fee_distribution.service.ts` | ✅ 75/25 epoch split correct |
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | ✅ v1.1.0 — canonical distribution and burnOn rule |
+| `01_coin_engine/coin_emission_model.md` | ✅ Spec matches implementation |
+| `01_coin_engine/aro_emission_protocol.md` | ✅ Spec matches implementation |

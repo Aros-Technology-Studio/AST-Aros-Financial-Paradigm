@@ -185,6 +185,8 @@ After 12.50 AFC accumulated:
 | `src/token/emission.interfaces.ts` | 1–21 | ✅ Interfaces correct |
 | `src/token/token.service.ts` | 1–221 | ✅ `mintForTransaction()` delegates to `EmissionService` |
 | `src/token/tokenomics.service.ts` | 1–52 | ✅ `updateInternalValuation()` is deprecated no-op |
+| `src/token/entities/supply_snapshot.entity.ts` | 1–26 | ✅ Tracks minted/burned/circulating correctly |
+| `01_coin_engine/aro_emission_protocol.md` | 1–107 | ✅ Spec matches implementation exactly |
 | `01_coin_engine/coin_emission_model.md` | 1–85 | ✅ Spec matches implementation |
 
 ### 2026-06-08 canonical rule check
@@ -205,8 +207,21 @@ After 12.50 AFC accumulated:
 
 **Conclusion: all 11 canonical rules pass. No corrections required. Implementation is compliant.**
 
+### Verified flow end-to-end
+
+```
+Transaction $10,000
+ → Emit 10,000 ARO to recipient          (1:1)
+ → Commission = $50  (0.5%)
+   → 75% = $37.50 → NODE_POOL
+   → 25% = $12.50 → AFC_RESERVE
+ → AFC reserveIndex = 1.0 + sqrt(12.50) / 10_000 = 1.0000353
+ → Burn 10,000 ARO → BURN_VAULT
+ → Net circulating supply change = 0
+```
+
 ### Module 01 deprecation status (re-confirmed)
 
-`01_coin_engine/` remains documentation-only as of this pass. `coin_emission_model.md` correctly references `src/token/emission.service.ts` as the implementation authority. No orphaned code found in Module 01.
+`01_coin_engine/` remains documentation-only as of this pass. `aro_emission_protocol.md` and `coin_emission_model.md` correctly reference `src/token/emission.service.ts` as the implementation authority. No orphaned code found in Module 01.
 
 *Re-verification completed by AGENT-CORE. No code changes made.*

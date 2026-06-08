@@ -192,4 +192,85 @@ describe('TokenService', () => {
             expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
         });
     });
+
+    describe('mintForTransaction — canonical 1:1 emission', () => {
+        const canonicalEmissionResult = {
+            transactionAmount: 10_000,
+            emissionAmount:    10_000,          // 1:1
+            commission:        50,              // 10_000 × 0.005
+            nodeShare:         37.5,            // 50 × 0.75
+            afcReserveShare:   12.5,            // 50 × 0.25
+            commissionRate:    0.005,
+        };
+
+        beforeEach(() => {
+            mockEmissionService.processTransactionEmission.mockResolvedValue(canonicalEmissionResult);
+        });
+
+        it('should delegate to EmissionService and return the emission result', async () => {
+            const result = await service.mintForTransaction(10_000, 'ADDR_TX_1', 'REF_TX_001');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10_000,
+                'ADDR_TX_1',
+                'REF_TX_001',
+                undefined,
+            );
+            expect(result.emissionAmount).toBe(10_000);
+            expect(result.commission).toBe(50);
+            expect(result.nodeShare).toBe(37.5);
+            expect(result.afcReserveShare).toBe(12.5);
+        });
+
+        it('should pass an explicit commissionRate to EmissionService', async () => {
+            await service.mintForTransaction(5_000, 'ADDR_TX_2', 'REF_TX_002', 0.01);
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                5_000,
+                'ADDR_TX_2',
+                'REF_TX_002',
+                0.01,
+            );
+        });
+
+        it('should emit a canonical event after successful emission', async () => {
+            const emitter = (service as any).eventEmitter;
+
+            await service.mintForTransaction(10_000, 'ADDR_TX_1', 'REF_TX_003');
+
+            expect(emitter.emit).toHaveBeenCalledWith(
+                'token.emission.canonical',
+                expect.objectContaining({
+                    referenceId:     'REF_TX_003',
+                    transactionAmount: 10_000,
+                    emissionAmount:  10_000,
+                    commission:      50,
+                    nodeShare:       37.5,
+                    afcReserveShare: 12.5,
+                }),
+            );
+        });
+
+        it('should reject a zero-amount transaction', async () => {
+            await expect(service.mintForTransaction(0, 'ADDR', 'REF'))
+                .rejects.toThrow(BadRequestException);
+
+            expect(mockEmissionService.processTransactionEmission).not.toHaveBeenCalled();
+        });
+
+        it('should reject a negative-amount transaction', async () => {
+            await expect(service.mintForTransaction(-500, 'ADDR', 'REF'))
+                .rejects.toThrow(BadRequestException);
+        });
+
+        it('nodeShare + afcReserveShare should equal commission (canonical invariant)', async () => {
+            const r = canonicalEmissionResult;
+            expect(r.nodeShare + r.afcReserveShare).toBeCloseTo(r.commission, 8);
+        });
+
+        it('emissionAmount should equal transactionAmount (1:1 invariant)', async () => {
+            const r = canonicalEmissionResult;
+            expect(r.emissionAmount).toBe(r.transactionAmount);
+        });
+    });
 });

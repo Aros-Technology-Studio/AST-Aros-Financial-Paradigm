@@ -7,6 +7,7 @@
       "totalSupply": "dynamic",
       "supplyMechanism": {
         "type": "transaction-fee-based",
+        "emissionModel": "1:1 transaction amount",
         "initialSupply": 0,
         "mintOn": "verified_transaction",
         "burnOn": "post_transaction_canonical_burn"
@@ -44,8 +45,8 @@
       "immutability": true
     },
     "metadata": {
-      "version": "1.0.0",
-      "lastUpdated": "2026-06-07",
+      "version": "1.1.0",
+      "lastUpdated": "2026-06-08",
       "contractRef": "contracts/aros_token_mainnet.sol"
     }
   }

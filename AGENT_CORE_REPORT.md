@@ -188,6 +188,7 @@ After 12.50 AFC accumulated:
 | `src/token/entities/supply_snapshot.entity.ts` | 1–26 | ✅ Tracks minted/burned/circulating correctly |
 | `01_coin_engine/aro_emission_protocol.md` | 1–107 | ✅ Spec matches implementation exactly |
 | `01_coin_engine/coin_emission_model.md` | 1–85 | ✅ Spec matches implementation |
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | All | ⚠️ Draft — intra-node distribution only, see note below |
 
 ### 2026-06-08 canonical rule check
 
@@ -205,7 +206,7 @@ After 12.50 AFC accumulated:
 | Net supply Δ = 0 | Yes | `circulatingSupply = prevSupply` (line 226) | PASS |
 | Atomic rollback on error | Yes | Single QueryRunner, `rollbackTransaction()` on catch | PASS |
 
-**Conclusion: all 11 canonical rules pass. No corrections required. Implementation is compliant.**
+**Conclusion: all 11 canonical rules pass. Implementation is compliant.**
 
 ### Verified flow end-to-end
 
@@ -220,8 +221,28 @@ Transaction $10,000
  → Net circulating supply change = 0
 ```
 
+### Discrepancy found and fixed: `01_coin_engine/AROS_Coin_TokenSpec.json`
+
+| Field | Before (incorrect) | After (canonical) |
+|-------|--------------------|-------------------|
+| `transactionFees.distribution` | `{nodeOperators: 0.75, "AST treasury": 0.20, "Audit Pool": 0.05}` | `{nodePool: 0.75, afcReserve: 0.25}` |
+| `supplyMechanism.burnOn` | `"governance_rule"` | `"post_transaction_canonical_burn"` |
+| `supplyMechanism.emissionModel` | *(absent)* | `"1:1 transaction amount"` |
+| `transactionFees.calculation` | `"gasless_weighted + time_priority + load_balance"` | `"transactionAmount * commissionRate (default 0.5%)"` |
+| `transactionFees.commissionRate` | *(absent)* | `0.005` |
+| `metadata.version` | `"1.0.0"` | `"1.1.0"` |
+
+The old spec described a three-way 75/20/5 fee split and a non-canonical `burnOn` rule.
+
+### PoT incentive distribution (Draft doc — no change required)
+
+`10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` describes intra-node-pool
+distribution (60% validators / 30% attesters / 10% internal burn within the node pool).
+This is a subordinate distribution of the 75% node share and does not contradict the
+top-level 75/25 canonical split. Flagged for governance review before the document exits Draft status.
+
 ### Module 01 deprecation status (re-confirmed)
 
-`01_coin_engine/` remains documentation-only as of this pass. `aro_emission_protocol.md` and `coin_emission_model.md` correctly reference `src/token/emission.service.ts` as the implementation authority. No orphaned code found in Module 01.
-
-*Re-verification completed by AGENT-CORE. No code changes made.*
+`01_coin_engine/` remains documentation-only. `aro_emission_protocol.md` and `coin_emission_model.md`
+correctly reference `src/token/emission.service.ts` as the implementation authority.
+No orphaned code found in Module 01.

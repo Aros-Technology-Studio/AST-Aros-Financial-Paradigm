@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
+**Branch:** `claude/inspiring-cannon-w82h4w`  
+**Date:** 2026-06-08 (updated; initial report 2026-05-12)  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
 
 ---
@@ -134,6 +134,39 @@ After 12.50 AFC accumulated:
 | `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas, AFC reserve index, example |
 | `01_coin_engine/aro_emission_protocol.md` | Replaced complex load-index formula with canonical 1:1 + 75/25 + burn flow |
 | `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split; added validator weight formula |
+
+---
+
+## 6b. Changes — 2026-06-08 re-audit
+
+### AROS_Coin_TokenSpec.json — Fixed (legacy fee split)
+
+`01_coin_engine/AROS_Coin_TokenSpec.json` contained the legacy pre-PR72 three-way split:
+```json
+"distribution": { "nodeOperators": 0.75, "AST treasury": 0.20, "Audit Pool": 0.05 }
+```
+Updated to canonical 75/25:
+```json
+"distribution": { "nodePool": 0.75, "afcReserve": 0.25 }
+```
+Also fixed:
+- `supplyMechanism.type`: `"transaction-fee-based"` → `"proof_of_transaction_1to1"`
+- `supplyMechanism.burnOn`: `"governance_rule"` → `"transaction_completion"`
+- `metadata.version`: `"1.0.0"` → `"1.1.0"`
+
+### TokenService.mint() — Annotated as bridge-only
+
+Added explicit `@deprecated` JSDoc to `src/token/token.service.ts:mint()` clarifying:
+- This method is for fiat-bridge FIAT_DEPOSIT only
+- It does **not** burn after completion, does **not** apply 75/25 fee split
+- Canonical emission: use `mintForTransaction()` instead
+
+### Confirmed correct (no changes needed)
+
+- `src/token/emission.service.ts` — fully canonical, all rules verified ✅
+- `src/token/token.service.ts:mintForTransaction()` — correct delegation ✅
+- `src/token/emission.interfaces.ts` — correct interface definitions ✅
+- `src/token/tokenomics.service.ts` — deprecated no-op correctly annotated ✅
 
 ---
 

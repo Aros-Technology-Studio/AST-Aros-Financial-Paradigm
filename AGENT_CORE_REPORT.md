@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-08 (updated from 2026-05-12)  
+**Date:** 2026-06-08  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code
 
 ---
@@ -33,9 +33,9 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | `emission.interfaces.ts` | ✅ `EmissionResult` includes `burnAmount` and optional `mintTxHash` |
 | `emission.service.ts` | ✅ Full canonical 1:1 lifecycle; `burnAmount = emission − commission`; `updateAfcReserve` called after commit; public `recordAfcContribution()` |
 | `emission.service.spec.ts` | ✅ 239-line suite: `calculate()`, `processTransactionEmission()`, AFC reserve, governance |
-| `token.service.ts` | **FIXED** (this pass): `mint()` now applies canonical 75/25 commission split |
-| `token.service.spec.ts` | ✅ Updated mock + new commission-split assertion test |
-| `tokenomics.service.ts` | ✅ `updateInternalValuation()` is a deprecated no-op; unchanged |
+| `token.service.ts` | **FIXED**: `mint()` applies canonical 75/25 split; `burn()` deprecated no-op call removed |
+| `token.service.spec.ts` | ✅ Updated mock + commission-split assertion test |
+| `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `EmissionService.getCurrentEmissionPrice()` (AFC sqrt index) |
 | `token.controller.ts` | ✅ `POST /emit` canonical endpoint and `GET /emission/price` (prior pass) |
 | `token.module.ts` | ✅ `EmissionService` registered and exported |
 

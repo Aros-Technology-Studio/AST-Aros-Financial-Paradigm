@@ -137,6 +137,33 @@ After 12.50 AFC accumulated:
 
 ---
 
+---
+
+## 8. Re-Audit Pass — 2026-06-07
+
+**Scope:** Full re-verification of all emission code and documentation against canonical model.
+
+**Result: All rules pass. One annotation added.**
+
+### Code verification (re-run)
+
+| File | Lines verified | Status |
+|------|---------------|--------|
+| `src/token/emission.service.ts` | 52–71 (calculate), 82–162 (lifecycle), 168–176 (AFC index) | ✅ No drift |
+| `src/token/emission.interfaces.ts` | All | ✅ No drift |
+| `src/token/token.service.ts` | 45–77 (mintForTransaction), 79–137 (legacy mint) | ✅ + fix below |
+| `src/token/tokenomics.service.ts` | All | ✅ No drift |
+| `src/fee_distribution/fee_distribution.service.ts` | 151–165 (distributeRewards) | ✅ No drift |
+| `01_coin_engine/coin_emission_model.md` | All | ✅ Already canonical |
+| `01_coin_engine/aro_emission_protocol.md` | All | ✅ Already canonical |
+| `01_coin_engine/payment_distribution.md` | All | ✅ Already canonical |
+
+### Change applied in this pass
+
+**`src/token/token.service.ts` — `mint()` method:** Added `@deprecated` JSDoc redirecting developers to `mintForTransaction()`. The legacy method is intentionally preserved for the FIAT_DEPOSIT bridge flow (it does not trigger canonical 1:1 emission+burn because a fiat deposit creates net-new circulating supply). The annotation prevents accidental use as a substitute for canonical transaction emission.
+
+---
+
 ## 7. Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.

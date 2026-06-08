@@ -76,6 +76,11 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated FIAT_DEPOSIT bridge path only.
+     * For transaction-triggered emission use mintForTransaction() — it applies the canonical
+     * 1:1 emit → 75/25 fee split → burn lifecycle via EmissionService.
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

@@ -59,6 +59,9 @@ export class EmissionService {
         const commission = transactionAmount * rate;
         const nodeShare  = commission * this.config.nodeShareRatio;
         const afcShare   = commission * this.config.afcReserveRatio;
+        // burnAmount = what the recipient actually burns after paying commission.
+        // Burning the full emissionAmount would exceed the recipient's balance (deficit = commission).
+        const burnAmount = emission - commission;
 
         return {
             transactionAmount,
@@ -66,6 +69,7 @@ export class EmissionService {
             commission,
             nodeShare,
             afcReserveShare:  afcShare,
+            burnAmount,
             commissionRate:   rate,
         };
     }
@@ -90,7 +94,7 @@ export class EmissionService {
         this.logger.log(
             `[Emission] TX=${referenceId} Amount=${transactionAmount} ` +
             `→ Emit=${result.emissionAmount} Fee=${result.commission} ` +
-            `(Nodes=${result.nodeShare} AFC=${result.afcReserveShare})`,
+            `(Nodes=${result.nodeShare} AFC=${result.afcReserveShare}) Burn=${result.burnAmount}`,
         );
 
         const queryRunner = this.dataSource.createQueryRunner();
@@ -99,7 +103,7 @@ export class EmissionService {
 
         try {
             // Step 1 — Mint ARO 1:1 to recipient
-            await this.ledgerService.recordTransaction({
+            const mintTx = await this.ledgerService.recordTransaction({
                 type:      TransactionType.MINT,
                 sender:    this.SYSTEM_EMISSION_AUTHORITY,
                 recipient: recipientAddress,
@@ -131,27 +135,34 @@ export class EmissionService {
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
             });
 
-            // Step 3 — Update AFC reserve state (price index rises)
-            this.updateAfcReserve(result.afcReserveShare);
-
-            // Step 4 — Burn emission (ARO are transient per canonical model)
+            // Step 3 — Burn burnAmount (= emissionAmount − commission).
+            // Recipient holds emissionAmount after Step 1, then pays commission in Steps 2a/2b,
+            // leaving exactly burnAmount. Burning the full emissionAmount here would create
+            // a ledger deficit equal to commission.
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.BURN,
                 sender:    recipientAddress,
                 recipient: this.BURN_ADDRESS,
-                amount:    result.emissionAmount.toFixed(8),
+                amount:    result.burnAmount.toFixed(8),
                 fee:       '0',
                 nonce:     Date.now() + 3,
                 metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
             });
 
-            // Step 5 — Update supply snapshot
+            // Step 4 — Update supply snapshot
             await this.updateSupplySnapshot(queryRunner, referenceId, result);
 
             await queryRunner.commitTransaction();
+
+            // Step 5 — Update AFC reserve AFTER successful DB commit.
+            // updateAfcReserve() mutates in-memory state only; if called before commitTransaction()
+            // and a later step throws, the DB rolls back but the in-memory index is already
+            // incremented — causing a permanent desync between on-chain records and the price index.
+            this.updateAfcReserve(result.afcReserveShare);
+
             this.logger.log(`[Emission] TX=${referenceId} completed. AFC Reserve Index: ${this.afcReserveState.reserveIndex.toFixed(6)}`);
 
-            return result;
+            return { ...result, mintTxHash: mintTx.hash };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             this.logger.error(`[Emission] TX=${referenceId} failed: ${error.message}`);
@@ -164,8 +175,9 @@ export class EmissionService {
     /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
+     * Called per-TX (internally) and per-epoch (from FeeDistributionService).
      */
-    private updateAfcReserve(afcAmount: number): void {
+    updateAfcReserve(afcAmount: number): void {
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();
@@ -179,6 +191,17 @@ export class EmissionService {
             `[AFC Reserve] +${afcAmount.toFixed(4)} → Total=${this.afcReserveState.totalReserve.toFixed(4)} ` +
             `Index=${this.afcReserveState.reserveIndex.toFixed(6)}`,
         );
+    }
+
+    /**
+     * Records an AFC reserve contribution from an external source (e.g. epoch fee distribution).
+     * Keeps the in-memory reserveIndex in sync when AFC reserve grows outside of
+     * processTransactionEmission() — e.g. after FeeDistributionService finalizes an epoch.
+     */
+    recordAfcContribution(amount: number): void {
+        if (amount > 0) {
+            this.updateAfcReserve(amount);
+        }
     }
 
     /**
@@ -217,13 +240,14 @@ export class EmissionService {
         const prevBurned  = lastSnapshot ? parseFloat(lastSnapshot.totalBurned)        : 0;
         const prevSupply  = lastSnapshot ? parseFloat(lastSnapshot.circulatingSupply)  : 0;
 
-        // Mint then burn in the same TX cycle → net circulating supply change = 0
-        // but totalMinted and totalBurned both increase (for audit trail).
+        // Per canonical cycle: mint emissionAmount, burn burnAmount (= emissionAmount − commission).
+        // commission stays in circulation (split between node pool and AFC reserve).
+        // Net circulating supply change per TX = +commission.
         const newSnapshot        = new SupplySnapshot();
         newSnapshot.triggerTransactionHash  = referenceId;
         newSnapshot.totalMinted             = (prevMinted + result.emissionAmount).toFixed(8);
-        newSnapshot.totalBurned             = (prevBurned + result.emissionAmount).toFixed(8);
-        newSnapshot.circulatingSupply       = prevSupply.toFixed(8); // net zero (burn cancels mint)
+        newSnapshot.totalBurned             = (prevBurned  + result.burnAmount).toFixed(8);
+        newSnapshot.circulatingSupply       = (prevSupply  + result.commission).toFixed(8);
 
         await runner.manager.save(SupplySnapshot, newSnapshot);
     }

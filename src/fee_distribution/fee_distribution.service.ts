@@ -5,16 +5,17 @@ import { EpochEntity } from './epoch.entity';
 import { DistributionLogEntity } from './distribution_log.entity';
 import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
+import { EmissionService } from '../token/emission.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
-
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 
 @Injectable()
 export class FeeDistributionService {
     private readonly logger = new Logger(FeeDistributionService.name);
     // Address where fees are collected before distribution (System Treasury/Fee Pool)
-    private readonly FEE_POOL_ADDRESS = 'SYSTEM_FEE_POOL_00000000000000000000';
+    private readonly FEE_POOL_ADDRESS  = 'SYSTEM_FEE_POOL_00000000000000000000';
+    private readonly NODE_POOL_ADDRESS = 'SYSTEM_NODE_POOL_00000000000000000000';
 
     constructor(
         @InjectRepository(EpochEntity)
@@ -25,9 +26,10 @@ export class FeeDistributionService {
         private readonly transactionRepo: Repository<Transaction>,
         private readonly potService: PoTService,
         private readonly tokenService: TokenService,
+        private readonly emissionService: EmissionService,
         private readonly nodeChainService: NodeChainService,
         private readonly smartContractService: SmartContractIntegration,
-        private readonly dataSource: DataSource, // For transactionality
+        private readonly dataSource: DataSource,
     ) { }
 
     /**
@@ -132,51 +134,35 @@ export class FeeDistributionService {
         }
     }
 
+    // Returns the node-pool amount accumulated during an epoch.
+    // EmissionService records each commission split as FEE_DISTRIBUTION to NODE_POOL_ADDRESS
+    // (75%) and AFC_RESERVE_ADDRESS (25%). The AFC share is already settled per-transaction;
+    // epoch distribution only needs to redistribute the node pool to individual nodes.
+    // Querying tx.fee (always '0' in this system) would return zero — we sum tx.amount instead.
     private async calculateTotalFees(start: Date, end: Date): Promise<number> {
         const { sum } = await this.transactionRepo
             .createQueryBuilder('tx')
-            .select('SUM(CAST(tx.fee AS DECIMAL))', 'sum')
-            .where('tx.createdAt BETWEEN :start AND :end', { start, end })
+            .select('SUM(CAST(tx.amount AS DECIMAL))', 'sum')
+            .where('tx.type = :type', { type: TransactionType.FEE_DISTRIBUTION })
+            .andWhere('tx.recipient = :recipient', { recipient: this.NODE_POOL_ADDRESS })
+            .andWhere('tx.createdAt BETWEEN :start AND :end', { start, end })
             .getRawOne();
 
         return parseFloat(sum || '0');
     }
 
-    private readonly AFC_RESERVE_ADDRESS = 'SYSTEM_AFC_RESERVE_000000000000000000';
-
-    // Canonical split ratios (75% nodes / 25% AFC reserve)
-    private readonly NODE_SHARE_RATIO = 0.75;
-    private readonly AFC_SHARE_RATIO  = 0.25;
-
-    private async distributeRewards(epoch: EpochEntity, totalFees: number, weights: Map<string, number>) {
+    // Distributes the accumulated node pool to individual nodes by PoT weight.
+    // AFC reserve already received its 25% per-transaction from EmissionService.processTransactionEmission();
+    // re-applying the 75/25 split at epoch level would double-credit the AFC reserve.
+    private async distributeRewards(epoch: EpochEntity, nodePool: number, weights: Map<string, number>) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-            // Canonical 75/25 split of collected fees
-            const nodePool   = totalFees * this.NODE_SHARE_RATIO;
-            const afcReserve = totalFees * this.AFC_SHARE_RATIO;
-
             this.logger.log(
-                `Epoch ${epoch.epochNumber}: total fees=${totalFees} ` +
-                `→ node pool=${nodePool.toFixed(8)} (75%) | AFC reserve=${afcReserve.toFixed(8)} (25%)`,
+                `Epoch ${epoch.epochNumber}: distributing node pool=${nodePool.toFixed(8)} to ${weights.size} nodes by PoT weight`,
             );
-
-            // Record AFC reserve contribution
-            await this.transactionRepo.save({
-                hash:         `AFC_RESERVE_${epoch.epochNumber}`,
-                previousHash: 'SYSTEM',
-                ledgerHeight: '0',
-                type:         TransactionType.FEE_DISTRIBUTION,
-                sender:       this.FEE_POOL_ADDRESS,
-                recipient:    this.AFC_RESERVE_ADDRESS,
-                amount:       afcReserve.toFixed(8),
-                fee:          '0',
-                nonce:        epoch.epochNumber * 10000,
-                status:       TransactionStatus.CONFIRMED,
-                metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
-            });
 
             let distributedSum = 0;
 
@@ -207,14 +193,14 @@ export class FeeDistributionService {
                     nodeId:          nodeId,
                     amount:          rewardStr,
                     weight:          weight,
-                    calculationData: { totalFees, nodePool, nodeWeight: weight },
+                    calculationData: { nodePool, nodeWeight: weight },
                 });
                 await queryRunner.manager.save(log);
 
                 distributedSum += rewardAmount;
             }
 
-            epoch.totalDistributed = (distributedSum + afcReserve).toFixed(8);
+            epoch.totalDistributed = distributedSum.toFixed(8);
             await queryRunner.manager.save(epoch);
 
             await queryRunner.commitTransaction();

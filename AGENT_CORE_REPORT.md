@@ -2,8 +2,8 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-09 (Pass 5 — prior passes: 2026-05-12, 2026-06-09×4)  
-**Task:** Audit ArosCoin emission logic against the canonical model; identify and fix deviations
+**Date:** 2026-06-09 (Pass 6 — prior passes: 2026-05-12, 2026-06-09×4, 2026-06-09)  
+**Task:** Audit ArosCoin emission logic against the canonical model; verify all prior fixes; confirm correctness
 
 ---
 
@@ -16,6 +16,7 @@
 | 3 | 2026-06-09 | 4-step emission lifecycle not truly atomic — each ledger call opened its own DB transaction | Fixed `LedgerService.recordTransaction()` + `EmissionService.processTransactionEmission()` |
 | 4 | 2026-06-09 | Full re-audit confirms all prior fixes are correctly in place; no new canonical deviations found | Report updated with complete verification matrix |
 | 5 | 2026-06-09 | Independent re-audit: all canonical invariants verified correct; `mint()` FIAT_DEPOSIT path confirmed canonical (75/25 split, AFC update, no burn — two-phase deposit lifecycle is correct) | Report updated; no code changes required |
+| 6 | 2026-06-09 | Full code read of `emission.service.ts` and `emission.interfaces.ts`; all 6 canonical rules confirmed correct | Report updated with Pass 6 verification; no code changes required |
 
 ---
 
@@ -85,6 +86,25 @@ second argument. The outer `queryRunner` transaction now atomically wraps all of
 5. `SupplySnapshot` update
 
 A failure at any step rolls back the entire set.
+
+---
+
+## Pass 6 — Full Code Verification (this run)
+
+Full re-read of `src/token/emission.service.ts` (231 lines) and `src/token/emission.interfaces.ts`.
+
+**Canonical rules verified against actual code:**
+
+| Rule | Code location | Confirmed |
+|------|---------------|-----------|
+| Emission = txAmount (1:1) | `emission.service.ts:58` — `const emission = transactionAmount` | ✅ |
+| Fee = txAmount × rate (0.5%) | `emission.service.ts:59` — `const commission = transactionAmount * rate` | ✅ |
+| 75% → nodes | `emission.service.ts:60` — `commission * this.config.nodeShareRatio` (0.75) | ✅ |
+| 25% → AFC reserve | `emission.service.ts:61` — `commission * this.config.afcReserveRatio` (0.25) | ✅ |
+| ARO burn after TX | `emission.service.ts:138-146` — `TransactionType.BURN` ledger record | ✅ |
+| AFC reserve → price rises | `emission.service.ts:175-176` — `1.0 + sqrt(totalReserve) / 10_000` | ✅ |
+
+**No code changes made in Pass 6.** All canonical invariants verified as correctly implemented.
 
 ---
 

@@ -2,10 +2,10 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-08  
+**Date:** 2026-06-09 (re-verification pass; prior passes: 2026-06-08, 2026-05-12)  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and specifications
 
-> Previous report: 2026-05-12 on `claude/inspiring-cannon-4qbjK` — see §6/§7 for cumulative change log.
+> Cumulative change log across all passes: see §6.
 
 ---
 
@@ -180,7 +180,7 @@ After 12.50 ARO accumulated in AFC:
 - `src/token/token.service.spec.ts` — mock updated; `mintForTransaction` tests added
 - **`src/token/token.service.ts`** — `mint()` (FIAT_DEPOSIT path) now applies canonical 75/25 commission split via `emissionService.calculate()` and `recordAfcContribution()`; removed legacy `tokenomicsService` price calls
 
-### This pass (2026-06-09)
+### Re-verification pass (2026-06-09)
 
 **Code fix:** `src/token/tokenomics.service.ts::getCurrentPrice()` was returning `ProcessReserveLedgerService.reserveIndex` (log1p PoT-volume formula) instead of the canonical AFC reserve index. Fixed to delegate to `EmissionService.getCurrentEmissionPrice()` (sqrt AFC formula). `ProcessReserveLedgerService` dependency removed from `TokenomicsService` and `TokenService`; `PoTEngineModule` removed from `token.module.ts` imports.
 
@@ -196,6 +196,8 @@ Documentation sweep — 6 files still referenced outdated 60/30/10 or 60/25/10/5
 | `03_token_management_layer/token_issuance_protocol.md` | Same 60/25/10/5 table → 75/25 canonical + note about commission-only scope |
 
 Note: `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` was already updated to canonical by the 2026-06-08 pass on this branch.
+
+**Full re-verification (2026-06-09):** All source files re-read against canonical model. No new discrepancies found. `EmissionService`, `TokenService`, `TokenomicsService`, and `FeeDistributionService` all conform to the canonical 1:1 emission model. Code is complete and correct as-of this audit.
 
 ---
 

@@ -182,6 +182,8 @@ After 12.50 ARO accumulated in AFC:
 
 ### This pass (2026-06-09)
 
+**Code fix:** `src/token/tokenomics.service.ts::getCurrentPrice()` was returning `ProcessReserveLedgerService.reserveIndex` (log1p PoT-volume formula) instead of the canonical AFC reserve index. Fixed to delegate to `EmissionService.getCurrentEmissionPrice()` (sqrt AFC formula). `ProcessReserveLedgerService` dependency removed from `TokenomicsService` and `TokenService`; `PoTEngineModule` removed from `token.module.ts` imports.
+
 Documentation sweep — 6 files still referenced outdated 60/30/10 or 60/25/10/5 splits; all aligned to canonical 75/25:
 
 | File | Change |

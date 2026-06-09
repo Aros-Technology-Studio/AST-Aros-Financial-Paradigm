@@ -76,6 +76,10 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use mintForTransaction() for canonical 1:1 emission with burn + fee split.
+     * This method is a legacy fiat-deposit bridge path (no commission split, no burn).
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

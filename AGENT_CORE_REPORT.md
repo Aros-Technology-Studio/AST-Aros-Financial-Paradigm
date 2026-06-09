@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
+**Branch:** `claude/inspiring-cannon-n9akt3`  
+**Date:** 2026-06-09  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
 
 ---
@@ -127,7 +127,16 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Documentation Changes Made in This Pass
+## 6. Changes Made in This Pass (2026-06-09)
+
+| File | Change |
+|------|--------|
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | Fixed `supplyMechanism.burnOn`: `"governance_rule"` → `"post_transaction"` |
+| `01_coin_engine/AROS_Coin_TokenSpec.json` | Fixed `transactionFees.distribution`: legacy 75/20/5 split → canonical 75/25 (nodeOperators/afcReserve) |
+| `src/token/token.service.ts` | Added `@deprecated` JSDoc to legacy `mint()` method to signal that `mintForTransaction()` is the canonical entry point |
+| `AGENT_CORE_REPORT.md` | Updated date and findings |
+
+### Previously Applied (prior pass)
 
 | File | Change |
 |------|--------|

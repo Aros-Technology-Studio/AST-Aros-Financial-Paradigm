@@ -137,9 +137,60 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 7. Recommendations
+## 7. Recommendations (from Audit Pass 1 — 2026-05-12)
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
-- **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
+- ~~**Wire `mintForTransaction()` into ingestion pipeline**~~ — **FIXED in Audit Pass 2** (see §8).
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## 8. Audit Pass 2 — 2026-06-09
+
+**Agent:** AGENT-CORE  
+**Branch:** `claude/inspiring-cannon-mm8ggs`
+
+### Gap Found
+
+`src/token/token.controller.ts` exposed only the legacy `POST /token/mint` endpoint, which calls `TokenService.mint()`. That legacy path:
+
+| Rule | Canonical | Legacy `mint()` |
+|------|-----------|-----------------|
+| Emission = TX Amount (1:1) | ✅ | ✅ (mints stated amount) |
+| Fee = TX Amount × 0.5% | ✅ | ❌ no fee deducted |
+| 75% → node pool | ✅ | ❌ |
+| 25% → AFC reserve | ✅ | ❌ |
+| Burn emitted ARO after TX | ✅ | ❌ ARO persist in supply |
+| AFC reserve index grows | ✅ | ❌ |
+
+The canonical engine (`EmissionService.processTransactionEmission`) was never exposed via HTTP; callers had no way to trigger the full canonical cycle through the API.
+
+### Fix Applied
+
+**`src/token/token.controller.ts`** — two changes:
+
+1. Added `POST /token/emit` — canonical endpoint:
+   - Accepts `{ transactionAmount, recipient, referenceId, commissionRate? }`
+   - Delegates to `TokenService.mintForTransaction()` → `EmissionService.processTransactionEmission()`
+   - Returns full `EmissionResult` plus `currentEmissionPrice`
+
+2. Added `GET /token/emission/price` — read-only snapshot of AFC reserve state and current `reserveIndex`.
+
+3. Annotated `POST /token/mint` with `@deprecated` JSDoc — it is preserved for Bridge fiat-deposit flows (a different lifecycle: fiat in → persistent ARO → fiat out on burn), but callers are directed to `/token/emit` for canonical transaction emission.
+
+### Canonical API Summary (post-fix)
+
+| Endpoint | Purpose | Canonical? |
+|----------|---------|-----------|
+| `POST /token/emit` | 1:1 TX emission + fee split + burn | ✅ |
+| `GET /token/emission/price` | AFC reserve index read | ✅ |
+| `POST /token/mint` *(deprecated)* | Bridge fiat-deposit | ⚠️ legacy |
+| `POST /token/burn` | Bridge fiat-withdrawal | ⚠️ legacy |
+| `GET /token/supply` | Supply snapshot | ✅ |
+
+### Remaining Open Items
+
+- **Persist `AfcReserveState`** — in-memory state resets on restart; add a DB entity.
+- **Epoch-level AFC sync** — `FeeDistributionService.distributeRewards()` records AFC on ledger but doesn't call `EmissionService.updateAfcReserve()`; the in-memory index diverges from on-chain state over epoch cycles.
+- **Unit tests for `EmissionService.calculate()`** — dust amounts, max rate, zero-amount guard.

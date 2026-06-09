@@ -180,6 +180,21 @@ After 12.50 ARO accumulated in AFC:
 - `src/token/token.service.spec.ts` — mock updated; `mintForTransaction` tests added
 - **`src/token/token.service.ts`** — `mint()` (FIAT_DEPOSIT path) now applies canonical 75/25 commission split via `emissionService.calculate()` and `recordAfcContribution()`; removed legacy `tokenomicsService` price calls
 
+### This pass (2026-06-09)
+
+Documentation sweep — 6 files still referenced outdated 60/30/10 or 60/25/10/5 splits; all aligned to canonical 75/25:
+
+| File | Change |
+|------|--------|
+| `glossary.md` | "distributed as 60% to validators" → "75% to node pool, 25% to AFC reserve" |
+| `economic_simulation.md` | `Fee Distribution Ratio: 0.6` → `Node share: 0.75, AFC share: 0.25`; `Burn Ratio: 0.1` → `1.0` (full emission burn) |
+| `08_fee_distribution/emission_flow_pipeline.md` | "60% to confirming node, 40% to treasury" → "75% to node pool, 25% to AFC reserve" |
+| `08_fee_distribution/epoch_allocation_model.md` | 60/25/10/5 Allocation Slices table → 75% Node Pool, 25% AFC Reserve |
+| `03_token_management_layer/token_distribution_model.md` | Processing Nodes 60%/Ecosystem 25%/Gov 10%/Buffer 5% → Node Pool 75%/AFC Reserve 25%; Mermaid diagram updated |
+| `03_token_management_layer/token_issuance_protocol.md` | Same 60/25/10/5 table → 75/25 canonical + note about commission-only scope |
+
+Note: `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` was already updated to canonical by the 2026-06-08 pass on this branch.
+
 ---
 
 ## 7. Remaining Recommendations

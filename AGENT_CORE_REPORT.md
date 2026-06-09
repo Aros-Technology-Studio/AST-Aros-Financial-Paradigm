@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-09 (Pass 4 — prior passes: 2026-05-12, 2026-06-09×3)  
+**Date:** 2026-06-09 (Pass 5 — prior passes: 2026-05-12, 2026-06-09×4)  
 **Task:** Audit ArosCoin emission logic against the canonical model; identify and fix deviations
 
 ---
@@ -15,10 +15,29 @@
 | 2 | 2026-06-09 | `calculateTotalFees()` summed wrong column (always 0); epoch double-counted AFC reserve; `burnAmount` balance deficit | Fixed `fee_distribution.service.ts`, added `burnAmount` to `EmissionResult`, moved AFC update post-commit |
 | 3 | 2026-06-09 | 4-step emission lifecycle not truly atomic — each ledger call opened its own DB transaction | Fixed `LedgerService.recordTransaction()` + `EmissionService.processTransactionEmission()` |
 | 4 | 2026-06-09 | Full re-audit confirms all prior fixes are correctly in place; no new canonical deviations found | Report updated with complete verification matrix |
+| 5 | 2026-06-09 | Independent re-audit: all canonical invariants verified correct; `mint()` FIAT_DEPOSIT path confirmed canonical (75/25 split, AFC update, no burn — two-phase deposit lifecycle is correct) | Report updated; no code changes required |
 
 ---
 
-## Pass 4 — Full Re-Audit (this run)
+## Pass 5 — Independent Re-Audit (this run)
+
+Full independent audit of all emission-related files. All canonical invariants verified as correctly implemented. No deviations from the canonical model found.
+
+**Files audited:** `src/token/emission.service.ts`, `src/token/emission.interfaces.ts`, `src/token/token.service.ts`, `src/token/tokenomics.service.ts`, `src/proof_of_transaction_engine/process_reserve.service.ts`, `01_coin_engine/*.md`, `10_proof_of_transaction_engine/*.md`.
+
+**Key observations:**
+- `EmissionService.calculate()` computes `burnAmount = emissionAmount − commission` correctly, avoiding any ledger deficit (Pass 2 fix confirmed).
+- All 4 ledger writes in `processTransactionEmission()` share `queryRunner.manager` — truly atomic (Pass 3 fix confirmed).
+- AFC reserve updated AFTER `commitTransaction()` — in-memory state stays in sync with DB (Pass 3 fix confirmed).
+- `mint()` FIAT_DEPOSIT path applies 75/25 commission split and calls `recordAfcContribution()` — canonical fee distribution respected even for deposits.
+- `tokenomics.service.updateInternalValuation()` is a correctly marked no-op deprecated wrapper.
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` are documentation-only; no source code, not deprecated.
+
+**No code changes made in this pass.**
+
+---
+
+## Pass 4 — Full Re-Audit (prior run)
 
 All prior fixes (Passes 1–3) verified as correctly implemented. No new deviations from the canonical model found. The complete verification matrix is documented in Section 2 below.
 

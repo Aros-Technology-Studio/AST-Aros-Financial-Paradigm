@@ -76,6 +76,11 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use mintForTransaction() for canonical 1:1 emission with commission split and burn.
+     * This legacy path does not apply commission distribution or post-transaction burn,
+     * and incorrectly tracks circulatingSupply as persistent rather than transient.
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

@@ -102,40 +102,43 @@ export class EmissionService {
         await queryRunner.startTransaction();
 
         try {
-            // Step 1 — Mint ARO 1:1 to recipient
+            const mgr  = queryRunner.manager;
+            const base = Date.now();
+
+            // Step 1 — Mint ARO 1:1 to recipient (atomic: shares outer queryRunner.manager)
             const mintTx = await this.ledgerService.recordTransaction({
                 type:      TransactionType.MINT,
                 sender:    this.SYSTEM_EMISSION_AUTHORITY,
                 recipient: recipientAddress,
                 amount:    result.emissionAmount.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now(),
+                nonce:     base,
                 metadata:  { referenceId, operation: 'CANONICAL_1_1_EMISSION' },
-            });
+            }, mgr);
 
-            // Step 2a — Record 75% commission to node pool
+            // Step 2a — Record 75% commission to node pool (atomic)
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.FEE_DISTRIBUTION,
                 sender:    recipientAddress,
                 recipient: this.NODE_POOL_ADDRESS,
                 amount:    result.nodeShare.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 1,
+                nonce:     base + 1,
                 metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: result.commissionRate },
-            });
+            }, mgr);
 
-            // Step 2b — Record 25% commission to AFC reserve
+            // Step 2b — Record 25% commission to AFC reserve (atomic)
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.FEE_DISTRIBUTION,
                 sender:    recipientAddress,
                 recipient: this.AFC_RESERVE_ADDRESS,
                 amount:    result.afcReserveShare.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 2,
+                nonce:     base + 2,
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
-            });
+            }, mgr);
 
-            // Step 3 — Burn burnAmount (= emissionAmount − commission).
+            // Step 3 — Burn burnAmount (= emissionAmount − commission). (atomic)
             // Recipient holds emissionAmount after Step 1, then pays commission in Steps 2a/2b,
             // leaving exactly burnAmount. Burning the full emissionAmount here would create
             // a ledger deficit equal to commission.
@@ -145,9 +148,9 @@ export class EmissionService {
                 recipient: this.BURN_ADDRESS,
                 amount:    result.burnAmount.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 3,
+                nonce:     base + 3,
                 metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
-            });
+            }, mgr);
 
             // Step 4 — Update supply snapshot
             await this.updateSupplySnapshot(queryRunner, referenceId, result);

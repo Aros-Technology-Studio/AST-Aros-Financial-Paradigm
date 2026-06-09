@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException, Logger, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import { Transaction, TransactionStatus, TransactionType } from './entities/transaction.entity';
 import * as crypto from 'crypto';
 
@@ -19,48 +19,29 @@ export class LedgerService {
         private readonly txEncoder: TxEncoderService,
     ) { }
 
-    async recordTransaction(dto: Partial<Transaction>): Promise<Transaction> {
+    /**
+     * Records a single ledger transaction.
+     *
+     * When `manager` is supplied the write participates in the caller's existing DB
+     * transaction — no new QueryRunner is created, no commit/rollback issued here.
+     * Use this to make multi-step emission lifecycles fully atomic.
+     *
+     * When `manager` is omitted the method wraps the write in its own transaction
+     * (original standalone behaviour, unchanged for all existing callers).
+     */
+    async recordTransaction(dto: Partial<Transaction>, manager?: EntityManager): Promise<Transaction> {
+        if (manager) {
+            return this.writeWithManager(manager, dto);
+        }
+
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-            const lastTx = await queryRunner.manager
-                .getRepository(Transaction)
-                .createQueryBuilder('tx')
-                .setLock('pessimistic_write')
-                .orderBy('tx.createdAt', 'DESC')
-                .addOrderBy('tx.ledgerHeight', 'DESC')
-                .limit(1)
-                .getOne();
-
-            const previousHash = lastTx ? lastTx.hash : 'GENESIS_HASH_00000000000000000000000000000000';
-            const currentHeight = lastTx ? BigInt(lastTx.ledgerHeight) + 1n : 1n;
-
-            const newTx = new Transaction();
-            Object.assign(newTx, dto);
-
-            newTx.previousHash = previousHash;
-            newTx.ledgerHeight = currentHeight.toString();
-            newTx.status = TransactionStatus.CONFIRMED;
-            newTx.finalizedAt = new Date();
-            newTx.hash = this.calculateHash(newTx);
-
-            const savedTx = await queryRunner.manager.save(Transaction, newTx);
+            const savedTx = await this.writeWithManager(queryRunner.manager, dto);
             await queryRunner.commitTransaction();
-
-            this.logger.log(`Transaction recorded at height ${savedTx.ledgerHeight}: ${savedTx.hash}`);
-
-            this.eventEmitter.emit('ledger.transaction.recorded', {
-                hash: savedTx.hash,
-                ledgerHeight: savedTx.ledgerHeight,
-                sender: savedTx.sender,
-                nonce: savedTx.nonce,
-                amount: savedTx.amount
-            });
-
             return savedTx;
-
         } catch (error) {
             await queryRunner.rollbackTransaction();
             this.logger.error(`Failed to record transaction: ${error.message}`, error.stack);
@@ -68,6 +49,43 @@ export class LedgerService {
         } finally {
             await queryRunner.release();
         }
+    }
+
+    private async writeWithManager(manager: EntityManager, dto: Partial<Transaction>): Promise<Transaction> {
+        const lastTx = await manager
+            .getRepository(Transaction)
+            .createQueryBuilder('tx')
+            .setLock('pessimistic_write')
+            .orderBy('tx.createdAt', 'DESC')
+            .addOrderBy('tx.ledgerHeight', 'DESC')
+            .limit(1)
+            .getOne();
+
+        const previousHash = lastTx ? lastTx.hash : 'GENESIS_HASH_00000000000000000000000000000000';
+        const currentHeight = lastTx ? BigInt(lastTx.ledgerHeight) + 1n : 1n;
+
+        const newTx = new Transaction();
+        Object.assign(newTx, dto);
+
+        newTx.previousHash = previousHash;
+        newTx.ledgerHeight = currentHeight.toString();
+        newTx.status = TransactionStatus.CONFIRMED;
+        newTx.finalizedAt = new Date();
+        newTx.hash = this.calculateHash(newTx);
+
+        const savedTx = await manager.save(Transaction, newTx);
+
+        this.logger.log(`Transaction recorded at height ${savedTx.ledgerHeight}: ${savedTx.hash}`);
+
+        this.eventEmitter.emit('ledger.transaction.recorded', {
+            hash: savedTx.hash,
+            ledgerHeight: savedTx.ledgerHeight,
+            sender: savedTx.sender,
+            nonce: savedTx.nonce,
+            amount: savedTx.amount,
+        });
+
+        return savedTx;
     }
 
     async getBalance(address: string): Promise<string> {

@@ -2,8 +2,32 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-09  
-**Task:** Audit ArosCoin emission logic against the canonical model; align code and documentation if needed
+**Date:** 2026-06-09 (updated — prior pass 2026-05-12)  
+**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+
+---
+
+## PASS 2 — 2026-06-09 (this run)
+
+### New bugs found and fixed in `src/fee_distribution/fee_distribution.service.ts`
+
+#### Bug 1 — `calculateTotalFees()` always returned 0
+
+`EmissionService` records every fee credit as a `FEE_DISTRIBUTION` transaction with `fee: '0'`; the fee amount is stored in the `amount` column. The old query summed `tx.fee` (always 0), so every epoch reported 0 fees and no rewards were ever distributed.
+
+**Fix:** now queries `SUM(tx.amount)` filtered to `type = FEE_DISTRIBUTION` within the epoch window.
+
+#### Bug 2 — `distributeRewards()` double-counted AFC reserve
+
+`EmissionService` already credits `AFC_RESERVE_ADDRESS` 25% of each commission in real-time. The old `distributeRewards()` re-applied the 75/25 split to epoch totals and re-recorded an `AFC_RESERVE_<epoch>` transaction — crediting AFC twice per transaction over every epoch.
+
+**Fix:** the per-epoch reward distribution now distributes only the 75% node pool to individual validators by PoT weight. The redundant AFC recording is removed. Sender on `VALIDATOR_REWARD` transactions corrected from `FEE_POOL_ADDRESS` to `NODE_POOL_ADDRESS`.
+
+#### Test fix — `fee_distribution.service.test.ts`
+
+Added `andWhere: jest.fn().mockReturnThis()` to the query builder mock to match the updated `calculateTotalFees()` query chain.
+
+---
 
 ---
 
@@ -36,11 +60,20 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | `tokenomics.service.ts` | ✅ Correct | `getCurrentPrice()` uses `reserveIndex`; `updateInternalValuation()` is legacy |
 | `token.module.ts` | ✅ Correct | `EmissionService` registered as provider and exported |
 
-### src/fee_distribution/ — Status: Canonical implementation CONFIRMED ✅
+### src/fee_distribution/ — Status: Two bugs fixed (see Pass 2 above)
 
-| File | State | Key verification |
-|------|-------|------------------|
-| `fee_distribution.service.ts` → `distributeRewards()` | ✅ Correct | 75% node pool, 25% AFC reserve per epoch finalization |
+| File | Verified state |
+|------|---------------|
+| `fee_distribution.service.ts` → `calculateTotalFees()` | ✅ Fixed (was summing wrong column; now queries FEE_DISTRIBUTION to NODE_POOL_ADDRESS) |
+| `fee_distribution.service.ts` → `distributeRewards()` | ✅ Fixed (removed double-AFC recording; distributes node pool 100% to validators) |
+
+### src/proof_of_transaction_engine/ — Status: Correct, unchanged
+
+| File | Notes |
+|------|-------|
+| `process_reserve.service.ts` | General process volume ledger; `reserveIndex` via `log1p` — used by legacy tokenomics |
+| `pot.service.ts` | PoT scoring and weight normalization — correct and untouched |
+>>>>>>> 3471e4a (feat: canonical 1:1 emission model implementation)
 
 ---
 

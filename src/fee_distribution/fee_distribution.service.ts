@@ -179,7 +179,7 @@ export class FeeDistributionService {
                     previousHash: 'SYSTEM',
                     ledgerHeight: '0',
                     type:         TransactionType.VALIDATOR_REWARD,
-                    sender:       this.FEE_POOL_ADDRESS,
+                    sender:       this.NODE_POOL_ADDRESS,
                     recipient:    nodeId,
                     amount:       rewardStr,
                     fee:          '0',

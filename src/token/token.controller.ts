@@ -25,9 +25,15 @@ export class TokenController {
     }
 
     @Post('mint')
-    async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
+    async mintTokens(@Body() body: { amount: string; recipient: string; refId: string; commissionRate?: number }) {
         try {
-            return await this.tokenService.mint(body.amount, body.recipient, body.refId);
+            // Route to canonical 1:1 emission: emit = amount, fee split 75% nodes / 25% AFC, then burn.
+            return await this.tokenService.mintForTransaction(
+                parseFloat(body.amount),
+                body.recipient,
+                body.refId,
+                body.commissionRate,
+            );
         } catch (e) {
             throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
         }

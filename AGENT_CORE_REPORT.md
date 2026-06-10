@@ -2,8 +2,8 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-10 (Pass 13 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×6)  
-**Task:** Audit ArosCoin emission logic against the canonical model; verify all prior fixes; confirm correctness (Pass 13)
+**Date:** 2026-06-10 (Pass 14 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×7)  
+**Task:** Audit ArosCoin emission logic against the canonical model; verify all prior fixes; confirm correctness (Pass 14)
 
 ---
 
@@ -11,6 +11,7 @@
 
 | Pass | Date | Finding | Action |
 |------|------|---------|--------|
+| 14 | 2026-06-10 | Full cold-start re-audit: read `emission.service.ts`, `emission.interfaces.ts`, `token.service.ts`, `tokenomics.service.ts`, `fee_distribution.service.ts`, `process_reserve.service.ts`, `01_coin_engine/coin_emission_model.md`; all 13 prior fixes confirmed; dual-reserve distinction (AFC vs PoT) documented | No code changes required — report updated |
 | 13 | 2026-06-10 | Fresh cold-start re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`; all 12 prior fixes confirmed; `emission.service.ts` fully implements canonical 1:1 model end-to-end | No code changes required — report updated |
 | 12 | 2026-06-10 | Full cold-start re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`; all 11 prior fixes confirmed; `AROS_Coin_TokenSpec.json` already canonical (correct 75/25 split, `post_transaction_canonical_burn`) | No code changes required — report updated |
 | 1 | 2026-05-12 | Docs in `01_coin_engine/` diverged from canonical (wrong formulas) | Rewrote `coin_emission_model.md`, `aro_emission_protocol.md`, `payment_distribution.md` |
@@ -63,6 +64,56 @@ Architecture docs (`docs/architecture/Architecture_Overview.md`, `docs/architect
 - `AfcReserveState` persistence to DB is still outstanding.
 
 **No code changes made in Pass 10.**
+
+---
+
+## Pass 14 — Full Cold-Start Re-Audit (2026-06-10)
+
+Full independent audit of all emission-related source files from scratch against the canonical model.
+
+**Files read:**
+- `src/token/emission.service.ts` (264 lines)
+- `src/token/emission.interfaces.ts`
+- `src/token/token.service.ts`
+- `src/token/tokenomics.service.ts`
+- `src/fee_distribution/fee_distribution.service.ts`
+- `src/proof_of_transaction_engine/process_reserve.service.ts`
+- `01_coin_engine/coin_emission_model.md`
+
+**All 13 prior fixes confirmed in code:**
+
+| Fix | Location | Confirmed |
+|-----|----------|-----------|
+| 1:1 emission (docs aligned) | `01_coin_engine/coin_emission_model.md` | ✅ |
+| `calculateTotalFees()` sums `FEE_DISTRIBUTION` amounts | `fee_distribution.service.ts:142` | ✅ |
+| `burnAmount = emissionAmount − commission` (no deficit) | `emission.service.ts:64` | ✅ |
+| 4-step lifecycle atomic via shared `EntityManager` | `emission.service.ts:111-159` | ✅ |
+| AFC update AFTER `commitTransaction()` | `emission.service.ts:170` | ✅ |
+| `mint()` FIAT path applies 75/25 split + `recordAfcContribution()` | `token.service.ts:85-156` | ✅ |
+| `tokenomics.updateInternalValuation()` is no-op | `tokenomics.service.ts:48` | ✅ |
+| `01_coin_engine/README.md` decimals = 8 | §4, §8 | ✅ |
+| KILL_SWITCH emergency brake | `emission.service.ts:93-96` | ✅ |
+| `recordAfcContribution()` exists for external epoch sync | `emission.service.ts:210-214` | ✅ |
+| `circulatingSupply += commission` (correct net supply Δ) | `emission.service.ts:259` | ✅ |
+| `01_coin_engine/` documentation aligned with canonical formulas | Docs confirmed | ✅ |
+| `AROS_Coin_TokenSpec.json` canonical (75/25, post_transaction_canonical_burn) | Confirmed | ✅ |
+
+**Dual-reserve distinction (documented for clarity):**
+
+Two independent reserves exist in the system, each serving a different purpose:
+
+| Reserve | Service | Index formula | Purpose |
+|---------|---------|--------------|---------|
+| AFC Reserve | `EmissionService.afcReserveState` | `1.0 + sqrt(totalAfcReserve) / 10_000` | Emission price index — canonical, fee-accumulation driven |
+| PoT Process Reserve | `ProcessReserveLedgerService.reserveState` | `1.0 + log1p(volume) / 100` | PoT-backed intrinsic currency value — volume driven |
+
+`TokenomicsService.getCurrentPrice()` returns the PoT index. `EmissionService.getCurrentEmissionPrice()` returns the canonical AFC index. Callers that need the canonical emission price should always use `EmissionService.getCurrentEmissionPrice()` directly.
+
+**Open recommendations (carried forward):**
+- `AfcReserveState` is still in-memory only — needs DB persistence (entity + periodic snapshot + reload on boot).
+- `FeeDistributionService.distributeRewards()` records AFC entries directly to `transactionRepo` with synthetic `previousHash: 'SYSTEM'` — bypasses the hash chain. Should call `emissionService.recordAfcContribution(afcReserve)` after epoch commit and use `ledgerService.recordTransaction()` for chain integrity.
+
+**No code changes made in Pass 14.**
 
 ---
 

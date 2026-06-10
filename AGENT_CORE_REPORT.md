@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-10 (Pass 7 — prior passes: 2026-05-12, 2026-06-09×5)  
+**Date:** 2026-06-10 (Pass 8 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10)  
 **Task:** Audit ArosCoin emission logic against the canonical model; verify all prior fixes; confirm correctness
 
 ---
@@ -18,6 +18,7 @@
 | 5 | 2026-06-09 | Independent re-audit: all canonical invariants verified correct; `mint()` FIAT_DEPOSIT path confirmed canonical (75/25 split, AFC update, no burn — two-phase deposit lifecycle is correct) | Report updated; no code changes required |
 | 6 | 2026-06-09 | Full code read of `emission.service.ts` and `emission.interfaces.ts`; all 6 canonical rules confirmed correct | Report updated with Pass 6 verification; no code changes required |
 | 7 | 2026-06-10 | Deep independent audit from scratch: all 6 canonical rules verified; all prior fixes confirmed in place; `emission.interfaces.ts`, `pot.service.ts`, `fee_distribution.service.ts`, `01_coin_engine/coin_emission_model.md` all cross-checked | No code changes required — report updated |
+| 8 | 2026-06-10 | Cross-checked `AROS_Coin_TokenSpec.json` (decimals: 8) against `01_coin_engine/README.md` §4 and §8: both still showed `AROS_DECIMALS=6` and `1 AROS = 10^6 arx` | Fixed README §4 and §8 to `AROS_DECIMALS=8` / `1 AROS = 10^8 arx` — aligns with token spec and `emission.service.ts` (`.toFixed(8)`) |
 
 ---
 
@@ -141,6 +142,20 @@ Full cold-start audit of the entire emission stack.  All files read from scratch
 | Module 01 not deprecated | `01_coin_engine/README.md` — pure specification docs; canonical source in `src/token/` | ✅ |
 
 **Result:** All canonical invariants are correctly implemented. No code changes required in Pass 7.
+
+---
+
+## Pass 8 — Decimal Precision Audit (2026-06-10)
+
+Cross-check of `AROS_Coin_TokenSpec.json` against all documentation.
+
+**Finding:** `AROS_Coin_TokenSpec.json` specifies `"decimals": 8`. However, `01_coin_engine/README.md` §4 and §8 still showed the legacy `AROS_DECIMALS=6` and `1 AROS = 10^6 arx` values. `emission.service.ts` consistently uses `.toFixed(8)`, confirming 8 as the correct value.
+
+**Fix applied:**
+- `01_coin_engine/README.md` §4: `Decimals: 6` → `Decimals: 8`; `1 AROS = 10^6 arx` → `1 AROS = 10^8 arx`
+- `01_coin_engine/README.md` §8: `AROS_DECIMALS=6` → `AROS_DECIMALS=8`
+
+**Result:** All three sources (`AROS_Coin_TokenSpec.json`, `emission.service.ts`, `README.md`) now agree on 8 decimals.
 
 ---
 

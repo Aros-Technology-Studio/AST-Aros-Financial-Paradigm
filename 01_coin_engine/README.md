@@ -65,9 +65,9 @@ pnpm lint && pnpm typecheck
 
 **4) Token Specification (Essentials)**
 	•	Symbol: AROS
-	•	Base unit: arx (1 AROS = 10^6 arx, fixed)
+	•	Base unit: arx (1 AROS = 10^8 arx, fixed)
 	•	Supply type: Fee Distribution-bounded with PoT-weighted payments
-	•	Decimals: 6
+	•	Decimals: 8
 	•	Pause switches:
 	•	EMISSION_PAUSE (governance circuit-breaker)
 	•	MINT_BURN_PAUSE (kill-switch for state transitions)
@@ -119,7 +119,7 @@ Formulas and proofs in payment_distribution.md.
 
 Environment variables (TypeScript impl):
 
-AROS_DECIMALS=6
+AROS_DECIMALS=8
 POT_EPOCH_SECS=600
 EMISSION_COMMISSION_RATE=0.005
 NODE_SHARE_RATIO=0.75

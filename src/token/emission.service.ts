@@ -78,6 +78,8 @@ export class EmissionService {
      *   4. Burn the emitted ARO (ARO are transient — they exist only during the transaction)
      *
      * Returns the emission result for audit logging.
+     *
+     * Halts immediately when KILL_SWITCH=true (emergency brake per canonical protocol §VIII).
      */
     async processTransactionEmission(
         transactionAmount: number,
@@ -85,6 +87,10 @@ export class EmissionService {
         referenceId: string,
         commissionRate?: number,
     ): Promise<EmissionResult> {
+        if (process.env.KILL_SWITCH === 'true') {
+            throw new BadRequestException('Emission engine halted: KILL_SWITCH is active');
+        }
+
         const result = this.calculate(transactionAmount, commissionRate);
 
         this.logger.log(
@@ -164,8 +170,9 @@ export class EmissionService {
     /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
+     * Public so epoch-level fee distribution can sync the index after finalization.
      */
-    private updateAfcReserve(afcAmount: number): void {
+    updateAfcReserve(afcAmount: number): void {
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();

@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-10 (Pass 9 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×2)  
+**Date:** 2026-06-10 (Pass 10 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×3)  
 **Task:** Audit ArosCoin emission logic against the canonical model; verify all prior fixes; confirm correctness
 
 ---
@@ -20,6 +20,47 @@
 | 7 | 2026-06-10 | Deep independent audit from scratch: all 6 canonical rules verified; all prior fixes confirmed in place; `emission.interfaces.ts`, `pot.service.ts`, `fee_distribution.service.ts`, `01_coin_engine/coin_emission_model.md` all cross-checked | No code changes required — report updated |
 | 8 | 2026-06-10 | Cross-checked `AROS_Coin_TokenSpec.json` (decimals: 8) against `01_coin_engine/README.md` §4 and §8: both still showed `AROS_DECIMALS=6` and `1 AROS = 10^6 arx` | Fixed README §4 and §8 to `AROS_DECIMALS=8` / `1 AROS = 10^8 arx` — aligns with token spec and `emission.service.ts` (`.toFixed(8)`) |
 | 9 | 2026-06-10 | `aro_emission_protocol.md` §VIII specifies KILL_SWITCH env-var emergency brake; guard was absent from `processTransactionEmission()` on all prior passes | Added KILL_SWITCH guard to `EmissionService.processTransactionEmission()` |
+| 10 | 2026-06-10 | Full cold-start re-audit: all 9 prior fixes verified in code; architecture docs note Module 01 superseded by Module 08 (informational); `token.service.ts` `mint()` FIAT path confirmed canonical; `recordAfcContribution()` present to bridge epoch → in-memory index | No code changes required — report updated |
+
+---
+
+## Pass 10 — Full Cold-Start Re-Audit (2026-06-10)
+
+Full independent audit of all emission-related source files from scratch against the canonical model.
+
+**Files read:**
+- `src/token/emission.service.ts` (264 lines)
+- `src/token/emission.interfaces.ts`
+- `src/token/token.service.ts`
+- `src/token/tokenomics.service.ts`
+- `src/fee_distribution/fee_distribution.service.ts`
+- `01_coin_engine/` (documentation, marked superseded by Module 08 in arch docs)
+- `10_proof_of_transaction_engine/` (documentation only, no emission code)
+
+**All 9 prior fixes confirmed in code:**
+
+| Fix | Location | Confirmed |
+|-----|----------|-----------|
+| 1:1 emission (docs aligned) | `01_coin_engine/coin_emission_model.md` | ✅ |
+| `calculateTotalFees()` sums `FEE_DISTRIBUTION` amounts | `fee_distribution.service.ts:142` | ✅ |
+| `burnAmount = emissionAmount − commission` (no deficit) | `emission.service.ts:64` | ✅ |
+| 4-step lifecycle atomic via shared `EntityManager` | `emission.service.ts:111-159` | ✅ |
+| AFC update after commit (no in-memory desync) | `emission.service.ts:170` | ✅ |
+| `mint()` FIAT path applies 75/25 split + `recordAfcContribution()` | `token.service.ts:91-145` | ✅ |
+| `tokenomics.updateInternalValuation()` is no-op | `tokenomics.service.ts:48` | ✅ |
+| `01_coin_engine/README.md` decimals = 8 | §4, §8 | ✅ |
+| KILL_SWITCH emergency brake | `emission.service.ts:93-96` | ✅ |
+
+**New observation (Module 01 deprecated marker):**
+
+Architecture docs (`docs/architecture/Architecture_Overview.md`, `docs/architecture/Module_Map.md`, root `README.md`) mark Module 01 as `*DEPRECATED/Reference* — Superseded by Module 08`. The module's own `01_coin_engine/README.md` does not carry this marker. This is consistent: Module 01 remains a valid reference specification; the runtime implementation lives in Module 08 + `src/token/`. No action needed.
+
+**Open recommendation status:**
+
+- `recordAfcContribution()` now exists on `EmissionService` — the infrastructure for epoch→index sync is ready; `FeeDistributionService` needs one call to `emissionService.recordAfcContribution(afcReserve)` after epoch commit to close the loop.
+- `AfcReserveState` persistence to DB is still outstanding.
+
+**No code changes made in Pass 10.**
 
 ---
 

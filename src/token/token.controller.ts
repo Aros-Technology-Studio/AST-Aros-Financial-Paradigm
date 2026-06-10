@@ -24,10 +24,50 @@ export class TokenController {
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
     }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Replaces legacy /mint — routes through EmissionService (fee split + burn).
+     *
+     * Body:
+     *   transactionAmount  number   — fiat/transaction value; ARO minted 1:1
+     *   recipient          string   — destination address
+     *   referenceId        string   — idempotency key / TX reference
+     *   commissionRate?    number   — optional override (default 0.5%)
+     */
+    @Post('emit')
+    async emitTokens(
+        @Body() body: {
+            transactionAmount: number;
+            recipient: string;
+            referenceId: string;
+            commissionRate?: number;
+        },
+    ) {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * @deprecated Use POST /emit for the canonical 1:1 emission flow.
+     * Kept for backward compatibility with legacy integrations.
+     * Routes to canonical mintForTransaction() — legacy amount/string interface preserved.
+     */
     @Post('mint')
     async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
         try {
-            return await this.tokenService.mint(body.amount, body.recipient, body.refId);
+            return await this.tokenService.mintForTransaction(
+                parseFloat(body.amount),
+                body.recipient,
+                body.refId,
+            );
         } catch (e) {
             throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
         }

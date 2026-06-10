@@ -498,3 +498,18 @@ Full independent audit against the canonical model. Directories reviewed: `01_co
 **All 14 prior fixes confirmed in place. No new deviations found. No code changes made.**
 
 *Audited by AGENT-CORE | Branch: `agent/core-emission`*
+
+---
+
+## Pass 16 — Re-Audit (2026-06-10, branch: `agent/core-emission`)
+
+Fresh cold-start audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`. Confirmed all 15 prior fixes in place. The three issues documented below (controller routing, legacy mint body, tokenomics price index) were all resolved in prior passes — code is correct.
+
+| File | Final State |
+|---|---|
+| `src/token/token.controller.ts` | `POST /mint` → `mintForTransaction()`; `POST /emit` canonical endpoint present |
+| `src/token/token.service.ts` | `mint()` = canonical FIAT_DEPOSIT path with 75/25 split + `recordAfcContribution()` |
+| `src/token/tokenomics.service.ts` | `getCurrentPrice()` → `EmissionService.getCurrentEmissionPrice()` |
+| `src/token/emission.service.ts` | Canonical 1:1 model fully correct — unchanged |
+
+**No code changes required. All canonical invariants verified.**

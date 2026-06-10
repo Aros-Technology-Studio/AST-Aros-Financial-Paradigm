@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-10 (Pass 8 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10)  
+**Date:** 2026-06-10 (Pass 9 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×2)  
 **Task:** Audit ArosCoin emission logic against the canonical model; verify all prior fixes; confirm correctness
 
 ---
@@ -19,6 +19,7 @@
 | 6 | 2026-06-09 | Full code read of `emission.service.ts` and `emission.interfaces.ts`; all 6 canonical rules confirmed correct | Report updated with Pass 6 verification; no code changes required |
 | 7 | 2026-06-10 | Deep independent audit from scratch: all 6 canonical rules verified; all prior fixes confirmed in place; `emission.interfaces.ts`, `pot.service.ts`, `fee_distribution.service.ts`, `01_coin_engine/coin_emission_model.md` all cross-checked | No code changes required — report updated |
 | 8 | 2026-06-10 | Cross-checked `AROS_Coin_TokenSpec.json` (decimals: 8) against `01_coin_engine/README.md` §4 and §8: both still showed `AROS_DECIMALS=6` and `1 AROS = 10^6 arx` | Fixed README §4 and §8 to `AROS_DECIMALS=8` / `1 AROS = 10^8 arx` — aligns with token spec and `emission.service.ts` (`.toFixed(8)`) |
+| 9 | 2026-06-10 | `aro_emission_protocol.md` §VIII specifies KILL_SWITCH env-var emergency brake; guard was absent from `processTransactionEmission()` on all prior passes | Added KILL_SWITCH guard to `EmissionService.processTransactionEmission()` |
 
 ---
 
@@ -159,6 +160,28 @@ Cross-check of `AROS_Coin_TokenSpec.json` against all documentation.
 
 ---
 
+## Pass 9 — KILL_SWITCH Implementation (2026-06-10)
+
+`aro_emission_protocol.md` §VIII specifies an emergency brake: setting `KILL_SWITCH=true` (environment variable) must halt all emission transitions. This guard was **documented but never implemented** across all 8 prior passes.
+
+**Fix applied to `src/token/emission.service.ts`:**
+
+```typescript
+if (process.env.KILL_SWITCH === 'true') {
+    this.logger.error(`[Emission] KILL_SWITCH active — emission halted for TX=${referenceId}`);
+    throw new BadRequestException('Emission engine is halted (KILL_SWITCH=true). Contact protocol governance.');
+}
+```
+
+Added at the top of `processTransactionEmission()`, before `calculate()` is called. When triggered:
+- No ARO are minted, no fees are split, no DB transaction is opened.
+- Caller receives `400 BadRequestException` with a clear governance message.
+- All existing ledger reads and `getAfcReserveState()` calls remain unaffected (read-only mode).
+
+**Canonical model compliance after Pass 9:** All 6 canonical rules implemented; KILL_SWITCH emergency brake now enforced.
+
+---
+
 ## 1. Directory Audit
 
 ### 01_coin_engine — Status: Documentation only (not deprecated) ✅
@@ -280,6 +303,7 @@ After 12.50 AFC accumulated:
 
 | Priority | Item |
 |----------|------|
+| ~~High~~ | ~~**KILL_SWITCH emergency brake**~~ — ✅ Implemented (Pass 9): `processTransactionEmission()` checks `KILL_SWITCH=true` and halts with `BadRequestException`. |
 | High | **Persist `AfcReserveState` to database** — currently in-memory; state lost on restart. Add an `AfcReserveEntity` table; reload `totalReserve` on service init. |
 | Medium | **Wire `mintForTransaction()` into all ingestion paths** — replace residual `mint()` calls in bridge/ingestion with the canonical entry point. |
 | Medium | **Epoch AFC sync** — `FeeDistributionService` writes AFC reserve to ledger but does not call `EmissionService.recordAfcContribution()`; in-memory `reserveIndex` drifts from ledger after epoch finalization. |

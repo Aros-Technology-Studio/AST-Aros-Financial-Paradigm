@@ -82,6 +82,7 @@ export class EmissionService {
      *   4. Burn the emitted ARO (ARO are transient — they exist only during the transaction)
      *
      * Returns the emission result for audit logging.
+     * Halted immediately when KILL_SWITCH=true (emergency brake — see aro_emission_protocol.md §VIII).
      */
     async processTransactionEmission(
         transactionAmount: number,
@@ -89,6 +90,11 @@ export class EmissionService {
         referenceId: string,
         commissionRate?: number,
     ): Promise<EmissionResult> {
+        if (process.env.KILL_SWITCH === 'true') {
+            this.logger.error(`[Emission] KILL_SWITCH active — emission halted for TX=${referenceId}`);
+            throw new BadRequestException('Emission engine is halted (KILL_SWITCH=true). Contact protocol governance.');
+        }
+
         const result = this.calculate(transactionAmount, commissionRate);
 
         this.logger.log(

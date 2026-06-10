@@ -1,9 +1,43 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
+**Branch:** `claude/inspiring-cannon-ncbhm2`  
+**Date:** 2026-06-10  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+
+---
+
+## PASS 2 — 2026-06-10 (claude/inspiring-cannon-ncbhm2)
+
+Three divergences from the canonical model were found and corrected:
+
+### Fix 1 — CRITICAL: Bridge used legacy `mint()` (no fee split, no burn)
+
+**File:** `src/bridge/bridge.service.ts`
+
+Every fiat deposit processed via `handleFiatDepositWebhook()` was calling `TokenService.mint()` — the legacy path that mints ARO without applying the 75/25 fee split and without burning the emission after the transaction. This violated the canonical model for every real deposit entering the system.
+
+**Change:** Replaced `this.tokenService.mint(...)` with `this.tokenService.mintForTransaction(...)`.
+- Full atomic 5-step lifecycle now executes: MINT → NODE_FEE (75%) → AFC_RESERVE (25%) → updateAfcReserve → BURN
+- `relatedTxHash` set to `externalReference` (the canonical linkage identifier)
+
+### Fix 2 — MEDIUM: `TokenomicsService.getCurrentPrice()` read from wrong reserve
+
+**File:** `src/token/tokenomics.service.ts`
+
+`getCurrentPrice()` was reading `ProcessReserveLedgerService.reserveIndex`, which uses a logarithmic process-volume formula (`1.0 + log1p(volume) / 100`) — a legacy per-volume index unrelated to the AFC reserve. Any system component calling `getCurrentPrice()` received a price derived from the wrong data source.
+
+**Change:** Replaced `ProcessReserveLedgerService` dependency with `EmissionService`. `getCurrentPrice()` now calls `EmissionService.getCurrentEmissionPrice()`, which returns the canonical AFC-reserve-backed index (`1.0 + sqrt(totalAfcReserve) / 10_000`).
+
+### Fix 3 — LOW: `TokenService.burn()` called deprecated legacy reserve methods
+
+**File:** `src/token/token.service.ts`
+
+The fiat-withdrawal `burn()` called `processReserve.recordTransactionVolume()` and `tokenomicsService.updateInternalValuation()` (a confirmed no-op). These are vestiges of the legacy pricing path and have no meaningful effect under the canonical model.
+
+**Change:** Removed both calls from `burn()`.
+
+---
 
 ---
 
@@ -140,6 +174,7 @@ After 12.50 AFC accumulated:
 ## 7. Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
-- **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
+- ~~**Wire `mintForTransaction()` into ingestion pipeline**~~ — **DONE** (Pass 2: bridge now uses canonical path).
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+- **Remove legacy `TokenService.mint()`** — now unreachable from production paths; mark `@deprecated` then delete in next breaking release.

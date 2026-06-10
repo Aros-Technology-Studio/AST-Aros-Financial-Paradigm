@@ -143,3 +143,45 @@ After 12.50 AFC accumulated:
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## 8. Re-Audit — 2026-06-10 (AGENT-CORE / claude/inspiring-cannon-j03y2o)
+
+### Critical Gap Found and Fixed
+
+**Problem:** `POST /api/v1/token/mint` in `src/token/token.controller.ts` routed to the legacy
+`TokenService.mint()` method. That legacy method:
+- Does **not** calculate commission
+- Does **not** split fees 75% nodes / 25% AFC reserve
+- Does **not** burn ARO after the transaction
+- Calls the deprecated `tokenomicsService.updateInternalValuation()` (a no-op)
+
+This meant any external caller hitting `POST /api/v1/token/mint` completely bypassed
+`EmissionService` and the canonical model.
+
+**Fix applied to `src/token/token.controller.ts`:**
+
+1. **New canonical endpoint `POST /api/v1/token/emit`** — primary entry point.
+   Accepts `{ transactionAmount: number, recipient, referenceId, commissionRate? }`.
+   Delegates directly to `TokenService.mintForTransaction()` → `EmissionService.processTransactionEmission()`.
+
+2. **Legacy `POST /api/v1/token/mint`** — preserved for backward compatibility.
+   Now routes to `mintForTransaction(parseFloat(amount), recipient, refId)` instead of
+   the broken `mint()`. Original request body shape `{ amount: string, recipient, refId }` is unchanged.
+
+### Re-Audit Checklist (2026-06-10)
+
+| Component | Status |
+|-----------|--------|
+| `EmissionService.calculate()` | ✅ 1:1, 0.5%, 75/25 — correct |
+| `EmissionService.processTransactionEmission()` | ✅ Atomic 4-step lifecycle — correct |
+| `EmissionService.updateAfcReserve()` | ✅ `1.0 + sqrt(total) / 10_000` — correct |
+| `TokenService.mintForTransaction()` | ✅ Canonical entry point — correct |
+| `TokenService.mint()` | ⚠️ Legacy — kept, but no longer reachable via controller |
+| `TokenController POST /emit` | ✅ New canonical endpoint — wired correctly |
+| `TokenController POST /mint` | ✅ Now routes to canonical path (was broken) |
+| `TokenomicsService.updateInternalValuation()` | ✅ Deprecated no-op — harmless |
+| `aro_emission_protocol.md` | ✅ Spec matches implementation |
+
+**All emission paths now conform to the canonical 1:1 model.**

@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-10 (Pass 10 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×3)  
+**Date:** 2026-06-10 (Pass 11 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×4)  
 **Task:** Audit ArosCoin emission logic against the canonical model; verify all prior fixes; confirm correctness
 
 ---
@@ -350,3 +350,24 @@ After 12.50 AFC accumulated:
 | Medium | **Epoch AFC sync** — `FeeDistributionService` writes AFC reserve to ledger but does not call `EmissionService.recordAfcContribution()`; in-memory `reserveIndex` drifts from ledger after epoch finalization. |
 | Low | **Nonce collision under concurrency** — steps 2a, 2b, 4 share `sender = recipientAddress` with nonces `base+1..+3`; two concurrent emissions for the same recipient within 1 ms collide on `(sender, nonce)` unique index. Use a per-address monotonic sequence or a UUID-derived nonce. |
 | Low | **Unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate boundary, zero-amount guard, and `burnAmount + commission == emissionAmount` assertion. |
+
+---
+
+## Pass 11 — Cold-Start Re-Audit (2026-06-10)
+
+Full independent audit against the canonical model. Directories reviewed: `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`.
+
+**Findings:** All 10 prior fixes confirmed in place. Canonical 1:1 emission model fully implemented and correct. No new deviations found. **No code changes made in this pass.**
+
+| Rule | Status |
+|---|---|
+| Emission = txAmount (1:1) | ✅ `emission.service.ts:58` |
+| Commission = txAmount × 0.5% | ✅ `emission.service.ts:59` |
+| Node share = 75% of commission | ✅ `emission.service.ts:60` |
+| AFC share = 25% of commission | ✅ `emission.service.ts:61` |
+| ARO burned after TX (net supply = 0) | ✅ `emission.service.ts:138-146` |
+| AFC index = 1.0 + sqrt(reserve) / 10_000 | ✅ `emission.service.ts:175-176` |
+| KILL_SWITCH emergency brake | ✅ `emission.service.ts:93-96` |
+| 4-step lifecycle atomic (shared EntityManager) | ✅ `emission.service.ts:111-159` |
+| `mint()` FIAT path applies 75/25 split + recordAfcContribution | ✅ `token.service.ts:115-141` |
+| `01_coin_engine/` docs match canonical model | ✅ Verified across all .md files |

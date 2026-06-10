@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-10 (Pass 11 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×4)  
+**Date:** 2026-06-10 (Pass 12 — prior passes: 2026-05-12, 2026-06-09×5, 2026-06-10×5)  
 **Task:** Audit ArosCoin emission logic against the canonical model; verify all prior fixes; confirm correctness
 
 ---
@@ -11,6 +11,7 @@
 
 | Pass | Date | Finding | Action |
 |------|------|---------|--------|
+| 12 | 2026-06-10 | Full cold-start re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`; all 11 prior fixes confirmed; `AROS_Coin_TokenSpec.json` already canonical (correct 75/25 split, `post_transaction_canonical_burn`) | No code changes required — report updated |
 | 1 | 2026-05-12 | Docs in `01_coin_engine/` diverged from canonical (wrong formulas) | Rewrote `coin_emission_model.md`, `aro_emission_protocol.md`, `payment_distribution.md` |
 | 2 | 2026-06-09 | `calculateTotalFees()` summed wrong column (always 0); epoch double-counted AFC reserve; `burnAmount` balance deficit | Fixed `fee_distribution.service.ts`, added `burnAmount` to `EmissionResult`, moved AFC update post-commit |
 | 3 | 2026-06-09 | 4-step emission lifecycle not truly atomic — each ledger call opened its own DB transaction | Fixed `LedgerService.recordTransaction()` + `EmissionService.processTransactionEmission()` |
@@ -371,3 +372,27 @@ Full independent audit against the canonical model. Directories reviewed: `01_co
 | 4-step lifecycle atomic (shared EntityManager) | ✅ `emission.service.ts:111-159` |
 | `mint()` FIAT path applies 75/25 split + recordAfcContribution | ✅ `token.service.ts:115-141` |
 | `01_coin_engine/` docs match canonical model | ✅ Verified across all .md files |
+
+---
+
+## Pass 12 — Cold-Start Re-Audit (2026-06-10)
+
+Full independent audit against the canonical model. Directories reviewed: `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`, `src/fee_distribution/`.
+
+**Key verifications this pass:**
+
+1. **`01_coin_engine/AROS_Coin_TokenSpec.json`** — Previously identified as carrying wrong distribution (75/20/5 split with "AST treasury" and "Audit Pool"). Confirmed now canonical: `nodePool: 0.75, afcReserve: 0.25`, `burnOn: "post_transaction_canonical_burn"`, `commissionRate: 0.005`.
+
+2. **`01_coin_engine/` — not deprecated** — Module 01 contains specification documentation only; actual runtime implementation is in `src/token/`. Arch-level docs mark it as reference/superseded by Module 08 (runtime), but the spec files themselves are valid and aligned.
+
+3. **`10_proof_of_transaction_engine/` — no emission code** — All PoT logic lives in `src/proof_of_transaction_engine/`. Module 10 is documentation only.
+
+4. **`EmissionService.processTransactionEmission()`** — All 5 ledger steps (MINT, FEE×2, BURN, SupplySnapshot) share the same `EntityManager` via `queryRunner.manager`. AFC reserve updated AFTER `commitTransaction()` to prevent in-memory desync on rollback. `KILL_SWITCH=true` guard at entry point.
+
+5. **`EmissionService.calculate()`** — `burnAmount = emissionAmount − commission` correctly avoids ledger deficit. Sum invariant: `burnAmount + nodeShare + afcShare == emissionAmount`.
+
+6. **`FeeDistributionService.distributeRewards()`** — Canonical 75/25 constants (`NODE_SHARE_RATIO = 0.75`, `AFC_SHARE_RATIO = 0.25`) applied at epoch level. AFC reserve address matches `EmissionService`.
+
+**All 11 prior fixes confirmed in place. No new deviations found. No code changes made.**
+
+*Audited by AGENT-CORE | Branch: `agent/core-emission`*

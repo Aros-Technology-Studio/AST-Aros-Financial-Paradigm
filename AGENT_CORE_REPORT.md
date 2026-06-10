@@ -110,10 +110,10 @@ All six operations execute atomically within a single `QueryRunner` transaction.
 TX Amount      = 10,000 ARO
 Emission       = 10,000 ARO  (1:1 mint → recipient)
 Commission     = 10,000 × 0.005 = 50 ARO
-  Node pool    = 50 × 0.75  = 37.50 ARO  (split by PoT weight)
-  AFC reserve  = 50 × 0.25  = 12.50 ARO  (locked in reserve)
-Burn           = 10,000 ARO  (ARO destroyed after TX completes)
-Net circulating change = 0   (mint and burn cancel out)
+  Node pool    = 50 × 0.75  = 37.50 ARO  (split by PoT weight → stays in circulation)
+  AFC reserve  = 50 × 0.25  = 12.50 ARO  (locked in reserve → stays in circulation)
+Burn           = 10,000 − 50 = 9,950 ARO  (recipient's remaining balance burned after TX)
+Net circulating change = +50 ARO  (commission stays: 37.5 nodes + 12.5 AFC)
 
 After 12.50 AFC accumulated:
   reserveIndex = 1.0 + sqrt(12.50) / 10_000 = 1.0000353...
@@ -134,7 +134,7 @@ After 12.50 AFC accumulated:
 
 1. `emissionAmount == transactionAmount` (enforced in `calculate()`, throws on violation)
 2. `nodeShare + afcShare == commission` (exact split, no rounding loss beyond float precision)
-3. `totalMinted == totalBurned` per canonical TX cycle in `SupplySnapshot` (net-zero supply)
+3. `totalBurned == totalMinted − commission` per canonical TX cycle in `SupplySnapshot` (commission stays in circulation)
 4. `reserveIndex` is monotonically non-decreasing (only grows, never resets)
 5. All four ledger steps succeed or all roll back (atomic QueryRunner transaction)
 

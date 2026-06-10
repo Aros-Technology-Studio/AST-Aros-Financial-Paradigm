@@ -235,7 +235,7 @@ export class EmissionService {
         if (newRate <= 0 || newRate >= 1) {
             throw new BadRequestException('Commission rate must be between 0 and 1 exclusive');
         }
-        (this.config as any).defaultCommissionRate = newRate;
+        this.config.defaultCommissionRate = newRate;
         this.logger.log(`[Emission] Commission rate updated to ${(newRate * 100).toFixed(3)}%`);
     }
 

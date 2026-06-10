@@ -11,6 +11,7 @@
 
 | Pass | Date | Finding | Action |
 |------|------|---------|--------|
+| 17 | 2026-06-10 | Fresh cold-start audit of all three target directories; direct read of `emission.service.ts`, `emission.interfaces.ts`, `tokenomics.service.ts`, `fee_distribution.service.ts`, `AROS_Coin_TokenSpec.json`, all `01_coin_engine/*.md`; all 16 prior fixes confirmed; canonical model fully implemented | No code changes required — report updated |
 | 15 | 2026-06-10 | Fresh cold-start audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`; direct read of `emission.service.ts`, `token.service.ts`, `fee_distribution.service.ts`, `tokenomics.service.ts`, `AROS_Coin_TokenSpec.json`; all 14 prior fixes confirmed; canonical model fully implemented | No code changes required — report updated |
 | 14 | 2026-06-10 | Full cold-start re-audit: read `emission.service.ts`, `emission.interfaces.ts`, `token.service.ts`, `tokenomics.service.ts`, `fee_distribution.service.ts`, `process_reserve.service.ts`, `01_coin_engine/coin_emission_model.md`; all 13 prior fixes confirmed; dual-reserve distinction (AFC vs PoT) documented | No code changes required — report updated |
 | 13 | 2026-06-10 | Fresh cold-start re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`; all 12 prior fixes confirmed; `emission.service.ts` fully implements canonical 1:1 model end-to-end | No code changes required — report updated |
@@ -513,3 +514,45 @@ Fresh cold-start audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, 
 | `src/token/emission.service.ts` | Canonical 1:1 model fully correct — unchanged |
 
 **No code changes required. All canonical invariants verified.**
+
+---
+
+## Pass 17 — Full Cold-Start Audit (2026-06-10, branch: `agent/core-emission`)
+
+Independent fresh audit of all three target directories and all key source files.
+
+**Files directly read:**
+- `src/token/emission.service.ts` (231 lines)
+- `src/token/emission.interfaces.ts`
+- `src/token/tokenomics.service.ts`
+- `src/fee_distribution/fee_distribution.service.ts` (275 lines)
+- `01_coin_engine/aro_emission_protocol.md`
+- `01_coin_engine/coin_emission_model.md`
+- `01_coin_engine/payment_distribution.md`
+- `01_coin_engine/AROS_Coin_TokenSpec.json`
+
+**Canonical model verification:**
+
+| Rule | Location | Status |
+|------|----------|--------|
+| `emission = transactionAmount` (1:1) | `emission.service.ts:58` | ✅ |
+| `commission = transactionAmount × 0.005` (0.5%) | `emission.service.ts:59` | ✅ |
+| `nodeShare = commission × 0.75` | `emission.service.ts:60` | ✅ |
+| `afcShare = commission × 0.25` | `emission.service.ts:61` | ✅ |
+| Step 1: MINT to recipient | `emission.service.ts:102–110` | ✅ |
+| Step 2a: FEE_DISTRIBUTION 75% → NODE_POOL | `emission.service.ts:113–121` | ✅ |
+| Step 2b: FEE_DISTRIBUTION 25% → AFC_RESERVE | `emission.service.ts:124–132` | ✅ |
+| Step 3: AFC reserve update (index rises) | `emission.service.ts:135, 168–176` | ✅ |
+| Step 4: BURN emissionAmount → BURN_VAULT | `emission.service.ts:138–146` | ✅ |
+| All 4 steps atomic (QueryRunner) | `emission.service.ts:96–161` | ✅ |
+| `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` | `emission.service.ts:175–176` | ✅ |
+| Net circulating supply = 0 per TX cycle (SupplySnapshot) | `emission.service.ts:220–227` | ✅ |
+| Epoch 75/25: `NODE_SHARE_RATIO=0.75`, `AFC_SHARE_RATIO=0.25` | `fee_distribution.service.ts:148–149` | ✅ |
+| `AROS_Coin_TokenSpec.json` distribution canonical (75/25, `post_transaction_canonical_burn`) | `AROS_Coin_TokenSpec.json` | ✅ |
+| `tokenomics.updateInternalValuation()` correctly deprecated no-op | `tokenomics.service.ts:47–51` | ✅ |
+| Module 01 marked Deprecated; live code in `src/token/` | `README.md`, `docs/architecture/` | ✅ |
+| Module 01 docs (formulas, 75/25 table, burn rules) aligned with canonical model | `01_coin_engine/*.md` | ✅ |
+
+**All 16 prior fixes confirmed. No new deviations found. No code changes required.**
+
+*Audited by AGENT-CORE | Branch: `agent/core-emission` | 2026-06-10*

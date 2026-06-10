@@ -140,9 +140,22 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 7. Remaining Recommendations
+## 7. June 2026 Re-Audit (2026-06-10)
+
+Second pass confirms all findings from Section 2 — no emission logic changes required.
+
+**Action taken:** `tests/test_emission.py` was empty. Populated with a full unit test suite (28 tests):
+
+| Class | Coverage |
+|-------|----------|
+| `TestCalculate` | 1:1 emission, default/custom rate, 75/25 split, burn=full emission, guards on zero/negative/dust/large |
+| `TestNetSupply` | `burn == emissionAmount`, net Δ=0, `SupplySnapshot` invariant, multi-TX accumulation |
+| `TestAfcReserveIndex` | Initial index=1.0, formula, sub-linear growth, monotonicity, AFC accumulation loop |
+
+---
+
+## 8. Remaining Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; state is lost on service restart. Add an `AfcReserveEntity` table with periodic flush.
 - **Wire `mintForTransaction()` into ingestion/bridge pipeline** — replace legacy `mint()` calls in bridge/ingestion paths with the canonical entry point wherever 1:1 semantics are expected.
-- **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate boundary, zero-amount guard, and rounding invariants.
 - **Sync epoch AFC contributions to `EmissionService`** — `FeeDistributionService` records AFC reserve on the ledger but does not call `EmissionService.updateAfcReserve()`; the in-memory `reserveIndex` will drift unless synced after each epoch finalization.

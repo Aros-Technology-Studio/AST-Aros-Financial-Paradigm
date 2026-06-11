@@ -1,7 +1,8 @@
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ProcessingParams } from './tokenomics.interfaces';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
+import { EmissionService } from './emission.service';
 
 @Injectable()
 export class TokenomicsService {
@@ -9,6 +10,8 @@ export class TokenomicsService {
 
     constructor(
         private readonly processReserve: ProcessReserveLedgerService,
+        @Inject(forwardRef(() => EmissionService))
+        private readonly emissionService: EmissionService,
     ) {}
 
     private processingConfig = {
@@ -40,8 +43,8 @@ export class TokenomicsService {
      * NOTE: For canonical price, prefer EmissionService.getCurrentEmissionPrice().
      */
     getCurrentPrice(): number {
-        const state = this.processReserve.getReserveState();
-        return state.reserveIndex;
+        // Canonical: price is driven by the AFC reserve index (sqrt formula in EmissionService).
+        return this.emissionService.getCurrentEmissionPrice();
     }
 
     /** @deprecated Use EmissionService.processTransactionEmission() for canonical flow. */

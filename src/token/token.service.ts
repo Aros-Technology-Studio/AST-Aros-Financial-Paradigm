@@ -76,6 +76,11 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated Use mintForTransaction() — the canonical 1:1 emission with fee split and burn.
+     * This method does not burn emitted ARO and does not apply the 75/25 fee split,
+     * so it violates the canonical emission model. Kept for backward-compat only.
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

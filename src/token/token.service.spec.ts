@@ -12,15 +12,6 @@ import { EmissionService } from './emission.service';
 import { TokenomicsService } from './tokenomics.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
-const mockTokenomicsService = {
-    getCurrentPrice: jest.fn().mockReturnValue(1.0),
-    updateInternalValuation: jest.fn(),
-};
-
-const mockProcessReserveService = {
-    recordTransactionVolume: jest.fn(),
-};
-
 const mockEmissionService = {
     calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125, burnAmount: 99.5, commissionRate: 0.005 }),
     processTransactionEmission: jest.fn().mockResolvedValue({
@@ -35,6 +26,15 @@ const mockEmissionService = {
     }),
     recordAfcContribution: jest.fn(),
     getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
+};
+
+const mockTokenomicsService = {
+    getCurrentPrice: jest.fn().mockReturnValue(1.0),
+    updateInternalValuation: jest.fn(),
+};
+
+const mockProcessReserveService = {
+    recordTransactionVolume: jest.fn(),
 };
 
 const mockSupplyRepo = {
@@ -146,53 +146,6 @@ describe('TokenService', () => {
         });
     });
 
-    describe('mintForTransaction (canonical 1:1)', () => {
-        it('should delegate to EmissionService and return emission result with mintTxHash', async () => {
-            const result = await service.mintForTransaction(10000, 'RECIPIENT_1', 'REF_TX_001');
-
-            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
-                10000, 'RECIPIENT_1', 'REF_TX_001', undefined,
-            );
-            expect(result.emissionAmount).toBe(100);
-            expect(result.mintTxHash).toBe('MINT_TX_HASH');
-        });
-
-        it('should throw BadRequestException for non-positive amount', async () => {
-            await expect(service.mintForTransaction(0, 'RECIPIENT_1', 'REF_1'))
-                .rejects.toThrow(BadRequestException);
-            await expect(service.mintForTransaction(-5, 'RECIPIENT_1', 'REF_2'))
-                .rejects.toThrow(BadRequestException);
-        });
-    });
-
-    describe('burn', () => {
-        it('should burn tokens and trigger bridge payout', async () => {
-            const amount = '50';
-            const sender = 'SENDER_1';
-            const bankDetails = 'BANK_1';
-
-            mockLedgerService.getBalance.mockResolvedValue('100'); // Sufficient balance
-            mockLedgerService.recordTransaction.mockResolvedValue({ hash: 'BURN_TX' });
-            mockQueryRunner.manager.find.mockResolvedValue([]); // No prev snapshot
-            mockBridgeService.requestFiatPayout.mockResolvedValue('BANK_TX_ID');
-
-            const result = await service.burn(amount, sender, bankDetails);
-
-            expect(result.bankTxId).toBe('BANK_TX_ID');
-            expect(mockBridgeService.requestFiatPayout).toHaveBeenCalledWith(amount, bankDetails);
-        });
-
-        it('should throw if insufficient balance', async () => {
-            mockLedgerService.getBalance.mockResolvedValue('10'); // Less than 50
-
-            await expect(service.burn('50', 'SENDER_1', 'BANK_1'))
-                .rejects.toThrow(BadRequestException);
-
-            // Should not even start transaction
-            expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
-        });
-    });
-
     describe('mintForTransaction — canonical 1:1 emission', () => {
         const canonicalEmissionResult = {
             transactionAmount: 10_000,
@@ -271,6 +224,34 @@ describe('TokenService', () => {
         it('emissionAmount should equal transactionAmount (1:1 invariant)', async () => {
             const r = canonicalEmissionResult;
             expect(r.emissionAmount).toBe(r.transactionAmount);
+        });
+    });
+
+    describe('burn', () => {
+        it('should burn tokens and trigger bridge payout', async () => {
+            const amount = '50';
+            const sender = 'SENDER_1';
+            const bankDetails = 'BANK_1';
+
+            mockLedgerService.getBalance.mockResolvedValue('100'); // Sufficient balance
+            mockLedgerService.recordTransaction.mockResolvedValue({ hash: 'BURN_TX' });
+            mockQueryRunner.manager.find.mockResolvedValue([]); // No prev snapshot
+            mockBridgeService.requestFiatPayout.mockResolvedValue('BANK_TX_ID');
+
+            const result = await service.burn(amount, sender, bankDetails);
+
+            expect(result.bankTxId).toBe('BANK_TX_ID');
+            expect(mockBridgeService.requestFiatPayout).toHaveBeenCalledWith(amount, bankDetails);
+        });
+
+        it('should throw if insufficient balance', async () => {
+            mockLedgerService.getBalance.mockResolvedValue('10'); // Less than 50
+
+            await expect(service.burn('50', 'SENDER_1', 'BANK_1'))
+                .rejects.toThrow(BadRequestException);
+
+            // Should not even start transaction
+            expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
         });
     });
 });

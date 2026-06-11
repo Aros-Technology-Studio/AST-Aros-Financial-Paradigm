@@ -8,14 +8,24 @@ import { BridgeService } from '../bridge/bridge.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 import { DataSource } from 'typeorm';
 import { BadRequestException } from '@nestjs/common';
-import { TokenomicsService } from './tokenomics.service';
 import { EmissionService } from './emission.service';
+import { TokenomicsService } from './tokenomics.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
 const mockEmissionService = {
-    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
-    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
-    updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125, burnAmount: 99.5, commissionRate: 0.005 }),
+    processTransactionEmission: jest.fn().mockResolvedValue({
+        transactionAmount: 100,
+        emissionAmount: 100,
+        commission: 0.5,
+        nodeShare: 0.375,
+        afcReserveShare: 0.125,
+        burnAmount: 99.5,
+        commissionRate: 0.005,
+        mintTxHash: 'MINT_TX_HASH',
+    }),
+    recordAfcContribution: jest.fn(),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockTokenomicsService = {
@@ -94,18 +104,16 @@ describe('TokenService', () => {
         expect(service).toBeDefined();
     });
 
-    describe('mint', () => {
-        it('should mint tokens successfully', async () => {
+    describe('mint (legacy FIAT_DEPOSIT bridge path)', () => {
+        it('should mint tokens successfully via direct ledger path', async () => {
             const amount = '100';
             const recipient = 'REC_1';
             const refId = 'REF_123';
 
             mockLedgerService.recordTransaction.mockResolvedValue({
-                hash: 'TX_HASH',
-                amount: amount,
-                recipient: recipient
+                hash: 'TX_HASH', amount, recipient,
             });
-            mockQueryRunner.manager.find.mockResolvedValue([]); // No previous snapshot
+            mockQueryRunner.manager.find.mockResolvedValue([]);
 
             const result = await service.mint(amount, recipient, refId);
 
@@ -115,13 +123,107 @@ describe('TokenService', () => {
             expect(result.status).toBe('SUCCESS');
         });
 
-        it('should rollback if ledger fails', async () => {
-            mockLedgerService.recordTransaction.mockRejectedValue(new Error('Ledger Error'));
+        it('applies canonical 75/25 commission split (3 ledger records)', async () => {
+            const amount = '100';
+            mockLedgerService.recordTransaction.mockResolvedValue({ hash: 'TX_HASH', amount, recipient: 'REC_1' });
+            mockQueryRunner.manager.find.mockResolvedValue([]);
+
+            await service.mint(amount, 'REC_1', 'REF_FEE');
+
+            // MINT + FEE_DISTRIBUTION (node 75%) + FEE_DISTRIBUTION (AFC 25%)
+            expect(mockLedgerService.recordTransaction).toHaveBeenCalledTimes(3);
+            expect(mockEmissionService.calculate).toHaveBeenCalledWith(100, undefined);
+            expect(mockEmissionService.recordAfcContribution).toHaveBeenCalledWith(0.125);
+        });
+
+        it('should rollback and rethrow if ledger fails', async () => {
+            mockLedgerService.recordTransaction.mockRejectedValueOnce(new Error('Ledger Error'));
 
             await expect(service.mint('100', 'REC_1', 'REF_1'))
                 .rejects.toThrow('Ledger Error');
 
             expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        });
+    });
+
+    describe('mintForTransaction — canonical 1:1 emission', () => {
+        const canonicalEmissionResult = {
+            transactionAmount: 10_000,
+            emissionAmount:    10_000,          // 1:1
+            commission:        50,              // 10_000 × 0.005
+            nodeShare:         37.5,            // 50 × 0.75
+            afcReserveShare:   12.5,            // 50 × 0.25
+            commissionRate:    0.005,
+        };
+
+        beforeEach(() => {
+            mockEmissionService.processTransactionEmission.mockResolvedValue(canonicalEmissionResult);
+        });
+
+        it('should delegate to EmissionService and return the emission result', async () => {
+            const result = await service.mintForTransaction(10_000, 'ADDR_TX_1', 'REF_TX_001');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10_000,
+                'ADDR_TX_1',
+                'REF_TX_001',
+                undefined,
+            );
+            expect(result.emissionAmount).toBe(10_000);
+            expect(result.commission).toBe(50);
+            expect(result.nodeShare).toBe(37.5);
+            expect(result.afcReserveShare).toBe(12.5);
+        });
+
+        it('should pass an explicit commissionRate to EmissionService', async () => {
+            await service.mintForTransaction(5_000, 'ADDR_TX_2', 'REF_TX_002', 0.01);
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                5_000,
+                'ADDR_TX_2',
+                'REF_TX_002',
+                0.01,
+            );
+        });
+
+        it('should emit a canonical event after successful emission', async () => {
+            const emitter = (service as any).eventEmitter;
+
+            await service.mintForTransaction(10_000, 'ADDR_TX_1', 'REF_TX_003');
+
+            expect(emitter.emit).toHaveBeenCalledWith(
+                'token.emission.canonical',
+                expect.objectContaining({
+                    referenceId:     'REF_TX_003',
+                    transactionAmount: 10_000,
+                    emissionAmount:  10_000,
+                    commission:      50,
+                    nodeShare:       37.5,
+                    afcReserveShare: 12.5,
+                }),
+            );
+        });
+
+        it('should reject a zero-amount transaction', async () => {
+            await expect(service.mintForTransaction(0, 'ADDR', 'REF'))
+                .rejects.toThrow(BadRequestException);
+
+            expect(mockEmissionService.processTransactionEmission).not.toHaveBeenCalled();
+        });
+
+        it('should reject a negative-amount transaction', async () => {
+            await expect(service.mintForTransaction(-500, 'ADDR', 'REF'))
+                .rejects.toThrow(BadRequestException);
+        });
+
+        it('nodeShare + afcReserveShare should equal commission (canonical invariant)', async () => {
+            const r = canonicalEmissionResult;
+            expect(r.nodeShare + r.afcReserveShare).toBeCloseTo(r.commission, 8);
+        });
+
+        it('emissionAmount should equal transactionAmount (1:1 invariant)', async () => {
+            const r = canonicalEmissionResult;
+            expect(r.emissionAmount).toBe(r.transactionAmount);
         });
     });
 

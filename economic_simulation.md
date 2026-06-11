@@ -14,8 +14,8 @@ Simulate the ArosCoin economy to:
 - **Initial Supply**: 0 ARO (no pre-mine, per `01_coin_engine/coin_emission_model.md`).
 - **Transaction Volume**: 1,000 TX per epoch (default, adjustable for scenarios).
 - **Transaction Fee**: 0.05 ARO per TX (dynamic, based on network load).
-- **Fee Distribution Ratio**: 0.6 (60% of fees to nodes as new tokens).
-- **Burn Ratio**: 0.1 (10% of emitted tokens burned per epoch).
+- **Fee Distribution Ratio**: Node share = 0.75 (75% of collected commission to node pool); AFC reserve share = 0.25 (25% to AFC reserve). Canonical 1:1 emission model: entire TX amount is minted then burned — net circulating supply change = 0.
+- **Burn Ratio**: 1.0 per emission cycle (full burn after TX completion; ARO are transient).
 - **Epoch Duration**: 7 days (configurable).
 - **Epochs Simulated**: 100 (700 days, ~2 years).
 - **Node Count**: 10 active validators per epoch (scalable).

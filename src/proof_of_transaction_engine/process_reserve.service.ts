@@ -31,9 +31,8 @@ export class ProcessReserveLedgerService {
         this.reserveState.totalProcessVolume += volume;
         this.reserveState.lastUpdated = Date.now();
 
-        // Recalculate Index (Simple Logarithmic Growth or Linear Accumulation)
-        // Thesis: "Growth of value through scale"
-        this.reserveState.reserveIndex = 1.0 + (Math.log1p(this.reserveState.totalProcessVolume) / 100);
+        // Canonical sub-linear growth: mirrors AFC reserve formula (sqrt / 10_000).
+        this.reserveState.reserveIndex = 1.0 + Math.sqrt(this.reserveState.totalProcessVolume) / 10_000;
 
         this.logger.log(`[ProcessReserve] Volume Added: ${volume}. Total: ${this.reserveState.totalProcessVolume.toFixed(2)}. Index: ${this.reserveState.reserveIndex.toFixed(4)}`);
     }

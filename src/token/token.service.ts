@@ -76,6 +76,10 @@ export class TokenService {
         return result;
     }
 
+    /**
+     * @deprecated For payment transactions use mintForTransaction() (canonical 1:1 emission).
+     * This method is retained only for FIAT_DEPOSIT flows where ARO are held in a wallet.
+     */
     async mint(amount: string, recipient: string, referenceId: string): Promise<any> {
         if (parseFloat(amount) <= 0) throw new BadRequestException('Amount must be positive');
 

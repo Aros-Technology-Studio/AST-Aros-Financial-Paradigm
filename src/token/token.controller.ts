@@ -7,23 +7,37 @@ export class TokenController {
 
     constructor(private readonly tokenService: TokenService) { }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Use for payment transactions — emit ARO 1:1, collect fee (75% nodes / 25% AFC), burn ARO.
+     * Net circulating supply change = 0. AFC reserve grows → next emission price rises.
+     */
+    @Post('emit')
+    async emitForTransaction(
+        @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+    ) {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {
-        // Institutional Interface: ArosCoinSettlementInterface
-        // Allows AFC anchors to settle large batches of ArosCoin off-chain (or optimized on-chain)
-
         this.logger.log(`[Institutional Settlement] Processing Batch ${body.batchId} from ${body.counterparty}. Vol: ${body.totalVolume}`);
-
-        // 1. Record Volume in Process Reserve (This strengthens the currency)
-        // Accessing private service via public wrapper methods if they existed, or injecting ProcessReserve here too.
-        // For now, let's treat it as a "Mintless" volume update? 
-        // No, settlement usually implies movement.
-        // Let's assume we invoke a method on TokenService to "recordSettlement".
-
-        // return this.tokenService.processSettlement(body);
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
     }
 
+    /**
+     * @deprecated Use POST /emit for canonical payment transaction emission.
+     * This endpoint is retained for FIAT_DEPOSIT flows only (external fiat → ARO held in wallet).
+     */
     @Post('mint')
     async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
         try {

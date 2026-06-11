@@ -2,8 +2,29 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-10  
-**Task:** Audit ArosCoin emission logic against the canonical model; align all code and documentation
+**Date:** 2026-06-11 (re-audit; initial audit: 2026-05-12)  
+**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+
+---
+
+## Re-Audit Summary (2026-06-11)
+
+**ВЕРДИКТ: Canonical 1:1 emission model реализована корректно. Изменения в код не потребовались.**
+
+Полная повторная проверка `src/token/emission.service.ts`, `src/token/token.service.ts`,
+`src/token/tokenomics.service.ts`, `src/fee_distribution/fee_distribution.service.ts` и
+документации в `01_coin_engine/` подтвердила: все требования канонической модели выполнены.
+
+| Требование | Статус |
+|-----------|--------|
+| Emission = TX Amount (1:1) | ✅ `emission = transactionAmount` (emission.service.ts:58) |
+| Commission = TX Amount × 0.5% | ✅ `commission = transactionAmount * rate` (строка 59) |
+| Node Share = 75% комиссии | ✅ `nodeShare = commission * 0.75` (строка 60) |
+| AFC Share = 25% комиссии | ✅ `afcShare = commission * 0.25` (строка 61) |
+| ARO сжигаются после TX | ✅ BURN step в `processTransactionEmission()` (строки 137–146) |
+| AFC reserve → цена растёт | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` (строки 175–176) |
+| Атомарность операций | ✅ `QueryRunner` + rollback (строки 96–161) |
+| Module 01 статус | ✅ Не Deprecated; актуальная документация |
 
 ---
 

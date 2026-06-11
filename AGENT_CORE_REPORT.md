@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
+**Branch:** `agent/core-emission`  
+**Date:** 2026-06-11  
 **Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
 
 ---
@@ -127,19 +127,41 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Documentation Changes Made in This Pass
+## 6. Changes Applied in This Pass (2026-06-11)
 
-| File | Change |
-|------|--------|
-| `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas, AFC reserve index, example |
-| `01_coin_engine/aro_emission_protocol.md` | Replaced complex load-index formula with canonical 1:1 + 75/25 + burn flow |
-| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split; added validator weight formula |
+### 6.1 `01_coin_engine/AROS_Coin_TokenSpec.json` — исправлен (2 расхождения)
+
+| Поле | Было | Стало |
+|------|------|-------|
+| `supplyMechanism.burnOn` | `"governance_rule"` | `"post_transaction_completion"` |
+| `transactionFees.distribution` | `{nodeOperators:0.75, AST treasury:0.20, Audit Pool:0.05}` | `{nodeOperators:0.75, AFC_Reserve:0.25}` |
+
+Поле `burnOn: "governance_rule"` противоречило канонической модели: ARO сгорают автоматически после каждой транзакции, а не по решению governance. Распределение комиссии 75/20/5 противоречило канону 75/25.
+
+### 6.2 `src/token/token.controller.ts` — добавлен канонический эндпоинт
+
+Обнаружена критическая проблема: `TokenService.mintForTransaction()` (канонический путь) был реализован, но недоступен через HTTP API. Единственный существующий эндпоинт `POST /api/v1/token/mint` маршрутизировал в legacy `mint()` для FIAT_DEPOSIT — без комиссии, без burn, без AFC-резерва.
+
+**Добавлен эндпоинт:**
+
+```
+POST /api/v1/token/emit
+Body: { transactionAmount, recipientAddress, referenceId, commissionRate? }
+→ TokenService.mintForTransaction()
+→ EmissionService.processTransactionEmission()
+
+Response: { ...EmissionResult, emissionPrice, afcReserveState }
+```
+
+### 6.3 `src/token/emission.service.ts` — изменений не потребовалось
+
+Код уже полностью соответствует канонической модели (подтверждено аудитом).
 
 ---
 
-## 7. Recommendations
+## 7. Рекомендации (follow-up)
 
-- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
-- **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
+- **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add an `afc_reserve_state` table with periodic snapshots.
+- **Wire `mintForTransaction()` into ingestion pipeline** — replace `mint()` calls in bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
-- **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+- **Epoch AFC sync** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` in-memory; consider syncing after each epoch finalization.

@@ -59,10 +59,7 @@ export class EmissionService {
         const commission = transactionAmount * rate;
         const nodeShare  = commission * this.config.nodeShareRatio;
         const afcShare   = commission * this.config.afcReserveRatio;
-        // FEE_DISTRIBUTION entries are ledger accounting records — they do NOT debit the
-        // recipient's wallet balance. The recipient retains the full emissionAmount until
-        // the BURN step, enabling net-zero circulating supply per canonical TX cycle.
-        const burnAmount = emission;
+        const burnAmount = emission - commission;
 
         return {
             transactionAmount,

@@ -238,3 +238,62 @@ The machine-readable spec described an archaic 3-way split (nodeOperators 0.75 /
 - Added `GET /api/v1/token/emission/price` returning current `reserveIndex` and `AfcReserveState`.
 - `EmissionService` injected directly into the controller for price reads.
 - Legacy `POST /api/v1/token/mint` now routes to `mintForTransaction()` and carries `@deprecated` notice.
+
+---
+
+## 10. Burn Amount Correction (2026-06-11 — `agent/core-emission`)
+
+A residual deviation was found and fixed in `emission.service.ts`:
+
+### The Problem
+
+Previous pass set `burnAmount = emissionAmount - commission`. This caused:
+- Burn: 9,950 ARO (for a $10,000 TX with 50 ARO commission)
+- Net circulating supply change: **+50 ARO per TX** (commission remained in circulation)
+
+This contradicts the canonical model, which specifies:
+```
+Burn           = 10,000 ARO  (destroyed after TX completes)
+Net circulating change = 0
+```
+
+The erroneous logic assumed that `FEE_DISTRIBUTION` ledger entries debit the recipient's wallet balance (reducing available ARO for burning). They do not — `FEE_DISTRIBUTION` entries are accounting records for tracking commission allocations, not balance debits.
+
+### The Fix
+
+**`src/token/emission.service.ts`** — `calculate()`:
+```typescript
+// Before (wrong):
+const burnAmount = emission - commission;   // 9,950 for $10K TX
+
+// After (canonical):
+const burnAmount = emission;               // 10,000 — full burn, net zero supply
+```
+
+**`src/token/emission.service.ts`** — `updateSupplySnapshot()`:
+```typescript
+// Before (wrong):
+newSnapshot.totalBurned       = (prevBurned + result.burnAmount).toFixed(8);  // +9,950
+newSnapshot.circulatingSupply = (prevSupply + result.commission).toFixed(8);  // +50 ARO
+
+// After (canonical):
+newSnapshot.totalBurned       = (prevBurned + result.emissionAmount).toFixed(8);  // +10,000
+newSnapshot.circulatingSupply = prevSupply.toFixed(8);                            // net zero
+```
+
+**`src/token/emission.interfaces.ts`** — `EmissionResult.burnAmount` comment updated to:
+```typescript
+burnAmount: number;  // = emissionAmount (full burn — FEE_DISTRIBUTION entries are accounting-only)
+```
+
+### Verified Example ($10,000 transaction) — Post-Fix
+
+```
+TX Amount    = 10,000
+Emission     = 10,000 ARO  minted to recipient (1:1)
+Commission   = 10,000 × 0.005 = 50 ARO  (accounting allocation only)
+  Node pool  = 50 × 0.75  = 37.50 ARO → SYSTEM_NODE_POOL  [ledger record only]
+  AFC share  = 50 × 0.25  = 12.50 ARO → SYSTEM_AFC_RESERVE [drives price index]
+Burn         = 10,000 ARO → SYSTEM_BURN_VAULT  (full emission, canonical)
+Net supply Δ = 0  ← canonical
+```

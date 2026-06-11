@@ -2,8 +2,9 @@
 
 **Agent:** AGENT-CORE  
 **Branch:** `agent/core-emission`  
-**Date:** 2026-06-11 (re-audit; initial audit: 2026-05-12)  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+**Previous audit:** `claude/inspiring-cannon-4qbjK` → merged PR #72 (2026-05-12)  
+**This audit:** 2026-06-11  
+**Task:** Re-audit ArosCoin emission logic; confirm canonical model; fix any remaining gaps
 
 ---
 
@@ -161,7 +162,27 @@ After 12.50 AFC accumulated:
 
 ---
 
+<<<<<<< HEAD
 ## 7. June 2026 Re-Audit (2026-06-10)
+=======
+## 6. Changes Made in This Audit Pass (2026-06-11)
+
+### Gap identified: canonical endpoint not exposed in controller
+
+**Before:** `token.controller.ts` exposed only `POST /api/v1/token/mint` (legacy fiat-bridge path).  
+`TokenService.mintForTransaction()` existed but was unreachable from the REST API.
+
+**Fix applied:**
+
+```
+POST /api/v1/token/emit
+Body: { transactionAmount: number, recipient: string, referenceId: string, commissionRate?: number }
+→ delegates to TokenService.mintForTransaction() → EmissionService.processTransactionEmission()
+Returns: EmissionResult
+```
+
+### Previous documentation changes (2026-05-12 pass)
+>>>>>>> 99cee7f (feat: canonical 1:1 emission model implementation)
 
 Second pass confirms all findings from Section 2 — no emission logic changes required.
 

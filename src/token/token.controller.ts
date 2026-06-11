@@ -1,11 +1,33 @@
 import { Controller, Post, Body, Get, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { TokenService } from './token.service';
+import { EmissionResult } from './emission.interfaces';
 
 @Controller('api/v1/token')
 export class TokenController {
     private readonly logger = new Logger(TokenController.name);
 
     constructor(private readonly tokenService: TokenService) { }
+
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Emits ARO equal to transactionAmount, splits commission 75% nodes / 25% AFC,
+     * then burns the emitted tokens. Net circulating supply change = 0.
+     */
+    @Post('emit')
+    async emitForTransaction(
+        @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+    ): Promise<EmissionResult> {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.transactionAmount,
+                body.recipient,
+                body.referenceId,
+                body.commissionRate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @Post('settlement/clearing')
     async processInstitutionalSettlement(@Body() body: { batchId: string, totalVolume: number, counterparty: string }) {

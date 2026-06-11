@@ -143,3 +143,38 @@ After 12.50 AFC accumulated:
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## 8. Follow-up Audit Pass — 2026-06-11 (branch: `agent/core-emission`)
+
+A second audit pass was executed against the same scope. All code in `src/token/emission.service.ts` and `src/token/token.service.ts::mintForTransaction()` remains fully canonical. Two additional defects were found and fixed:
+
+### 8.1 `01_coin_engine/AROS_Coin_TokenSpec.json` — Fee Distribution Outdated ❌ → ✅ Fixed
+
+The machine-readable token spec still described an archaic 3-way split that predates the canonical 2-way model:
+
+```json
+// BEFORE (wrong)
+"distribution": { "nodeOperators": 0.75, "AST treasury": 0.20, "Audit Pool": 0.05 }
+
+// AFTER (canonical)
+"distribution": { "nodePool": 0.75, "afcReserve": 0.25 }
+```
+
+The `calculation` field was also updated from a vague string to the actual formula reference.
+
+### 8.2 `src/token/token.controller.ts` — Canonical Emission Endpoint Missing ❌ → ✅ Fixed
+
+`POST /api/v1/token/mint` only routed to the legacy fiat-deposit `tokenService.mint()`. The canonical emission path (`EmissionService.processTransactionEmission()` via `mintForTransaction()`) was reachable in code but not exposed via HTTP.
+
+Added `POST /api/v1/token/emit` endpoint:
+
+```typescript
+@Post('emit')
+async emitForTransaction(
+    @Body() body: { transactionAmount: number; recipient: string; referenceId: string; commissionRate?: number },
+): Promise<EmissionResult>
+```
+
+This is the correct API entry point for any service triggering a canonical ARO emission cycle.

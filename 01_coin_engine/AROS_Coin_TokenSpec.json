@@ -22,11 +22,10 @@
     },
     "transactionFees": {
       "feeType": "variable",
-      "calculation": "gasless_weighted + time_priority + load_balance",
+      "calculation": "transactionAmount × commissionRate (default 0.5%)",
       "distribution": {
-        "nodeOperators": 0.75,
-        "AST treasury": 0.20,
-        "Audit Pool": 0.05
+        "nodePool": 0.75,
+        "afcReserve": 0.25
       }
     },
     "compatibility": {

@@ -58,7 +58,7 @@ Based on one or more of the following:
 ### 🔹 5. Distribution Routing
 
 Token allocation performed using one of the following models:
-- Validator payment split (e.g., 60% to confirming node, 40% to treasury)
+- Canonical fee split: **75% to node pool** (distributed by PoT weight among validators), **25% to AFC reserve** (drives emission price index upward)
 - NodeChain round-based rotation
 - Governance treasury replenishment
 - Shard-local redistribution

@@ -9,6 +9,7 @@ import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { EmissionService } from '../token/emission.service';
 import { DataSource } from 'typeorm';
 
 describe('FeeDistributionService', () => {
@@ -29,6 +30,7 @@ describe('FeeDistributionService', () => {
         createQueryBuilder: jest.fn(() => ({
             select: jest.fn().mockReturnThis(),
             where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
             getRawOne: jest.fn().mockReturnValue({ sum: '100.00' }),
         })),
         save: jest.fn(),
@@ -40,6 +42,11 @@ describe('FeeDistributionService', () => {
     };
 
     const mockTokenService = {};
+
+    const mockEmissionService = {
+        recordAfcContribution: jest.fn(),
+        getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
+    };
 
     const mockNodeChainService = {
         getConnectedNodes: jest.fn().mockReturnValue([
@@ -72,6 +79,7 @@ describe('FeeDistributionService', () => {
                 { provide: getRepositoryToken(Transaction), useValue: mockTransactionRepo },
                 { provide: PoTService, useValue: mockPoTService },
                 { provide: TokenService, useValue: mockTokenService },
+                { provide: EmissionService, useValue: mockEmissionService },
                 { provide: NodeChainService, useValue: mockNodeChainService },
                 { provide: SmartContractIntegration, useValue: { validateReserve: jest.fn().mockResolvedValue({ isValid: true, onChainSupply: 100 }) } },
                 { provide: DataSource, useValue: mockDataSource },

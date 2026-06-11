@@ -26,11 +26,20 @@ AFC Reserve  = Commission × 0.25            (25% → locked in AFC reserve cont
 TX Amount      = 10,000 ARO
 Emission       = 10,000 ARO  (minted to recipient, 1:1)
 Commission     = 10,000 × 0.005 = 50 ARO
-  Node pool    = 50 × 0.75  = 37.50 ARO  (distributed by PoT weight)
-  AFC reserve  = 50 × 0.25  = 12.50 ARO  (locked in reserve)
-Burn           = 10,000 ARO  (destroyed after TX completes)
-Net circulating change = 0
+  Node pool    = 50 × 0.75  = 37.50 ARO  (recipient → NODE_POOL, PoT-weighted)
+  AFC reserve  = 50 × 0.25  = 12.50 ARO  (recipient → AFC_RESERVE)
+Burn           = 9,950 ARO   (recipient → BURN_VAULT; = emission − commission)
+Recipient net  = +10,000 − 37.50 − 12.50 − 9,950 = 0
+
+Net circulating change = +50 ARO per TX
+  (commission stays in node pool + AFC reserve as protocol reward)
 ```
+
+> **Accounting note:** The recipient receives the full `emissionAmount` (1:1) and pays commission
+> from that balance before the remainder is burned. Burning the full `emissionAmount` would create
+> a ledger deficit equal to the commission; instead `burnAmount = emissionAmount − commission`
+> keeps every ledger entry balanced. The commission (50 ARO) permanently enters circulation as
+> node rewards (37.50) and AFC reserve backing (12.50).
 
 ## AFC Reserve Price Index
 

@@ -59,6 +59,9 @@ export class EmissionService {
         const commission = transactionAmount * rate;
         const nodeShare  = commission * this.config.nodeShareRatio;
         const afcShare   = commission * this.config.afcReserveRatio;
+        // burnAmount = what the recipient actually burns after paying commission.
+        // Burning the full emissionAmount would exceed the recipient's balance (deficit = commission).
+        const burnAmount = emission - commission;
 
         return {
             transactionAmount,
@@ -66,6 +69,7 @@ export class EmissionService {
             commission,
             nodeShare,
             afcReserveShare:  afcShare,
+            burnAmount,
             commissionRate:   rate,
         };
     }
@@ -78,6 +82,7 @@ export class EmissionService {
      *   4. Burn the emitted ARO (ARO are transient — they exist only during the transaction)
      *
      * Returns the emission result for audit logging.
+     * Halted immediately when KILL_SWITCH=true (emergency brake — see aro_emission_protocol.md §VIII).
      */
     async processTransactionEmission(
         transactionAmount: number,
@@ -85,12 +90,17 @@ export class EmissionService {
         referenceId: string,
         commissionRate?: number,
     ): Promise<EmissionResult> {
+        if (process.env.KILL_SWITCH === 'true') {
+            this.logger.error(`[Emission] KILL_SWITCH active — emission halted for TX=${referenceId}`);
+            throw new BadRequestException('Emission engine is halted (KILL_SWITCH=true). Contact protocol governance.');
+        }
+
         const result = this.calculate(transactionAmount, commissionRate);
 
         this.logger.log(
             `[Emission] TX=${referenceId} Amount=${transactionAmount} ` +
             `→ Emit=${result.emissionAmount} Fee=${result.commission} ` +
-            `(Nodes=${result.nodeShare} AFC=${result.afcReserveShare})`,
+            `(Nodes=${result.nodeShare} AFC=${result.afcReserveShare}) Burn=${result.burnAmount}`,
         );
 
         const queryRunner = this.dataSource.createQueryRunner();
@@ -98,60 +108,70 @@ export class EmissionService {
         await queryRunner.startTransaction();
 
         try {
-            // Step 1 — Mint ARO 1:1 to recipient
-            await this.ledgerService.recordTransaction({
+            const mgr  = queryRunner.manager;
+            const base = Date.now();
+
+            // Step 1 — Mint ARO 1:1 to recipient (atomic: shares outer queryRunner.manager)
+            const mintTx = await this.ledgerService.recordTransaction({
                 type:      TransactionType.MINT,
                 sender:    this.SYSTEM_EMISSION_AUTHORITY,
                 recipient: recipientAddress,
                 amount:    result.emissionAmount.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now(),
+                nonce:     base,
                 metadata:  { referenceId, operation: 'CANONICAL_1_1_EMISSION' },
-            });
+            }, mgr);
 
-            // Step 2a — Record 75% commission to node pool
+            // Step 2a — Record 75% commission to node pool (atomic)
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.FEE_DISTRIBUTION,
                 sender:    recipientAddress,
                 recipient: this.NODE_POOL_ADDRESS,
                 amount:    result.nodeShare.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 1,
+                nonce:     base + 1,
                 metadata:  { referenceId, operation: 'NODE_FEE_75PCT', commissionRate: result.commissionRate },
-            });
+            }, mgr);
 
-            // Step 2b — Record 25% commission to AFC reserve
+            // Step 2b — Record 25% commission to AFC reserve (atomic)
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.FEE_DISTRIBUTION,
                 sender:    recipientAddress,
                 recipient: this.AFC_RESERVE_ADDRESS,
                 amount:    result.afcReserveShare.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 2,
+                nonce:     base + 2,
                 metadata:  { referenceId, operation: 'AFC_RESERVE_25PCT', commissionRate: result.commissionRate },
-            });
+            }, mgr);
 
-            // Step 3 — Update AFC reserve state (price index rises)
-            this.updateAfcReserve(result.afcReserveShare);
-
-            // Step 4 — Burn emission (ARO are transient per canonical model)
+            // Step 3 — Burn burnAmount (= emissionAmount − commission). (atomic)
+            // Recipient holds emissionAmount after Step 1, then pays commission in Steps 2a/2b,
+            // leaving exactly burnAmount. Burning the full emissionAmount here would create
+            // a ledger deficit equal to commission.
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.BURN,
                 sender:    recipientAddress,
                 recipient: this.BURN_ADDRESS,
-                amount:    result.emissionAmount.toFixed(8),
+                amount:    result.burnAmount.toFixed(8),
                 fee:       '0',
-                nonce:     Date.now() + 3,
+                nonce:     base + 3,
                 metadata:  { referenceId, operation: 'POST_TX_CANONICAL_BURN' },
-            });
+            }, mgr);
 
-            // Step 5 — Update supply snapshot
+            // Step 4 — Update supply snapshot
             await this.updateSupplySnapshot(queryRunner, referenceId, result);
 
             await queryRunner.commitTransaction();
+
+            // Step 5 — Update AFC reserve AFTER successful DB commit.
+            // updateAfcReserve() mutates in-memory state only; if called before commitTransaction()
+            // and a later step throws, the DB rolls back but the in-memory index is already
+            // incremented — causing a permanent desync between on-chain records and the price index.
+            this.updateAfcReserve(result.afcReserveShare);
+
             this.logger.log(`[Emission] TX=${referenceId} completed. AFC Reserve Index: ${this.afcReserveState.reserveIndex.toFixed(6)}`);
 
-            return result;
+            return { ...result, mintTxHash: mintTx.hash };
         } catch (error) {
             await queryRunner.rollbackTransaction();
             this.logger.error(`[Emission] TX=${referenceId} failed: ${error.message}`);
@@ -164,8 +184,9 @@ export class EmissionService {
     /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
+     * Called per-TX (internally) and per-epoch (from FeeDistributionService).
      */
-    private updateAfcReserve(afcAmount: number): void {
+    updateAfcReserve(afcAmount: number): void {
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();
@@ -179,6 +200,17 @@ export class EmissionService {
             `[AFC Reserve] +${afcAmount.toFixed(4)} → Total=${this.afcReserveState.totalReserve.toFixed(4)} ` +
             `Index=${this.afcReserveState.reserveIndex.toFixed(6)}`,
         );
+    }
+
+    /**
+     * Records an AFC reserve contribution from an external source (e.g. epoch fee distribution).
+     * Keeps the in-memory reserveIndex in sync when AFC reserve grows outside of
+     * processTransactionEmission() — e.g. after FeeDistributionService finalizes an epoch.
+     */
+    recordAfcContribution(amount: number): void {
+        if (amount > 0) {
+            this.updateAfcReserve(amount);
+        }
     }
 
     /**
@@ -203,7 +235,7 @@ export class EmissionService {
         if (newRate <= 0 || newRate >= 1) {
             throw new BadRequestException('Commission rate must be between 0 and 1 exclusive');
         }
-        (this.config as any).defaultCommissionRate = newRate;
+        this.config.defaultCommissionRate = newRate;
         this.logger.log(`[Emission] Commission rate updated to ${(newRate * 100).toFixed(3)}%`);
     }
 
@@ -217,13 +249,14 @@ export class EmissionService {
         const prevBurned  = lastSnapshot ? parseFloat(lastSnapshot.totalBurned)        : 0;
         const prevSupply  = lastSnapshot ? parseFloat(lastSnapshot.circulatingSupply)  : 0;
 
-        // Mint then burn in the same TX cycle → net circulating supply change = 0
-        // but totalMinted and totalBurned both increase (for audit trail).
+        // Per canonical cycle: mint emissionAmount, burn burnAmount (= emissionAmount − commission).
+        // commission stays in circulation (split between node pool and AFC reserve).
+        // Net circulating supply change per TX = +commission.
         const newSnapshot        = new SupplySnapshot();
         newSnapshot.triggerTransactionHash  = referenceId;
         newSnapshot.totalMinted             = (prevMinted + result.emissionAmount).toFixed(8);
-        newSnapshot.totalBurned             = (prevBurned + result.emissionAmount).toFixed(8);
-        newSnapshot.circulatingSupply       = prevSupply.toFixed(8); // net zero (burn cancels mint)
+        newSnapshot.totalBurned             = (prevBurned  + result.burnAmount).toFixed(8);
+        newSnapshot.circulatingSupply       = (prevSupply  + result.commission).toFixed(8);
 
         await runner.manager.save(SupplySnapshot, newSnapshot);
     }

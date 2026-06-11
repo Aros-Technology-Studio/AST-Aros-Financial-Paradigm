@@ -59,12 +59,10 @@ The emitted volume is subdivided by role:
 
 | **Role** | **Allocation %** |
 | --- | --- |
-| Validator Payment | 60% |
-| Governance pool | 25% |
-| Ecosystem reserve | 10% |
-| Risk buffer | 5% |
+| Node Pool (validators, split by PoT weight) | 75% |
+| AFC Reserve (funds emission price index) | 25% |
 
-These ratios may evolve under governance consensus.
+Canonical split per `01_coin_engine/payment_distribution.md` and implemented in `src/fee_distribution/fee_distribution.service.ts`. Ratios may evolve under governance consensus.
 
 ---
 

@@ -65,9 +65,9 @@ pnpm lint && pnpm typecheck
 
 **4) Token Specification (Essentials)**
 	•	Symbol: AROS
-	•	Base unit: arx (1 AROS = 10^6 arx, fixed)
+	•	Base unit: arx (1 AROS = 10^8 arx, fixed)
 	•	Supply type: Fee Distribution-bounded with PoT-weighted payments
-	•	Decimals: 6
+	•	Decimals: 8
 	•	Pause switches:
 	•	EMISSION_PAUSE (governance circuit-breaker)
 	•	MINT_BURN_PAUSE (kill-switch for state transitions)
@@ -76,13 +76,17 @@ Machine-readable spec lives in AROS_Coin_TokenSpec.json.
 
 ⸻
 
-**5) Fee Distribution Model (Summary)**
+**5) Emission Model (Summary)**
 
-Fee Distribution = Base schedule × Network activity multiplier × Compliance factor.
+Emission = Transaction Amount (1:1 — no multiplier, no decay curve).
 
-Base schedule is a predictable curve (piecewise geometric decay). Activity multiplier derives from PoT (volume/uniques/latency buckets). Compliance factor is a capped modifier from The All-Seeing Eye (0.0–1.0).
+For each verified transaction of amount `A`:
+- `A` ARO are minted to the recipient.
+- A commission (`A × rate`, default 0.5%) is split: **75% → node pool**, **25% → AFC reserve**.
+- The emitted `A` ARO are burned on transaction completion (net circulating supply change = 0).
+- The AFC reserve accumulates → emission price index rises monotonically (`reserveIndex = 1.0 + sqrt(totalReserve) / 10_000`).
 
-Mathematical details are in coin_emission_model.md with reference vectors in /fixtures/emission/.
+Full mathematical spec: `coin_emission_model.md`. Reference implementation: `src/token/emission.service.ts`.
 
 ⸻
 
@@ -103,8 +107,9 @@ See burn_and_mint_rules.md for exhaustive truth tables and failure codes.
 
 **7) Payments & Distribution**
 	•	Epoch: fixed 600s (example; configurable via env POT_EPOCH_SECS).
-	•	Pool split: R_validator, R_operator, R_ecosystem with governance-locked ratios.
-	•	Weighting: validator shares proportional to PoT-contributed verified transactions, adjusted by reliability score and slashing events.
+	•	Commission split: **75% → node pool**, **25% → AFC reserve** (applies both per-TX and per-epoch finalization).
+	•	Validator allocation: each node receives `nodePool × (potScore_node / Σ potScore_all_nodes)`.
+	•	PoT weight: function of `txCount`, `validations`, `penaltyScore`; normalized to sum = 1.0.
 
 Formulas and proofs in payment_distribution.md.
 
@@ -114,11 +119,11 @@ Formulas and proofs in payment_distribution.md.
 
 Environment variables (TypeScript impl):
 
-AROS_DECIMALS=6
+AROS_DECIMALS=8
 POT_EPOCH_SECS=600
-EMISSION_BASE_RATE=1.0
-EMISSION_DECAY=0.965
-COMPLIANCE_MAX_REDUCTION=0.25
+EMISSION_COMMISSION_RATE=0.005
+NODE_SHARE_RATIO=0.75
+AFC_RESERVE_RATIO=0.25
 NODECHAIN_RPC=http://nodechain:8545
 KILL_SWITCH=false
 
@@ -130,35 +135,39 @@ Never store secrets in repo. Use Docker secrets or CI variables. AST has no end-
 
 OpenAPI fragments live in /specs/openapi/*.yaml. Typical flows:
 
-9.1 Calculate next emission
+9.1 Calculate emission (pure, no side effects)
 
-POST /v1/emission/next
+POST /v1/emission/calculate
 
 {
-  "epoch": 102934,
-  "activity": {"tx_volume": "321904.200000", "unique_senders": 1842, "latency_bucket": "P50"},
-  "policy": {"base_rate": 1.0, "decay": 0.965},
-  "compliance_factor": 0.92
+  "transactionAmount": 10000,
+  "commissionRate": 0.005
 }
 
 Response:
 
-{"mint_arx": "128900000", "cap_hit": false, "explanations": ["base*decay*activity*compliance"]}
+{
+  "transactionAmount": 10000,
+  "emissionAmount": 10000,
+  "commission": 50,
+  "nodeShare": 37.5,
+  "afcReserveShare": 12.5,
+  "commissionRate": 0.005
+}
 
-**9.2 Apply mint/burn**
+**9.2 Process canonical emission (mint + fee split + burn, atomic)**
 
-POST /v1/supply/transition
+POST /v1/emission/process
 
 {
-  "transition_id": "tx_01HXR...",
-  "kind": "MINT_payment",
-  "amount_arx": "128900000",
-  "evidence": {"nodechain_event": "evt_...", "proof": "0xabc..."}
+  "transactionAmount": 10000,
+  "recipientAddress": "addr_...",
+  "referenceId": "tx_01HXR..."
 }
 
 Response:
 
-{"ok": true, "total_supply_arx": "123456789000000"}
+{"ok": true, "emissionAmount": "10000.00000000", "afcReserveIndex": 1.0000353}
 
 
 ⸻

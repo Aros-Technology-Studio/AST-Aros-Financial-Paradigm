@@ -55,14 +55,12 @@ Where:
 
 Newly minted tokens are distributed as follows (default values):
 
-| **Receiver** | **Percentage** |
-| --- | --- |
-| Processing Nodes | 60% |
-| Ecosystem Reserve | 25% |
-| Governance Pool | 10% |
-| Emergency Buffer | 5% |
+| **Receiver**       | **Percentage** |
+| ------------------ | -------------- |
+| Node Pool (PoT weight-based split) | 75% |
+| AFC Reserve (funds emission price index) | 25% |
 
-> Note: These values are tunable via DAO proposals or governance AI protocol.
+> Canonical split per `01_coin_engine/payment_distribution.md`. Applied to the commission only (commission = TX amount × 0.5%); the full emission amount (1:1 with TX) is burned after the transaction. These values are tunable via DAO proposals or governance AI protocol.
 > 
 
 ---

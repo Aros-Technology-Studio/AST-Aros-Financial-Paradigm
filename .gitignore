@@ -16,6 +16,8 @@ yarn-error.log*
 Thumbs.db
 
 .venv
+__pycache__/
+*.pyc
 
 contracts/cache
 contracts/artifacts

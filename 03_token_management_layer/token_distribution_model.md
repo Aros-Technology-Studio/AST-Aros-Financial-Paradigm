@@ -10,14 +10,12 @@ This document outlines the distribution logic of newly minted ArosCoins and the 
 
 Upon issuance (triggered by the Dynamic Fee Distribution Formula `T_E = α·TV + β·U + γ`), tokens are distributed into the following allocations:
 
-| Pool Name           | Purpose                                             | Default Share |
-|---------------------|------------------------------------------------------|---------------|
-| **Processing Nodes**| Compensation for participating in transaction processing and encryption | 60% |
-| **Ecosystem Reserve** | Long-term project support, partnerships, grants     | 25%           |
-| **Governance Pool**  | Used by the All-Seeing Eye for protocol-level proposals and upgrades | 10% |
-| **Emergency Buffer** | Crisis fund for economic stabilization and extreme volatility | 5%            |
+| Pool Name              | Purpose                                                              | Default Share |
+|------------------------|----------------------------------------------------------------------|---------------|
+| **Node Pool**          | Compensation split by PoT weight among validating nodes              | 75%           |
+| **AFC Reserve**        | Accumulated reserve that drives the emission price index upward      | 25%           |
 
-> These proportions can be rebalanced through governance actions.
+Canonical split per `01_coin_engine/payment_distribution.md` (updated from legacy 60/25/10/5 model). Proportions may be rebalanced through governance actions.
 
 ---
 
@@ -25,10 +23,10 @@ Upon issuance (triggered by the Dynamic Fee Distribution Formula `T_E = α·TV +
 
 ```mermaid
 graph TD
-    Mint[New Tokens Minted] --> Nodes[Processing Nodes 60%]
-    Mint --> Ecosystem[Ecosystem Reserve 25%]
-    Mint --> Governance[Governance Pool 10%]
-    Mint --> Emergency[Emergency Buffer 5%]
+    Mint[New Tokens Minted 1:1] --> Recipient[Recipient Wallet]
+    Recipient --> NodePool[Node Pool 75% of commission]
+    Recipient --> AFC[AFC Reserve 25% of commission]
+    Recipient --> Burn[BURN VAULT — full emission amount]
 ```
 
 ---

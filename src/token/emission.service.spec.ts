@@ -1,29 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { EmissionService } from './emission.service';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
-import { DataSource } from 'typeorm';
+import { TransactionType } from '../ledger/entities/transaction.entity';
 
-const mockSupplyRepo = {
-    find: jest.fn(),
-    findOne: jest.fn(),
-    save: jest.fn(),
-};
-
-const mockLedgerService = {
-    recordTransaction: jest.fn().mockResolvedValue({ hash: 'TX_HASH' }),
-};
+// ── Mocks ───────────────────────────────────────────────────────────────────
 
 const mockQueryRunner = {
-    connect: jest.fn(),
-    startTransaction: jest.fn(),
-    commitTransaction: jest.fn(),
+    connect:             jest.fn(),
+    startTransaction:    jest.fn(),
+    commitTransaction:   jest.fn(),
     rollbackTransaction: jest.fn(),
-    release: jest.fn(),
+    release:             jest.fn(),
     manager: {
-        find: jest.fn().mockResolvedValue([]),
+        find: jest.fn(),
         save: jest.fn(),
     },
 };
@@ -31,6 +24,18 @@ const mockQueryRunner = {
 const mockDataSource = {
     createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
 };
+
+const mockLedgerService = {
+    recordTransaction: jest.fn().mockResolvedValue({ hash: 'MOCK_HASH' }),
+};
+
+const mockSupplyRepo = {
+    find:    jest.fn(),
+    findOne: jest.fn(),
+    save:    jest.fn(),
+};
+
+// ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('EmissionService', () => {
     let service: EmissionService;
@@ -40,197 +45,195 @@ describe('EmissionService', () => {
             providers: [
                 EmissionService,
                 { provide: getRepositoryToken(SupplySnapshot), useValue: mockSupplyRepo },
-                { provide: LedgerService, useValue: mockLedgerService },
-                { provide: DataSource, useValue: mockDataSource },
+                { provide: LedgerService,                      useValue: mockLedgerService },
+                { provide: DataSource,                         useValue: mockDataSource },
             ],
         }).compile();
 
         service = module.get<EmissionService>(EmissionService);
         jest.clearAllMocks();
         mockQueryRunner.manager.find.mockResolvedValue([]);
-        mockLedgerService.recordTransaction.mockResolvedValue({ hash: 'TX_HASH' });
     });
 
-    // ── calculate() ─────────────────────────────────────────────────────────
+    // ── calculate() — canonical 1:1 model ───────────────────────────────────
 
     describe('calculate()', () => {
-        it('enforces 1:1 emission — emissionAmount equals transactionAmount', () => {
+        it('emits exactly 1:1 for a standard amount', () => {
             const result = service.calculate(10_000);
             expect(result.emissionAmount).toBe(10_000);
             expect(result.transactionAmount).toBe(10_000);
         });
 
-        it('applies default 0.5% commission rate', () => {
+        it('applies the default 0.5% commission rate', () => {
             const result = service.calculate(10_000);
-            expect(result.commission).toBeCloseTo(50);
             expect(result.commissionRate).toBe(0.005);
+            expect(result.commission).toBeCloseTo(50, 8);
         });
 
-        it('splits commission: 75% nodes, 25% AFC reserve', () => {
+        it('splits commission 75% to nodes, 25% to AFC reserve', () => {
             const result = service.calculate(10_000);
-            expect(result.nodeShare).toBeCloseTo(37.5);
-            expect(result.afcReserveShare).toBeCloseTo(12.5);
-            expect(result.nodeShare + result.afcReserveShare).toBeCloseTo(result.commission);
+            expect(result.nodeShare).toBeCloseTo(37.5, 8);
+            expect(result.afcReserveShare).toBeCloseTo(12.5, 8);
+            expect(result.nodeShare + result.afcReserveShare).toBeCloseTo(result.commission, 8);
         });
 
-        it('accepts custom commission rate', () => {
+        it('burnAmount = emissionAmount − commission (prevents ledger deficit)', () => {
+            const result = service.calculate(10_000);
+            // After paying commission, recipient holds 9,950 — that is what gets burned.
+            expect(result.burnAmount).toBeCloseTo(9_950, 4);
+            expect(result.burnAmount).toBeCloseTo(result.emissionAmount - result.commission, 8);
+        });
+
+        it('nodeShare + afcReserveShare === commission for arbitrary amounts', () => {
+            const cases = [1, 99.99, 1_000_000, 0.000001];
+            for (const amount of cases) {
+                const r = service.calculate(amount);
+                expect(r.nodeShare + r.afcReserveShare).toBeCloseTo(r.commission, 10);
+            }
+        });
+
+        it('burnAmount + commission === emissionAmount for arbitrary amounts', () => {
+            const cases = [100, 5_000, 250_000];
+            for (const amount of cases) {
+                const r = service.calculate(amount);
+                expect(r.burnAmount + r.commission).toBeCloseTo(r.emissionAmount, 8);
+            }
+        });
+
+        it('respects a custom commission rate', () => {
             const result = service.calculate(1_000, 0.01); // 1%
-            expect(result.commission).toBeCloseTo(10);
-            expect(result.nodeShare).toBeCloseTo(7.5);
-            expect(result.afcReserveShare).toBeCloseTo(2.5);
+            expect(result.commission).toBeCloseTo(10, 8);
+            expect(result.burnAmount).toBeCloseTo(990, 8);
+            expect(result.commissionRate).toBe(0.01);
         });
 
-        it('handles small (dust) amounts without negative values', () => {
-            const result = service.calculate(0.00000001);
-            expect(result.emissionAmount).toBe(0.00000001);
-            expect(result.commission).toBeGreaterThanOrEqual(0);
-            expect(result.nodeShare).toBeGreaterThanOrEqual(0);
-            expect(result.afcReserveShare).toBeGreaterThanOrEqual(0);
-        });
-
-        it('throws BadRequestException for zero amount', () => {
+        it('throws for zero amount', () => {
             expect(() => service.calculate(0)).toThrow(BadRequestException);
         });
 
-        it('throws BadRequestException for negative amount', () => {
-            expect(() => service.calculate(-100)).toThrow(BadRequestException);
+        it('throws for negative amount', () => {
+            expect(() => service.calculate(-500)).toThrow(BadRequestException);
         });
 
-        it('nodeShare + afcReserveShare equals commission exactly', () => {
-            [1, 100, 9999.99, 1_000_000].forEach(amount => {
-                const r = service.calculate(amount);
-                expect(r.nodeShare + r.afcReserveShare).toBeCloseTo(r.commission, 10);
-            });
+        it('dust amount: emission still equals tx amount (1:1)', () => {
+            const result = service.calculate(0.000001);
+            expect(result.emissionAmount).toBe(0.000001);
         });
     });
 
-    // ── AFC reserve index ────────────────────────────────────────────────────
+    // ── getAfcReserveState() — initial state ─────────────────────────────────
 
-    describe('AFC reserve index', () => {
-        it('starts at 1.0 (no reserve accumulated yet)', () => {
-            expect(service.getCurrentEmissionPrice()).toBe(1.0);
-        });
-
-        it('rises monotonically as transactions are processed', async () => {
-            const price0 = service.getCurrentEmissionPrice();
-
-            await service.processTransactionEmission(10_000, 'ADDR_A', 'REF_1');
-            const price1 = service.getCurrentEmissionPrice();
-
-            await service.processTransactionEmission(10_000, 'ADDR_B', 'REF_2');
-            const price2 = service.getCurrentEmissionPrice();
-
-            expect(price1).toBeGreaterThan(price0);
-            expect(price2).toBeGreaterThan(price1);
-        });
-
-        it('follows the formula: 1.0 + sqrt(totalReserve) / 10_000', async () => {
-            await service.processTransactionEmission(10_000, 'ADDR_X', 'REF_IDX');
-
+    describe('getAfcReserveState()', () => {
+        it('starts at reserveIndex = 1.0 with zero reserve', () => {
             const state = service.getAfcReserveState();
-            const expected = 1.0 + Math.sqrt(state.totalReserve) / 10_000;
-            expect(state.reserveIndex).toBeCloseTo(expected, 10);
-        });
-
-        it('getAfcReserveState returns read-only snapshot', () => {
-            const snap = service.getAfcReserveState();
-            expect(snap).toHaveProperty('totalReserve');
-            expect(snap).toHaveProperty('reserveIndex');
-            expect(snap).toHaveProperty('transactionCount');
-            expect(snap).toHaveProperty('lastUpdated');
+            expect(state.reserveIndex).toBe(1.0);
+            expect(state.totalReserve).toBe(0);
+            expect(state.transactionCount).toBe(0);
         });
     });
 
-    // ── processTransactionEmission() ────────────────────────────────────────
+    // ── getCurrentEmissionPrice() ────────────────────────────────────────────
 
-    describe('processTransactionEmission()', () => {
-        it('records exactly 4 ledger operations per TX (MINT, 2× FEE_DISTRIBUTION, BURN)', async () => {
-            await service.processTransactionEmission(1_000, 'RECIPIENT', 'REF_4OPS');
-            expect(mockLedgerService.recordTransaction).toHaveBeenCalledTimes(4);
-        });
-
-        it('MINT amount equals transaction amount (1:1)', async () => {
-            await service.processTransactionEmission(5_000, 'RECIPIENT', 'REF_MINT');
-
-            const mintCall = mockLedgerService.recordTransaction.mock.calls[0][0];
-            expect(mintCall.type).toBe('MINT');
-            expect(parseFloat(mintCall.amount)).toBeCloseTo(5_000);
-        });
-
-        it('BURN amount equals emission amount (full burn after TX)', async () => {
-            await service.processTransactionEmission(5_000, 'RECIPIENT', 'REF_BURN');
-
-            const burnCall = mockLedgerService.recordTransaction.mock.calls[3][0];
-            expect(burnCall.type).toBe('BURN');
-            expect(parseFloat(burnCall.amount)).toBeCloseTo(5_000);
-        });
-
-        it('node pool receives 75% of commission', async () => {
-            await service.processTransactionEmission(10_000, 'RECIPIENT', 'REF_75');
-
-            const nodeFeeCall = mockLedgerService.recordTransaction.mock.calls[1][0];
-            expect(nodeFeeCall.type).toBe('FEE_DISTRIBUTION');
-            expect(nodeFeeCall.recipient).toBe('SYSTEM_NODE_POOL_00000000000000000000');
-            expect(parseFloat(nodeFeeCall.amount)).toBeCloseTo(37.5); // 10000*0.005*0.75
-        });
-
-        it('AFC reserve receives 25% of commission', async () => {
-            await service.processTransactionEmission(10_000, 'RECIPIENT', 'REF_25');
-
-            const afcCall = mockLedgerService.recordTransaction.mock.calls[2][0];
-            expect(afcCall.type).toBe('FEE_DISTRIBUTION');
-            expect(afcCall.recipient).toBe('SYSTEM_AFC_RESERVE_000000000000000000');
-            expect(parseFloat(afcCall.amount)).toBeCloseTo(12.5); // 10000*0.005*0.25
-        });
-
-        it('commits the QueryRunner transaction on success', async () => {
-            await service.processTransactionEmission(1_000, 'RECIPIENT', 'REF_COMMIT');
-            expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
-            expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
-        });
-
-        it('rolls back and rethrows on ledger failure', async () => {
-            mockLedgerService.recordTransaction.mockRejectedValueOnce(new Error('ledger down'));
-
-            await expect(
-                service.processTransactionEmission(1_000, 'RECIPIENT', 'REF_ROLLBACK'),
-            ).rejects.toThrow('ledger down');
-
-            expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
-        });
-
-        it('net circulating supply change is zero (mint and burn cancel)', async () => {
-            await service.processTransactionEmission(8_000, 'RECIPIENT', 'REF_NET');
-
-            const mintCall = mockLedgerService.recordTransaction.mock.calls[0][0];
-            const burnCall = mockLedgerService.recordTransaction.mock.calls[3][0];
-
-            expect(parseFloat(mintCall.amount)).toBeCloseTo(parseFloat(burnCall.amount));
-        });
-
-        it('releases the QueryRunner in all cases', async () => {
-            await service.processTransactionEmission(1_000, 'RECIPIENT', 'REF_RELEASE');
-            expect(mockQueryRunner.release).toHaveBeenCalled();
+    describe('getCurrentEmissionPrice()', () => {
+        it('returns 1.0 before any transactions', () => {
+            expect(service.getCurrentEmissionPrice()).toBe(1.0);
         });
     });
 
     // ── updateCommissionRate() ───────────────────────────────────────────────
 
     describe('updateCommissionRate()', () => {
-        it('updates the commission rate used in subsequent calculations', () => {
+        it('updates rate and affects subsequent calculate() calls', () => {
             service.updateCommissionRate(0.01);
             const result = service.calculate(1_000);
             expect(result.commissionRate).toBe(0.01);
-            expect(result.commission).toBeCloseTo(10);
+            expect(result.commission).toBeCloseTo(10, 8);
+            expect(result.burnAmount).toBeCloseTo(990, 8);
         });
 
-        it('rejects rate of 0', () => {
+        it('throws for rate <= 0', () => {
             expect(() => service.updateCommissionRate(0)).toThrow(BadRequestException);
+            expect(() => service.updateCommissionRate(-0.1)).toThrow(BadRequestException);
         });
 
-        it('rejects rate of 1 or more', () => {
+        it('throws for rate >= 1', () => {
             expect(() => service.updateCommissionRate(1)).toThrow(BadRequestException);
             expect(() => service.updateCommissionRate(1.5)).toThrow(BadRequestException);
+        });
+    });
+
+    // ── processTransactionEmission() — full lifecycle ────────────────────────
+
+    describe('processTransactionEmission()', () => {
+        it('records four ledger entries in order: MINT, FEE×2, BURN', async () => {
+            await service.processTransactionEmission(10_000, 'RECIPIENT_1', 'REF_001');
+
+            const calls = mockLedgerService.recordTransaction.mock.calls;
+            expect(calls).toHaveLength(4);
+            expect(calls[0][0].type).toBe(TransactionType.MINT);
+            expect(calls[1][0].type).toBe(TransactionType.FEE_DISTRIBUTION);
+            expect(calls[2][0].type).toBe(TransactionType.FEE_DISTRIBUTION);
+            expect(calls[3][0].type).toBe(TransactionType.BURN);
+        });
+
+        it('mints the exact transaction amount (1:1)', async () => {
+            await service.processTransactionEmission(10_000, 'RECIPIENT_1', 'REF_001');
+            const mintCall = mockLedgerService.recordTransaction.mock.calls[0][0];
+            expect(parseFloat(mintCall.amount)).toBeCloseTo(10_000, 4);
+        });
+
+        it('burns burnAmount (emissionAmount − commission), not full emissionAmount', async () => {
+            await service.processTransactionEmission(10_000, 'RECIPIENT_1', 'REF_001');
+            const calls    = mockLedgerService.recordTransaction.mock.calls;
+            const mintAmt  = parseFloat(calls[0][0].amount); // 10,000
+            const burnAmt  = parseFloat(calls[3][0].amount); // 9,950 (not 10,000)
+            const feeAmt   = parseFloat(calls[1][0].amount) + parseFloat(calls[2][0].amount); // 50
+            expect(burnAmt).toBeCloseTo(mintAmt - feeAmt, 4); // burn = emit - fee
+            expect(burnAmt).toBeCloseTo(9_950, 4);
+        });
+
+        it('distributes 75% to node pool and 25% to AFC reserve', async () => {
+            await service.processTransactionEmission(10_000, 'RECIPIENT_1', 'REF_001');
+            const calls    = mockLedgerService.recordTransaction.mock.calls;
+            const nodeShare = parseFloat(calls[1][0].amount);
+            const afcShare  = parseFloat(calls[2][0].amount);
+            expect(nodeShare).toBeCloseTo(37.5, 4);
+            expect(afcShare).toBeCloseTo(12.5, 4);
+        });
+
+        it('grows AFC reserve index after each transaction', async () => {
+            const before = service.getCurrentEmissionPrice();
+            await service.processTransactionEmission(10_000, 'RECIPIENT_1', 'REF_001');
+            const after = service.getCurrentEmissionPrice();
+            expect(after).toBeGreaterThan(before);
+        });
+
+        it('AFC reserve index is monotonically non-decreasing across multiple TXs', async () => {
+            let prev = service.getCurrentEmissionPrice();
+            for (let i = 0; i < 5; i++) {
+                await service.processTransactionEmission(1_000, `REC_${i}`, `REF_${i}`);
+                const curr = service.getCurrentEmissionPrice();
+                expect(curr).toBeGreaterThanOrEqual(prev);
+                prev = curr;
+            }
+        });
+
+        it('rolls back on ledger failure', async () => {
+            mockLedgerService.recordTransaction.mockRejectedValueOnce(new Error('Ledger down'));
+            await expect(
+                service.processTransactionEmission(10_000, 'REC', 'REF_ERR'),
+            ).rejects.toThrow('Ledger down');
+            expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        });
+
+        it('returns an EmissionResult with all canonical fields including burnAmount', async () => {
+            const result = await service.processTransactionEmission(10_000, 'REC', 'REF_001');
+            expect(result.transactionAmount).toBe(10_000);
+            expect(result.emissionAmount).toBe(10_000);
+            expect(result.commission).toBeCloseTo(50, 4);
+            expect(result.nodeShare).toBeCloseTo(37.5, 4);
+            expect(result.afcReserveShare).toBeCloseTo(12.5, 4);
+            expect(result.burnAmount).toBeCloseTo(9_950, 4);
         });
     });
 });

@@ -137,7 +137,27 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 7. Recommendations
+## 7. Re-Audit — 2026-06-12 (AGENT-CORE, session `ubf1mk`)
+
+**Re-audit scope:** Full verification that emission logic still matches canonical model after PRs #77–#79.
+
+| Check | Result |
+|-------|--------|
+| `emission.service.ts` — 1:1 emission formula | ✅ `emission = transactionAmount` — unchanged |
+| `emission.service.ts` — fee split 75/25 | ✅ `nodeShare = commission * 0.75`, `afcShare = commission * 0.25` — unchanged |
+| `emission.service.ts` — burn after TX | ✅ `BURN` ledger entry for `emissionAmount` in same atomic `QueryRunner` — unchanged |
+| `emission.service.ts` — AFC index formula | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` — unchanged |
+| `token.service.ts` — canonical entry point | ✅ `mintForTransaction()` delegates to `EmissionService.processTransactionEmission()` — unchanged |
+| `emission.interfaces.ts` — type contracts | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` — unchanged |
+| `supply_snapshot.entity.ts` — net-zero invariant | ✅ `circulatingSupply` unchanged per canonical cycle; `totalMinted == totalBurned` growth — unchanged |
+| `01_coin_engine/` — no DEPRECATED markers | ✅ All docs reflect canonical formulas, no deprecated flags |
+| `10_proof_of_transaction_engine/` — no emission logic | ✅ PoT engine contains only validation/scoring; emission stays in `src/token/` |
+
+**Verdict: No code changes required.** The canonical 1:1 emission model is fully and correctly implemented. All invariants hold.
+
+---
+
+## 8. Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.

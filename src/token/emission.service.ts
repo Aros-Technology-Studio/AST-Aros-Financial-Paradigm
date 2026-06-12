@@ -164,8 +164,9 @@ export class EmissionService {
     /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
+     * Public so epoch finalization (FeeDistributionService) can sync after collecting fees.
      */
-    private updateAfcReserve(afcAmount: number): void {
+    updateAfcReserve(afcAmount: number): void {
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();

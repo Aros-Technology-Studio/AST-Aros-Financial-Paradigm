@@ -9,6 +9,7 @@ import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
 
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { EmissionService } from '../token/emission.service';
 
 @Injectable()
 export class FeeDistributionService {
@@ -28,6 +29,7 @@ export class FeeDistributionService {
         private readonly nodeChainService: NodeChainService,
         private readonly smartContractService: SmartContractIntegration,
         private readonly dataSource: DataSource, // For transactionality
+        private readonly emissionService: EmissionService,
     ) { }
 
     /**
@@ -218,6 +220,9 @@ export class FeeDistributionService {
             await queryRunner.manager.save(epoch);
 
             await queryRunner.commitTransaction();
+
+            // Sync AFC reserve index so per-TX emission price reflects epoch fees.
+            this.emissionService.updateAfcReserve(afcReserve);
         } catch (err) {
             await queryRunner.rollbackTransaction();
             throw err;

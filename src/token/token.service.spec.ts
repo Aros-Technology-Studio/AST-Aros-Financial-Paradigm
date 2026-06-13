@@ -16,6 +16,7 @@ const mockEmissionService = {
     calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
     processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
     updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockTokenomicsService = {
@@ -122,6 +123,36 @@ describe('TokenService', () => {
                 .rejects.toThrow('Ledger Error');
 
             expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        });
+    });
+
+    describe('mintForTransaction (canonical 1:1 emission)', () => {
+        it('should delegate to EmissionService and emit canonical event', async () => {
+            const result = await service.mintForTransaction(10000, 'RECIPIENT_ADDR', 'REF_TX_001');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10000,
+                'RECIPIENT_ADDR',
+                'REF_TX_001',
+                undefined,
+            );
+            expect(result.emissionAmount).toBe(100); // from mock
+        });
+
+        it('should throw if transactionAmount is zero or negative', async () => {
+            await expect(service.mintForTransaction(0, 'ADDR', 'REF')).rejects.toThrow();
+            await expect(service.mintForTransaction(-1, 'ADDR', 'REF')).rejects.toThrow();
+        });
+
+        it('should pass optional commissionRate through', async () => {
+            await service.mintForTransaction(5000, 'ADDR', 'REF_002', 0.01);
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                5000,
+                'ADDR',
+                'REF_002',
+                0.01,
+            );
         });
     });
 

@@ -1,9 +1,10 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+**Branch:** `claude/inspiring-cannon-cds1ok`  
+**Original implementation:** `agent/core-emission` → merged PR #72 (2026-05-12)  
+**Re-audit date:** 2026-06-13  
+**Task:** Verify ArosCoin emission logic against the canonical model; confirm or correct
 
 ---
 
@@ -137,7 +138,22 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 7. Recommendations
+## 7. Re-Audit Result (2026-06-13)
+
+A full re-audit was performed across `01_coin_engine/`, `10_proof_of_transaction_engine/`, and `src/token/`. **All findings from the original audit hold. No regressions detected.** The implementation at `src/token/emission.service.ts` remains the authoritative canonical source and matches the spec on every check point.
+
+Key files re-verified:
+- `src/token/emission.service.ts` — 1:1 emission, 75/25 split, atomic burn, AFC index ✅
+- `src/token/emission.interfaces.ts` — `EmissionResult`, `EmissionConfig`, `AfcReserveState` ✅
+- `src/token/token.service.ts` — `mintForTransaction()` delegates correctly; legacy `mint()` preserved for bridge/fiat path ✅
+- `01_coin_engine/coin_emission_model.md` — references `EmissionService` as canonical code ✅
+- `01_coin_engine/aro_emission_protocol.md` — matches implementation formulas exactly ✅
+
+**No code changes required.**
+
+---
+
+## 8. Recommendations
 
 - **Persist `AfcReserveState` to database** — currently in-memory; lost on restart. Add a `AfcReserveEntity` table with periodic snapshots.
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.

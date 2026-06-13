@@ -14,7 +14,8 @@ import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/proc
 
 const mockEmissionService = {
     calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
-    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
+    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
     updateAfcReserve: jest.fn().mockResolvedValue(undefined),
 };
 

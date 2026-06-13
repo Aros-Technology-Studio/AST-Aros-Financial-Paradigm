@@ -1,9 +1,9 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
-**Date:** 2026-05-12  
-**Task:** Audit ArosCoin emission logic against the canonical model and align all code and documentation
+**Branch:** `claude/inspiring-cannon-0cjgjk`  
+**Date:** 2026-06-13  
+**Task:** Audit ArosCoin emission logic against the canonical model — verify `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`
 
 ---
 
@@ -127,13 +127,20 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Documentation Changes Made in This Pass
+## 6. Audit Pass Results (2026-06-13)
 
-| File | Change |
-|------|--------|
-| `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas, AFC reserve index, example |
-| `01_coin_engine/aro_emission_protocol.md` | Replaced complex load-index formula with canonical 1:1 + 75/25 + burn flow |
-| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split; added validator weight formula |
+All components verified against canonical model. **No code or documentation changes required in this pass.**
+
+| Component | Status |
+|-----------|--------|
+| `src/token/emission.service.ts` | Fully canonical — all 5 lifecycle steps correct |
+| `src/token/emission.interfaces.ts` | Correct type definitions |
+| `src/token/token.service.ts` | `mintForTransaction()` → canonical; `mint()`/`burn()` → fiat bridge (intentionally separate) |
+| `src/token/tokenomics.service.ts` | `updateInternalValuation()` correctly deprecated no-op |
+| `01_coin_engine/coin_emission_model.md` | Canonical formulas confirmed present |
+| `01_coin_engine/aro_emission_protocol.md` | Canonical lifecycle + Mermaid diagram confirmed present |
+| `01_coin_engine/payment_distribution.md` | 75/25 split confirmed present |
+| `src/fee_distribution/fee_distribution.service.ts` | 75/25 epoch split confirmed |
 
 ---
 

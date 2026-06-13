@@ -94,6 +94,29 @@ describe('TokenService', () => {
         expect(service).toBeDefined();
     });
 
+    describe('mintForTransaction (canonical 1:1 emission)', () => {
+        it('should delegate to EmissionService and emit a canonical event', async () => {
+            const result = await service.mintForTransaction(10_000, 'WALLET_A', 'TX_REF_001');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10_000, 'WALLET_A', 'TX_REF_001', undefined,
+            );
+            expect(result.emissionAmount).toBe(100);
+        });
+
+        it('should reject non-positive amounts', async () => {
+            await expect(service.mintForTransaction(0, 'WALLET_A', 'TX_REF_002'))
+                .rejects.toThrow(BadRequestException);
+        });
+
+        it('should forward custom commission rate to EmissionService', async () => {
+            await service.mintForTransaction(5_000, 'WALLET_B', 'TX_REF_003', 0.01);
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                5_000, 'WALLET_B', 'TX_REF_003', 0.01,
+            );
+        });
+    });
+
     describe('mint', () => {
         it('should mint tokens successfully', async () => {
             const amount = '100';

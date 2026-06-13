@@ -110,9 +110,12 @@ export class EmissionService {
             });
 
             // Step 2a — Record 75% commission to node pool
+            // Sender is SYSTEM_EMISSION_AUTHORITY: the fee is collected at the system
+            // level from the transaction value, not debited from the recipient's
+            // transient emission balance (which burns in full at step 4).
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.FEE_DISTRIBUTION,
-                sender:    recipientAddress,
+                sender:    this.SYSTEM_EMISSION_AUTHORITY,
                 recipient: this.NODE_POOL_ADDRESS,
                 amount:    result.nodeShare.toFixed(8),
                 fee:       '0',
@@ -123,7 +126,7 @@ export class EmissionService {
             // Step 2b — Record 25% commission to AFC reserve
             await this.ledgerService.recordTransaction({
                 type:      TransactionType.FEE_DISTRIBUTION,
-                sender:    recipientAddress,
+                sender:    this.SYSTEM_EMISSION_AUTHORITY,
                 recipient: this.AFC_RESERVE_ADDRESS,
                 amount:    result.afcReserveShare.toFixed(8),
                 fee:       '0',

@@ -143,3 +143,78 @@ After 12.50 AFC accumulated:
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## 8. Patch — 2026-06-13 (AGENT-CORE second pass)
+
+**Branch:** `claude/inspiring-cannon-f49xsx`
+
+### Bug fixed: FEE_DISTRIBUTION ledger sender
+
+`EmissionService.processTransactionEmission()` recorded fee splits (steps 2a and 2b) with
+`sender: recipientAddress`. This caused a ledger deficit on every canonical TX:
+
+```
+Recipient ledger per TX:
+  +10 000 (MINT)
+  −    37.5 (FEE_DIST to NODE_POOL)
+  −    12.5 (FEE_DIST to AFC_RESERVE)
+  −10 000 (BURN)
+  ──────────
+  −50 ARO  ← deficit (violation of net-zero invariant)
+```
+
+**Fix:** both FEE_DISTRIBUTION records now use `sender: SYSTEM_EMISSION_AUTHORITY`.
+The commission is allocated at the emission-authority level; the recipient's
+balance is strictly `+emissionAmount − emissionAmount = 0`.
+
+**File:** `src/token/emission.service.ts` lines 112–132
+
+### Added: canonical emission API endpoint
+
+`POST /api/v1/token/emit` — routes to `TokenService.mintForTransaction()`.
+
+Prior to this patch there was no HTTP surface for canonical 1:1 emission; the
+only mint endpoint (`POST /api/v1/token/mint`) routed to the FIAT_DEPOSIT path
+(`TokenService.mint()`), which does not apply fee splits or burn.
+
+**File:** `src/token/token.controller.ts`
+
+```http
+POST /api/v1/token/emit
+Content-Type: application/json
+
+{
+  "transactionAmount": 10000,
+  "recipient": "WALLET_ADDRESS",
+  "referenceId": "TX_REF_001",
+  "commissionRate": 0.005
+}
+```
+
+### Cleaned up: `TokenService.mint()` legacy comments
+
+Removed ambiguous inline comments that suggested the FIAT_DEPOSIT path might
+handle canonical pricing or accept either FIAT or TOKEN amounts. Method is now
+clearly labelled as FIAT_DEPOSIT only; removed obsolete `updateInternalValuation()`
+call (it was already a no-op).
+
+**File:** `src/token/token.service.ts`
+
+### Added: `mintForTransaction()` tests
+
+Three new test cases in `src/token/token.service.spec.ts`:
+1. Delegates to `EmissionService.processTransactionEmission()` with correct args.
+2. Rejects non-positive amounts with `BadRequestException`.
+3. Forwards custom `commissionRate` to the emission service.
+
+### Files changed in this pass
+
+| File | Change |
+|------|--------|
+| `src/token/emission.service.ts` | Fixed FEE_DISTRIBUTION sender to `SYSTEM_EMISSION_AUTHORITY` |
+| `src/token/token.controller.ts` | Added `POST /api/v1/token/emit` canonical endpoint |
+| `src/token/token.service.ts` | Removed ambiguous FIAT/TOKEN comments; clarified FIAT_DEPOSIT purpose |
+| `src/token/token.service.spec.ts` | Added three `mintForTransaction()` test cases |
+| `AGENT_CORE_REPORT.md` | This section |

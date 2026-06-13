@@ -14,7 +14,8 @@ import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/proc
 
 const mockEmissionService = {
     calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
-    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
+    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
     updateAfcReserve: jest.fn().mockResolvedValue(undefined),
 };
 
@@ -92,6 +93,29 @@ describe('TokenService', () => {
 
     it('should be defined', () => {
         expect(service).toBeDefined();
+    });
+
+    describe('mintForTransaction (canonical 1:1 emission)', () => {
+        it('should delegate to EmissionService and emit a canonical event', async () => {
+            const result = await service.mintForTransaction(10_000, 'WALLET_A', 'TX_REF_001');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10_000, 'WALLET_A', 'TX_REF_001', undefined,
+            );
+            expect(result.emissionAmount).toBe(100);
+        });
+
+        it('should reject non-positive amounts', async () => {
+            await expect(service.mintForTransaction(0, 'WALLET_A', 'TX_REF_002'))
+                .rejects.toThrow(BadRequestException);
+        });
+
+        it('should forward custom commission rate to EmissionService', async () => {
+            await service.mintForTransaction(5_000, 'WALLET_B', 'TX_REF_003', 0.01);
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                5_000, 'WALLET_B', 'TX_REF_003', 0.01,
+            );
+        });
     });
 
     describe('mint', () => {

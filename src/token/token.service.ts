@@ -101,6 +101,7 @@ export class TokenService {
                 sender: this.MINT_ADDRESS,
                 recipient: recipient,
                 amount: amount,
+                fee: '0',
                 nonce: Date.now(),
                 metadata: { referenceId, operation: 'FIAT_DEPOSIT' }
             });

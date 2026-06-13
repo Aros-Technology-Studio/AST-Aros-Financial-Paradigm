@@ -1,5 +1,10 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
+> **Audit Pass 2 — 2026-06-13** (`claude/inspiring-cannon-yh09wf`)
+> Findings: `emission.service.ts` matches canonical model ✅. Controller missing canonical `/emit` endpoint — **fixed**. Legacy `mint()` missing `fee` field — **fixed**. Tests added for `mintForTransaction()`.
+
+---
+
 **Agent:** AGENT-CORE  
 **Branch:** `claude/inspiring-cannon-4qbjK` (canonical emission originally landed in `agent/core-emission` → merged PR #72)  
 **Date:** 2026-05-12  
@@ -143,3 +148,78 @@ After 12.50 AFC accumulated:
 - **Wire `mintForTransaction()` into ingestion pipeline** — replace all `mint()` calls in the bridge/ingestion path with the canonical entry point.
 - **Add unit tests for `EmissionService.calculate()`** — cover dust amounts, max commission rate, zero-amount guard.
 - **Epoch AFC contribution to `EmissionService`** — `FeeDistributionService` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()`; consider syncing the in-memory index after each epoch finalization.
+
+---
+
+## Audit Pass 2 — 2026-06-13
+
+**Branch:** `claude/inspiring-cannon-yh09wf`
+
+### Re-audit Scope
+
+Full re-read of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`, `src/proof_of_transaction_engine/`.
+
+### Confirmed Correct (no changes needed)
+
+- `src/token/emission.service.ts` — canonical 1:1 model fully implemented:
+  - `emission = transactionAmount` (1:1) ✅
+  - `commission = transactionAmount × 0.005` ✅
+  - `nodeShare = commission × 0.75` ✅
+  - `afcShare = commission × 0.25` ✅
+  - Atomic 4-step lifecycle: MINT → FEE_NODE → FEE_AFC → BURN ✅
+  - `reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000` ✅
+  - Net circulating supply change = 0 per canonical TX ✅
+- `src/token/emission.interfaces.ts` — `EmissionResult`, `EmissionConfig`, `AfcReserveState` correct ✅
+- `src/token/token.service.ts` — `mintForTransaction()` correctly delegates to `EmissionService` ✅
+- `01_coin_engine/coin_emission_model.md` — matches canonical model (updated in pass 1) ✅
+
+### Gaps Fixed in This Pass
+
+**Gap 1 — CRITICAL: No HTTP endpoint for canonical emission**
+
+`token.controller.ts` only exposed `POST /api/v1/token/mint` → legacy FIAT `mint()`. The canonical `mintForTransaction()` was unreachable via HTTP.
+
+Fixed: Added `POST /api/v1/token/emit`:
+```
+POST /api/v1/token/emit
+Body: { transactionAmount: number, recipient: string, referenceId: string, commissionRate?: number }
+Returns: EmissionResult
+```
+
+**Gap 2 — MINOR: Missing `fee` field in legacy FIAT `mint()`**
+
+`token.service.ts:mint()` called `ledgerService.recordTransaction()` without the `fee` field. Added `fee: '0'`.
+
+**Gap 3 — No test coverage for canonical emission path**
+
+Added three tests to `token.service.spec.ts` under `mintForTransaction`:
+- Happy path — delegates to `EmissionService.processTransactionEmission()`
+- Rejects zero/negative amounts
+- Forwards optional `commissionRate`
+
+### Two Distinct Mint Paths (By Design)
+
+| Path | Method | ARO fate |
+|------|--------|----------|
+| Canonical network TX | `mintForTransaction()` → `EmissionService` | Transient — burned after TX, net supply Δ = 0 |
+| FIAT deposit | `mint()` | Persistent — held in user wallet |
+
+The FIAT deposit path does not follow the canonical burn model intentionally. When a user deposits fiat, the ARO they receive persist until withdrawal.
+
+### Reserve Index Dualism
+
+| Reserve | Source | Formula |
+|---------|--------|---------|
+| AFC Reserve (emission price) | `EmissionService.afcReserveState` | `1.0 + sqrt(total) / 10_000` |
+| Process Reserve (PoT work) | `ProcessReserveLedgerService.reserveState` | `1.0 + log1p(total) / 100` |
+
+`TokenomicsService.getCurrentPrice()` returns Process Reserve index (used only for legacy mint logging). For canonical emission pricing use `EmissionService.getCurrentEmissionPrice()`.
+
+### Files Changed in This Pass
+
+| File | Change |
+|------|--------|
+| `src/token/token.controller.ts` | Added `POST /api/v1/token/emit` → `mintForTransaction()` |
+| `src/token/token.service.ts` | Added `fee: '0'` to FIAT `mint()` ledger call |
+| `src/token/token.service.spec.ts` | Added 3 tests for `mintForTransaction()` |
+| `AGENT_CORE_REPORT.md` | This section |

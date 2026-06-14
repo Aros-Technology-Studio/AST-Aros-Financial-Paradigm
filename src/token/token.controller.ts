@@ -24,6 +24,23 @@ export class TokenController {
         return { status: 'CLEARED', settlementTime: Date.now(), finality: 'INSTANT_AFC' };
     }
 
+    /**
+     * Canonical 1:1 emission endpoint.
+     * Emits ARO equal to `amount`, splits fee 75% nodes / 25% AFC reserve, then burns the ARO.
+     */
+    @Post('emit')
+    async emitForTransaction(
+        @Body() body: { amount: number; recipient: string; refId: string; rate?: number },
+    ) {
+        try {
+            return await this.tokenService.mintForTransaction(
+                body.amount, body.recipient, body.refId, body.rate,
+            );
+        } catch (e) {
+            throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @Post('mint')
     async mintTokens(@Body() body: { amount: string; recipient: string; refId: string }) {
         try {

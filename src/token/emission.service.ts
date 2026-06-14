@@ -162,6 +162,15 @@ export class EmissionService {
     }
 
     /**
+     * Public entry point used by FeeDistributionService to sync epoch-level AFC contributions
+     * into the in-memory price index.  Delegates to the private updater so the index stays
+     * consistent whether contributions arrive per-transaction or per-epoch.
+     */
+    recordAfcContribution(afcAmount: number): void {
+        this.updateAfcReserve(afcAmount);
+    }
+
+    /**
      * Grows the AFC reserve and recalculates the emission price index.
      * Price index rises monotonically as the reserve accumulates.
      */

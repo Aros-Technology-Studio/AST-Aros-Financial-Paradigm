@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { EmissionService } from './emission.service';
 import { SupplySnapshot } from './entities/supply_snapshot.entity';
 import { LedgerService } from '../ledger/ledger.service';
+import { TransactionType } from '../ledger/entities/transaction.entity';
 import { DataSource } from 'typeorm';
 
 const mockSupplyRepo = { find: jest.fn() };
@@ -134,10 +135,10 @@ describe('EmissionService', () => {
             expect(mockLedgerService.recordTransaction).toHaveBeenCalledTimes(4);
 
             const calls = mockLedgerService.recordTransaction.mock.calls;
-            expect(calls[0][0].type).toBe('MINT');
-            expect(calls[1][0].type).toBe('FEE_DISTRIBUTION'); // 75% nodes
-            expect(calls[2][0].type).toBe('FEE_DISTRIBUTION'); // 25% AFC
-            expect(calls[3][0].type).toBe('BURN');
+            expect(calls[0][0].type).toBe(TransactionType.MINT);
+            expect(calls[1][0].type).toBe(TransactionType.FEE_DISTRIBUTION); // 75% nodes
+            expect(calls[2][0].type).toBe(TransactionType.FEE_DISTRIBUTION); // 25% AFC
+            expect(calls[3][0].type).toBe(TransactionType.BURN);
         });
 
         it('minted amount equals transactionAmount (1:1)', async () => {

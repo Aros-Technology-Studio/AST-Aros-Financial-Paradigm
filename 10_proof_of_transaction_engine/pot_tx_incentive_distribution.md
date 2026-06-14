@@ -8,25 +8,41 @@
 Distributes incentives (fees/emission) to validating nodes post-PoT confirmation in NodeChain.
 
 ## 2. Principles
-- Merit-Based: Proportional to weight/role in NodeChain.
-- Deflationary: Portion burned.
+- Merit-Based: Proportional to PoT weight/role in NodeChain.
+- Non-dilutive: Emitted ARO are burned after TX completes; net circulating supply change = 0.
 
-## 3. Distribution Logic
-1. Collect fees from NodeChain TX.
-2. Allocate: 60% validators, 30% attesters, 10% burn.
-3. Disburse per weight.
+## 3. Canonical Distribution Logic
 
-## 4. Formula
-Node Incentive = total_incentives * (node_weight / total_weights)
+Canonical split per the `EmissionService` (src/token/emission.service.ts):
+
+1. Collect commission from NodeChain TX: `commission = tx_amount × rate` (default 0.5%)
+2. Allocate: **75% node pool** (distributed by PoT weight), **25% AFC reserve** (locked).
+3. Disburse node pool share proportionally by PoT weight.
+
+> Prior spec (60% validators / 30% attesters / 10% burn) is superseded by the canonical
+> 75/25 model. The burn no longer comes from the commission; ARO emission is burned
+> separately after each TX cycle (`CANONICAL_BURN` step in EmissionService).
+
+## 4. Formulas
+
+```
+Commission      = tx_amount × rate               (default rate = 0.005)
+Node Pool       = Commission × 0.75
+AFC Reserve     = Commission × 0.25
+Node Incentive  = Node_Pool × (node_weight / total_weights)
+```
 
 ## 5. Python Example
 ```python
-def distribute(total_incentives: float, nodes: list[dict]) -> dict:
+def distribute(tx_amount: float, nodes: list[dict], rate: float = 0.005) -> dict:
+    commission   = tx_amount * rate
+    node_pool    = commission * 0.75
+    afc_reserve  = commission * 0.25
+
     total_weight = sum(n['weight'] for n in nodes)
-    dist = {}
+    dist = {'afc_reserve': afc_reserve}
     for node in nodes:
-        share = total_incentives * (node['weight'] / total_weight)
-        dist[node['id']] = share
+        dist[node['id']] = node_pool * (node['weight'] / total_weight)
     return dist
 ```
 

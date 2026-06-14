@@ -1,20 +1,23 @@
 # PoT Transaction Incentive Distribution
 
 **Module:** AST PoT Engine  
-**Status:** Draft  
-**Date:** 2025-08-24  
+**Status:** Canonical  
+**Date:** 2026-06-14  
 
 ## 1. Purpose
 Distributes incentives (fees/emission) to validating nodes post-PoT confirmation in NodeChain.
 
 ## 2. Principles
-- Merit-Based: Proportional to weight/role in NodeChain.
-- Deflationary: Portion burned.
+- Merit-Based: Proportional to PoT weight across all active nodes.
+- Deflationary: ARO are burned after each TX cycle; net circulating supply change = 0.
 
-## 3. Distribution Logic
-1. Collect fees from NodeChain TX.
-2. Allocate: 60% validators, 30% attesters, 10% burn.
-3. Disburse per weight.
+## 3. Distribution Logic (Canonical 75/25 — adopted PR #72)
+1. Collect fees from NodeChain TX (commission = TX Amount × rate, default 0.5%).
+2. Canonical split: **75% → Node Pool**, **25% → AFC Reserve** (`SYSTEM_AFC_RESERVE_000000000000000000`).
+3. Node Pool disburse per PoT-normalized weight.
+
+> **Note:** The earlier 60/30/10 (validators/attesters/burn) split is superseded.
+> Governance bounties and ecosystem grants are funded from the AFC reserve, not from the per-TX split.
 
 ## 4. Formula
 Node Incentive = total_incentives * (node_weight / total_weights)

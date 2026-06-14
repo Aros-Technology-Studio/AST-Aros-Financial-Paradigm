@@ -182,6 +182,16 @@ export class EmissionService {
     }
 
     /**
+     * Public entry point for epoch-level AFC reserve contributions.
+     * Called by FeeDistributionService after epoch finalization so the
+     * in-memory price index reflects both per-TX and epoch-level accumulation.
+     */
+    recordAfcReserveContribution(amount: number): void {
+        if (amount <= 0) return;
+        this.updateAfcReserve(amount);
+    }
+
+    /**
      * Returns the current AFC reserve state (read-only snapshot).
      */
     getAfcReserveState(): Readonly<AfcReserveState> {

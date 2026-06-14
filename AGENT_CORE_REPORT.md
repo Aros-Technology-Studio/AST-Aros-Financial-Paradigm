@@ -1,7 +1,7 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-7sksc6`  
+**Branch:** `claude/inspiring-cannon-1qdkti`  
 **Date:** 2026-06-14  
 **Task:** Audit ArosCoin emission logic against the canonical model; align code and documentation
 
@@ -21,10 +21,15 @@
 
 **Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/`.
 
-### 10_proof_of_transaction_engine — Status: Documentation only
+### 10_proof_of_transaction_engine — Status: Documentation only (one doc fixed)
 
 Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
 Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here.
+
+| File | State |
+|------|-------|
+| `pot_tx_incentive_distribution.md` | ⚠️ **Fixed** — had legacy 60%/30%/10% split; updated to canonical 75/25 (see §7) |
+| All other docs | ✅ Correct |
 
 ### src/token/ — Status: Canonical code confirmed correct
 
@@ -36,11 +41,12 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve`; `updateInternalValuation()` is deprecated no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
 
-### src/fee_distribution/ — Status: Canonical code confirmed correct
+### src/fee_distribution/ — Status: Canonical code confirmed correct (one fix applied)
 
 | File | Verified state |
 |------|---------------|
 | `fee_distribution.service.ts` → `distributeRewards()` | ✅ 75% node pool, 25% AFC reserve per epoch finalization |
+| `fee_distribution.service.ts` → AFC index sync | ⚠️ **Fixed** — now calls `EmissionService.recordAfcReserveContribution()` after epoch-level AFC ledger record (see §7) |
 
 ### src/proof_of_transaction_engine/ — Status: Correct, unchanged
 
@@ -130,21 +136,33 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Open Issues (carry-forward from prior audit, not blocking)
+## 6. Open Issues (carry-forward, not blocking)
 
-| # | Issue | Priority |
-|---|-------|----------|
-| 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium |
-| 2 | `IngestionService.ingestAsset()` calls `TokenService.mint()` (commented out) — should call `mintForTransaction()` for canonical flow. | Medium |
-| 3 | No unit tests for `EmissionService.calculate()` — cover dust amounts, max commission rate, zero-amount guard. | Low |
-| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
+| # | Issue | Priority | Status |
+|---|-------|----------|--------|
+| 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium | Open |
+| 2 | `IngestionService.ingestAsset()` calls `TokenService.mint()` (commented out) — should call `mintForTransaction()` for canonical flow. | Medium | Open |
+| 3 | No unit tests for `EmissionService.calculate()` — cover dust amounts, max commission rate, zero-amount guard. | Low | Open |
+| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low | **Fixed this pass** |
 
 ---
 
-## 7. Documentation Changes Made in This Pass
+## 7. Changes Made in This Pass
 
-No documentation changes were required — all docs and code are already canonical.  
-Previous pass (2026-05-12) on branch `claude/inspiring-cannon-4qbjK` aligned:
+### Code fixes
+
+| File | Change |
+|------|--------|
+| `src/token/emission.service.ts` | Added `recordAfcReserveContribution(amount)` — public wrapper for epoch-level AFC index updates |
+| `src/fee_distribution/fee_distribution.service.ts` | Injected `EmissionService`; `distributeRewards()` now calls `recordAfcReserveContribution(afcReserve)` so the in-memory price index is updated after every epoch finalization |
+
+### Documentation fixes
+
+| File | Change |
+|------|--------|
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | Replaced legacy 60%/30%/10% (validators/attesters/burn) split with canonical 75/25 (node pool / AFC reserve); updated status from Draft → Canonical |
+
+### Historical reference (prior pass `claude/inspiring-cannon-4qbjK`, 2026-05-12)
 
 | File | Change |
 |------|--------|

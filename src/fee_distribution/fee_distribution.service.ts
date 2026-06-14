@@ -7,7 +7,7 @@ import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
-
+import { EmissionService } from '../token/emission.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 
 @Injectable()
@@ -26,6 +26,7 @@ export class FeeDistributionService {
         private readonly potService: PoTService,
         private readonly tokenService: TokenService,
         private readonly nodeChainService: NodeChainService,
+        private readonly emissionService: EmissionService,
         private readonly smartContractService: SmartContractIntegration,
         private readonly dataSource: DataSource, // For transactionality
     ) { }
@@ -177,6 +178,9 @@ export class FeeDistributionService {
                 status:       TransactionStatus.CONFIRMED,
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
+
+            // Sync epoch AFC contribution into the in-memory price index
+            this.emissionService.updateAfcReserve(afcReserve);
 
             let distributedSum = 0;
 

@@ -1,7 +1,7 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-7sksc6`  
+**Branch:** `claude/inspiring-cannon-dner1a`  
 **Date:** 2026-06-14  
 **Task:** Audit ArosCoin emission logic against the canonical model; align code and documentation
 
@@ -36,11 +36,12 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve`; `updateInternalValuation()` is deprecated no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
 
-### src/fee_distribution/ — Status: Canonical code confirmed correct
+### src/fee_distribution/ — Status: Fixed in this pass
 
 | File | Verified state |
 |------|---------------|
 | `fee_distribution.service.ts` → `distributeRewards()` | ✅ 75% node pool, 25% AFC reserve per epoch finalization |
+| `fee_distribution.service.ts` → `EmissionService` injection | ✅ **FIXED**: epoch AFC share now updates in-memory `reserveIndex` via `emissionService.updateAfcReserve()` |
 
 ### src/proof_of_transaction_engine/ — Status: Correct, unchanged
 
@@ -62,13 +63,30 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 | ARO burn after TX | Yes | ✅ `BURN` ledger record for `emissionAmount` in same atomic TX |
 | AFC reserve grows → price rises | Yes | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` |
 | Epoch fees also 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` |
+| Epoch AFC fees update price index | Yes | ✅ **FIXED** — `emissionService.updateAfcReserve(afcReserve)` called after ledger entry |
 | Net circulating supply change = 0 | Yes | ✅ `SupplySnapshot`: `totalMinted == totalBurned` per cycle |
 
-**Result: Code FULLY MATCHES canonical model. No rewrites required.**
+**Result: Code FULLY MATCHES canonical model.**
 
 ---
 
-## 3. Implementation Detail
+## 3. Changes Applied in This Pass
+
+### Fix: Epoch AFC reserve not updating in-memory price index
+
+**Problem (Issue #4 from prior audit):** `FeeDistributionService.distributeRewards()` was recording the 25% AFC portion on the ledger but NOT calling `EmissionService.updateAfcReserve()`, so the in-memory `reserveIndex` never reflected epoch-level fee accumulation. The emission price index was only updated by per-transaction emissions, not epoch finalization fees.
+
+**Files changed:**
+
+1. `src/token/emission.service.ts` — `updateAfcReserve()` changed from `private` to public (with doc comment).
+
+2. `src/fee_distribution/fee_distribution.service.ts`:
+   - Injected `EmissionService` via constructor (already available through `TokenModule` which `FeeDistributionModule` imports — no circular dependency).
+   - Added `this.emissionService.updateAfcReserve(afcReserve)` call immediately after the AFC ledger entry in `distributeRewards()`.
+
+---
+
+## 4. Implementation Detail
 
 ### EmissionService — Canonical lifecycle (`src/token/emission.service.ts`)
 
@@ -84,7 +102,7 @@ processTransactionEmission(txAmount, recipient, refId, rate?)
   ├─ Ledger MINT:             emissionAmount → recipient
   ├─ Ledger FEE_DISTRIBUTION: nodeShare → SYSTEM_NODE_POOL
   ├─ Ledger FEE_DISTRIBUTION: afcShare  → SYSTEM_AFC_RESERVE
-  ├─ updateAfcReserve(afcShare):
+  ├─ updateAfcReserve(afcShare):         ← also called by FeeDistributionService at epoch end
   │    reserveIndex = 1.0 + sqrt(totalReserve) / 10_000
   └─ Ledger BURN:             emissionAmount → SYSTEM_BURN_VAULT
 ```
@@ -102,7 +120,7 @@ All four ledger operations execute atomically within a single `QueryRunner` tran
 
 ---
 
-## 4. Example: $10,000 Transaction
+## 5. Example: $10,000 Transaction
 
 ```
 TX Amount      = 10,000 ARO
@@ -120,34 +138,31 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 5. Invariants
+## 6. Invariants
 
 1. `emissionAmount == transactionAmount` (enforced in `calculate()`, throws on violation)
 2. `nodeShare + afcShare == commission` (exact split, no rounding loss beyond float precision)
 3. `totalMinted == totalBurned` per canonical TX cycle in `SupplySnapshot` (net zero supply)
 4. `reserveIndex` is monotonically non-decreasing (only increases, never decreases)
 5. All four ledger steps succeed or all roll back (atomic QueryRunner transaction)
+6. Epoch fee AFC accumulation also updates `reserveIndex` (fix applied 2026-06-14)
 
 ---
 
-## 6. Open Issues (carry-forward from prior audit, not blocking)
+## 7. Open Issues (carry-forward, not blocking)
 
 | # | Issue | Priority |
 |---|-------|----------|
 | 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium |
-| 2 | `IngestionService.ingestAsset()` calls `TokenService.mint()` (commented out) — should call `mintForTransaction()` for canonical flow. | Medium |
+| 2 | `IngestionService.ingestAsset()` has `tokenService.mint()` commented out. When activated, should call `mintForTransaction()` instead of `mint()`. | Medium |
 | 3 | No unit tests for `EmissionService.calculate()` — cover dust amounts, max commission rate, zero-amount guard. | Low |
-| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
 
 ---
 
-## 7. Documentation Changes Made in This Pass
+## 8. Audit History
 
-No documentation changes were required — all docs and code are already canonical.  
-Previous pass (2026-05-12) on branch `claude/inspiring-cannon-4qbjK` aligned:
-
-| File | Change |
-|------|--------|
-| `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas |
-| `01_coin_engine/aro_emission_protocol.md` | Replaced load-index formula with canonical 1:1 + 75/25 + burn |
-| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split |
+| Date | Branch | Action |
+|------|--------|--------|
+| 2026-05-12 | `claude/inspiring-cannon-4qbjK` | Initial alignment — replaced load-index formula with canonical 1:1 in docs; implemented `EmissionService` |
+| 2026-06-13 | `claude/inspiring-cannon-7sksc6` | Full audit pass — confirmed canonical compliance; merged via PR #243 |
+| 2026-06-14 | `claude/inspiring-cannon-dner1a` | Fix: epoch AFC reserve now syncs in-memory price index via `EmissionService.updateAfcReserve()` |

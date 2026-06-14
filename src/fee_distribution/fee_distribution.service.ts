@@ -9,6 +9,7 @@ import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { Transaction, TransactionStatus, TransactionType } from '../ledger/entities/transaction.entity';
 
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
+import { EmissionService } from '../token/emission.service';
 
 @Injectable()
 export class FeeDistributionService {
@@ -27,7 +28,8 @@ export class FeeDistributionService {
         private readonly tokenService: TokenService,
         private readonly nodeChainService: NodeChainService,
         private readonly smartContractService: SmartContractIntegration,
-        private readonly dataSource: DataSource, // For transactionality
+        private readonly dataSource: DataSource,
+        private readonly emissionService: EmissionService,
     ) { }
 
     /**
@@ -163,7 +165,7 @@ export class FeeDistributionService {
                 `→ node pool=${nodePool.toFixed(8)} (75%) | AFC reserve=${afcReserve.toFixed(8)} (25%)`,
             );
 
-            // Record AFC reserve contribution
+            // Record AFC reserve contribution and synchronise the canonical emission price index
             await this.transactionRepo.save({
                 hash:         `AFC_RESERVE_${epoch.epochNumber}`,
                 previousHash: 'SYSTEM',
@@ -177,6 +179,9 @@ export class FeeDistributionService {
                 status:       TransactionStatus.CONFIRMED,
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
+            // Canonical model: AFC reserve growth → emission price rises.
+            // EmissionService holds the authoritative in-memory reserveIndex.
+            this.emissionService.updateAfcReserve(afcReserve);
 
             let distributedSum = 0;
 

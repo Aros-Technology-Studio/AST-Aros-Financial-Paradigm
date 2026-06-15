@@ -197,6 +197,15 @@ export class EmissionService {
     }
 
     /**
+     * Records an AFC reserve contribution from an external source (e.g. epoch fee distribution).
+     * Keeps the in-memory price index consistent regardless of which code path adds to the reserve.
+     */
+    recordEpochAfcContribution(afcAmount: number): void {
+        if (afcAmount <= 0) return;
+        this.updateAfcReserve(afcAmount);
+    }
+
+    /**
      * Allows governance to update the commission rate.
      */
     updateCommissionRate(newRate: number): void {

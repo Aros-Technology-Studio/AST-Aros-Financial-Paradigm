@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-7sksc6`  
-**Date:** 2026-06-14  
+**Branch:** `claude/inspiring-cannon-o2w8o4`  
+**Date:** 2026-06-15  
 **Task:** Audit ArosCoin emission logic against the canonical model; align code and documentation
 
 ---
@@ -24,7 +24,7 @@
 ### 10_proof_of_transaction_engine — Status: Documentation only
 
 Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
-Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here.
+Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic resides here.
 
 ### src/token/ — Status: Canonical code confirmed correct
 
@@ -32,7 +32,7 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 |------|---------------|
 | `emission.interfaces.ts` | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` — all correct |
 | `emission.service.ts` | ✅ Full canonical 1:1 lifecycle: mint → fee split → AFC update → burn (atomic) |
-| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved |
+| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved for bridge |
 | `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve`; `updateInternalValuation()` is deprecated no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
 
@@ -46,8 +46,12 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 
 | File | Notes |
 |------|-------|
-| `process_reserve.service.ts` | Reserve volume ledger; `reserveIndex` via `log1p` — consumed by legacy `TokenomicsService` |
+| `process_reserve.service.ts` | Reserve volume ledger; `reserveIndex` via `log1p` — consumed by `TokenomicsService` |
 | `pot.service.ts` | PoT scoring and weight normalization — correct, untouched |
+
+### src/integration/ingestion/ — Status: Stub (not canonical)
+
+`IngestionService.ingestAsset()` calculates `mintedAros` via oracle rate but the actual mint call is commented out (`// this.tokenService.mint(...)`). This is a known stub; see Open Issues below.
 
 ---
 
@@ -91,6 +95,16 @@ processTransactionEmission(txAmount, recipient, refId, rate?)
 
 All four ledger operations execute atomically within a single `QueryRunner` transaction.
 
+### TokenService — Entry point (`src/token/token.service.ts`)
+
+`mintForTransaction()` is the canonical entry point for all new transaction processing.  
+Legacy `mint()` remains for backward-compat with the bridge fiat deposit flow.
+
+### FeeDistributionService — Epoch-level split (`src/fee_distribution/fee_distribution.service.ts`)
+
+`distributeRewards()` implements the same canonical 75/25 split across collected epoch fees.  
+Node rewards are weighted by PoT score (normalized by `potService.calculateNormalizedWeights()`).
+
 ### System Addresses
 
 | Constant | Address |
@@ -130,24 +144,21 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Open Issues (carry-forward from prior audit, not blocking)
+## 6. Open Issues
 
-| # | Issue | Priority |
-|---|-------|----------|
-| 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium |
-| 2 | `IngestionService.ingestAsset()` calls `TokenService.mint()` (commented out) — should call `mintForTransaction()` for canonical flow. | Medium |
-| 3 | No unit tests for `EmissionService.calculate()` — cover dust amounts, max commission rate, zero-amount guard. | Low |
-| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
+| # | Issue | Priority | Status |
+|---|-------|----------|--------|
+| 1 | `AfcReserveState` is in-memory — lost on restart. Needs `AfcReserveEntity` table with periodic snapshots. | Medium | Open |
+| 2 | `IngestionService.ingestAsset()` has mint call commented out — should call `TokenService.mintForTransaction()` with `mintedAros` as the transaction amount for canonical flow. | Medium | Open |
+| 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, and the zero-amount guard. | Low | Open |
+| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index is not updated after epoch finalization. | Low | Open |
 
 ---
 
-## 7. Documentation Changes Made in This Pass
+## 7. History
 
-No documentation changes were required — all docs and code are already canonical.  
-Previous pass (2026-05-12) on branch `claude/inspiring-cannon-4qbjK` aligned:
-
-| File | Change |
-|------|--------|
-| `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas |
-| `01_coin_engine/aro_emission_protocol.md` | Replaced load-index formula with canonical 1:1 + 75/25 + burn |
-| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split |
+| Pass | Branch | Date | Outcome |
+|------|--------|------|---------|
+| 1 | `claude/inspiring-cannon-4qbjK` | 2026-05-12 | Rewrote `coin_emission_model.md`, `aro_emission_protocol.md`, `payment_distribution.md` to canonical formulas |
+| 2 | `claude/inspiring-cannon-7sksc6` | 2026-06-14 | Confirmed code fully canonical; wrote full audit report |
+| 3 | `claude/inspiring-cannon-o2w8o4` | 2026-06-15 | Re-audit confirms no drift; code and docs fully aligned; open issues unchanged |

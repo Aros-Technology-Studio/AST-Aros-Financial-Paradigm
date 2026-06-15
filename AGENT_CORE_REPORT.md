@@ -1,7 +1,7 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
+**Branch:** `claude/inspiring-cannon-r8pmdv`  
 **Date:** 2026-06-15  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
@@ -15,8 +15,8 @@
 |------|-------|
 | `coin_emission_model.md` | ✅ Canonical 1:1 formulas, AFC reserve index, worked example |
 | `aro_emission_protocol.md` | ✅ Canonical 1:1 + 75/25 + burn flow; mermaid sequence diagram |
-| `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula; historical note on old 60/15/15/5/5 split |
-| `burn_and_mint_rules.md` | ✅ Non-contradictory; left as-is |
+| `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula |
+| `burn_and_mint_rules.md` | ✅ Non-contradictory; correct guard logic |
 | `README.md` | ✅ Architecture overview; no formula conflicts |
 
 **Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/emission.service.ts`.
@@ -46,7 +46,7 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 
 | File | Notes |
 |------|-------|
-| `process_reserve.service.ts` | Reserve volume ledger; `reserveIndex` via `log1p` — consumed by legacy `TokenomicsService` |
+| `process_reserve.service.ts` | PoT volume ledger; `reserveIndex` via `log1p` — consumed by legacy `TokenomicsService` |
 | `pot.service.ts` | PoT scoring and weight normalization — correct, untouched |
 
 ---
@@ -148,4 +148,5 @@ After 12.50 AFC accumulated:
 | First canonical implementation | `agent/core-emission` (PR #72) | 2026-05-11 | Implemented `EmissionService`, `emission.interfaces.ts`, updated `TokenService.mintForTransaction()` |
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
-| Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-3w693h` (PR #254) | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-r8pmdv` | 2026-06-15 | Independent re-audit of all emission paths: `EmissionService`, `TokenService`, `FeeDistributionService`, `PoTService`, docs in 01_coin_engine and 10_proof_of_transaction_engine. Code and docs confirmed fully canonical. No changes required. |

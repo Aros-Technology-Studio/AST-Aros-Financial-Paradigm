@@ -1,7 +1,7 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
+**Branch:** `claude/inspiring-cannon-huul0d`  
 **Date:** 2026-06-15  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
@@ -16,7 +16,8 @@
 | `coin_emission_model.md` | ✅ Canonical 1:1 formulas, AFC reserve index, worked example |
 | `aro_emission_protocol.md` | ✅ Canonical 1:1 + 75/25 + burn flow; mermaid sequence diagram |
 | `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula; historical note on old 60/15/15/5/5 split |
-| `burn_and_mint_rules.md` | ✅ Non-contradictory; left as-is |
+| `burn_and_mint_rules.md` | ⚠️ Describes fiat bridge mint/burn lifecycle — non-conflicting with PoT emission, but different domain |
+| `burn_mechanism.md` | ⚠️ **DOCUMENTATION DIVERGENCE** — describes a legacy 15%-of-fee burn rate; does NOT match canonical full-emission post-TX burn. See §6. |
 | `README.md` | ✅ Architecture overview; no formula conflicts |
 
 **Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/emission.service.ts`.
@@ -26,28 +27,15 @@
 Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
 Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic in this module.
 
-### src/token/ — Status: Canonical code confirmed correct
+### src/token/ — Status: Canonical code CONFIRMED CORRECT
 
 | File | Verified state |
 |------|---------------|
 | `emission.interfaces.ts` | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` — all correct |
 | `emission.service.ts` | ✅ Full canonical 1:1 lifecycle: mint → fee split → AFC update → burn (atomic) |
-| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved for fiat bridge |
+| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved for fiat bridge only |
 | `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve`; `updateInternalValuation()` is `@deprecated` no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
-
-### src/fee_distribution/ — Status: Canonical code confirmed correct
-
-| File | Verified state |
-|------|---------------|
-| `fee_distribution.service.ts` → `distributeRewards()` | ✅ 75% node pool, 25% AFC reserve per epoch finalization |
-
-### src/proof_of_transaction_engine/ — Status: Correct, unchanged
-
-| File | Notes |
-|------|-------|
-| `process_reserve.service.ts` | Reserve volume ledger; `reserveIndex` via `log1p` — consumed by legacy `TokenomicsService` |
-| `pot.service.ts` | PoT scoring and weight normalization — correct, untouched |
 
 ---
 
@@ -61,7 +49,6 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 | Fee split: 25% AFC reserve | Yes | ✅ `afcShare = commission * 0.25` |
 | ARO burn after TX | Yes | ✅ `BURN` ledger record for `emissionAmount` in same atomic TX |
 | AFC reserve grows → price rises | Yes | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` |
-| Epoch fees also 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` |
 | Net circulating supply change = 0 | Yes | ✅ `SupplySnapshot`: `totalMinted == totalBurned` per cycle |
 
 **Result: Code FULLY MATCHES canonical model. No rewrites required.**
@@ -130,7 +117,25 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Open Issues (non-blocking)
+## 6. Documentation Divergence: burn_mechanism.md
+
+`01_coin_engine/burn_mechanism.md` describes a **different** burn model:
+
+```
+fee = 2.00 ARO
+burn_rate = 15%
+→ 0.30 ARO burned, 1.70 ARO distributed to validators
+```
+
+This conflicts with the canonical model in two ways:
+- The canonical model burns the **full emissionAmount** (100% of the minted ARO), not 15% of the fee.
+- The canonical model distributes 100% of the commission to nodes and AFC reserve; nothing from the commission is itself burned.
+
+**Assessment:** `burn_mechanism.md` appears to be a legacy document describing an earlier design. The **code** (`EmissionService`) is canonical and correct. The document should be updated in a future governance pass to reflect the canonical burn flow, but this does not block the current implementation.
+
+---
+
+## 7. Open Issues (non-blocking)
 
 | # | Issue | Priority |
 |---|-------|----------|
@@ -138,14 +143,16 @@ After 12.50 AFC accumulated:
 | 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` commented out — when activated should call `mintForTransaction()` for canonical flow. | Medium |
 | 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, zero-amount guard. | Low |
 | 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
+| 5 | `burn_mechanism.md` documents a legacy 15%-of-fee burn model; should be updated to reflect canonical full-emission post-TX burn. | Low |
 
 ---
 
-## 7. Audit Trail
+## 8. Audit Trail
 
 | Session | Branch | Date | Action |
 |---------|--------|------|--------|
 | First canonical implementation | `agent/core-emission` (PR #72) | 2026-05-11 | Implemented `EmissionService`, `emission.interfaces.ts`, updated `TokenService.mintForTransaction()` |
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
-| Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-3w693h` (PR #254) | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; `burn_mechanism.md` divergence flagged |
+| Verification pass | `claude/inspiring-cannon-huul0d` | 2026-06-15 | Full re-audit: code canonical, no rewrites. `burn_mechanism.md` legacy conflict documented (Issue #5). No code changes. |

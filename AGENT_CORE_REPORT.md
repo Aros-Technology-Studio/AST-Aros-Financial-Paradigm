@@ -1,7 +1,7 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
+**Branch:** `claude/inspiring-cannon-pqh7j4`  
 **Date:** 2026-06-15  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
@@ -36,11 +36,12 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 | `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve`; `updateInternalValuation()` is `@deprecated` no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
 
-### src/fee_distribution/ — Status: Canonical code confirmed correct
+### src/fee_distribution/ — Status: Fixed this session (Issue #4)
 
 | File | Verified state |
 |------|---------------|
 | `fee_distribution.service.ts` → `distributeRewards()` | ✅ 75% node pool, 25% AFC reserve per epoch finalization |
+| `fee_distribution.service.ts` → AFC price index sync | ✅ **FIXED** — now calls `emissionService.recordEpochAfcContribution()` after epoch AFC ledger record |
 
 ### src/proof_of_transaction_engine/ — Status: Correct, unchanged
 
@@ -62,9 +63,10 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 | ARO burn after TX | Yes | ✅ `BURN` ledger record for `emissionAmount` in same atomic TX |
 | AFC reserve grows → price rises | Yes | ✅ `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` |
 | Epoch fees also 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` |
+| Epoch AFC updates price index | Yes | ✅ **FIXED** — `recordEpochAfcContribution()` called at epoch finalization |
 | Net circulating supply change = 0 | Yes | ✅ `SupplySnapshot`: `totalMinted == totalBurned` per cycle |
 
-**Result: Code FULLY MATCHES canonical model. No rewrites required.**
+**Result: Code FULLY MATCHES canonical model. One bug fixed (Issue #4).**
 
 ---
 
@@ -90,6 +92,22 @@ processTransactionEmission(txAmount, recipient, refId, rate?)
 ```
 
 All four ledger operations execute atomically within a single `QueryRunner` transaction.
+
+### FeeDistributionService — Epoch finalization (`src/fee_distribution/fee_distribution.service.ts`)
+
+```
+distributeRewards(epoch, totalFees, weights)
+  │
+  ├─ nodePool   = totalFees × 0.75
+  ├─ afcReserve = totalFees × 0.25
+  │
+  ├─ Ledger FEE_DISTRIBUTION: afcReserve → SYSTEM_AFC_RESERVE
+  ├─ emissionService.recordEpochAfcContribution(afcReserve)   ← FIXED
+  │    → updateAfcReserve(afcReserve)
+  │    → reserveIndex = 1.0 + sqrt(totalReserve) / 10_000
+  │
+  └─ For each node: Ledger VALIDATOR_REWARD → nodePool × weight
+```
 
 ### System Addresses
 
@@ -127,17 +145,18 @@ After 12.50 AFC accumulated:
 3. `totalMinted == totalBurned` per canonical TX cycle in `SupplySnapshot` (net zero supply)
 4. `reserveIndex` is monotonically non-decreasing (only increases, never decreases)
 5. All four ledger steps succeed or all roll back (atomic QueryRunner transaction)
+6. Epoch AFC contributions update the in-memory price index via `recordEpochAfcContribution()` (enforced since this session)
 
 ---
 
-## 6. Open Issues (non-blocking)
+## 6. Open Issues
 
-| # | Issue | Priority |
-|---|-------|----------|
-| 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium |
-| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` commented out — when activated should call `mintForTransaction()` for canonical flow. | Medium |
-| 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, zero-amount guard. | Low |
-| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
+| # | Issue | Priority | Status |
+|---|-------|----------|--------|
+| 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium | Open |
+| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` commented out — when activated should call `mintForTransaction()` for canonical flow. | Medium | Open |
+| 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, zero-amount guard. | Low | Open |
+| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low | **RESOLVED this session** |
 
 ---
 
@@ -149,3 +168,4 @@ After 12.50 AFC accumulated:
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
 | Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Bug fix + verification | `claude/inspiring-cannon-pqh7j4` | 2026-06-15 | Full audit confirmed canonical model intact. Fixed Issue #4: `FeeDistributionService` now calls `emissionService.recordEpochAfcContribution()` so epoch-level AFC contributions propagate to the in-memory price index. Added `EmissionService.recordEpochAfcContribution()` public method. |

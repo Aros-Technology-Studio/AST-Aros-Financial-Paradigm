@@ -1,9 +1,9 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-7sksc6`  
-**Date:** 2026-06-14  
-**Task:** Audit ArosCoin emission logic against the canonical model; align code and documentation
+**Branch:** `claude/inspiring-cannon-3w693h`  
+**Date:** 2026-06-15  
+**Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
 ---
 
@@ -14,17 +14,17 @@
 | File | State |
 |------|-------|
 | `coin_emission_model.md` | ✅ Canonical 1:1 formulas, AFC reserve index, worked example |
-| `aro_emission_protocol.md` | ✅ Canonical 1:1 + 75/25 + burn flow |
-| `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula |
+| `aro_emission_protocol.md` | ✅ Canonical 1:1 + 75/25 + burn flow; mermaid sequence diagram |
+| `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula; historical note on old 60/15/15/5/5 split |
 | `burn_and_mint_rules.md` | ✅ Non-contradictory; left as-is |
 | `README.md` | ✅ Architecture overview; no formula conflicts |
 
-**Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/`.
+**Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/emission.service.ts`.
 
 ### 10_proof_of_transaction_engine — Status: Documentation only
 
 Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
-Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic here.
+Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic in this module.
 
 ### src/token/ — Status: Canonical code confirmed correct
 
@@ -32,8 +32,8 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic h
 |------|---------------|
 | `emission.interfaces.ts` | ✅ `EmissionResult`, `EmissionConfig`, `AfcReserveState` — all correct |
 | `emission.service.ts` | ✅ Full canonical 1:1 lifecycle: mint → fee split → AFC update → burn (atomic) |
-| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved |
-| `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve`; `updateInternalValuation()` is deprecated no-op |
+| `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved for fiat bridge |
+| `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve`; `updateInternalValuation()` is `@deprecated` no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
 
 ### src/fee_distribution/ — Status: Canonical code confirmed correct
@@ -130,24 +130,22 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Open Issues (carry-forward from prior audit, not blocking)
+## 6. Open Issues (non-blocking)
 
 | # | Issue | Priority |
 |---|-------|----------|
 | 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium |
-| 2 | `IngestionService.ingestAsset()` calls `TokenService.mint()` (commented out) — should call `mintForTransaction()` for canonical flow. | Medium |
-| 3 | No unit tests for `EmissionService.calculate()` — cover dust amounts, max commission rate, zero-amount guard. | Low |
+| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` commented out — when activated should call `mintForTransaction()` for canonical flow. | Medium |
+| 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, zero-amount guard. | Low |
 | 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
 
 ---
 
-## 7. Documentation Changes Made in This Pass
+## 7. Audit Trail
 
-No documentation changes were required — all docs and code are already canonical.  
-Previous pass (2026-05-12) on branch `claude/inspiring-cannon-4qbjK` aligned:
-
-| File | Change |
-|------|--------|
-| `01_coin_engine/coin_emission_model.md` | Replaced `E = F/N` with canonical 1:1 formulas |
-| `01_coin_engine/aro_emission_protocol.md` | Replaced load-index formula with canonical 1:1 + 75/25 + burn |
-| `01_coin_engine/payment_distribution.md` | Replaced 60/15/15/5/5 table with canonical 75/25 split |
+| Session | Branch | Date | Action |
+|---------|--------|------|--------|
+| First canonical implementation | `agent/core-emission` (PR #72) | 2026-05-11 | Implemented `EmissionService`, `emission.interfaces.ts`, updated `TokenService.mintForTransaction()` |
+| Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
+| Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |

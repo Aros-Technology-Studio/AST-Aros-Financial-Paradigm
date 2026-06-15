@@ -1,7 +1,7 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
+**Branch:** `claude/inspiring-cannon-7p2gm7`  
 **Date:** 2026-06-15  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
@@ -21,10 +21,14 @@
 
 **Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/emission.service.ts`.
 
-### 10_proof_of_transaction_engine — Status: Documentation only
+### 10_proof_of_transaction_engine — Status: Documentation corrected this session
 
-Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
-Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic in this module.
+| File | State |
+|------|-------|
+| `pot_tx_incentive_distribution.md` | ⚠️ **WAS** using old 60/30/10 split — **FIXED** to canonical 75/25 |
+| Other `.md` specs | ✅ PoT validation, slashing, signatures — no emission conflicts |
+
+Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic in those code files.
 
 ### src/token/ — Status: Canonical code confirmed correct
 
@@ -35,19 +39,6 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 | `token.service.ts` | ✅ `mintForTransaction()` delegates to `EmissionService`; legacy `mint()` preserved for fiat bridge |
 | `tokenomics.service.ts` | ✅ `getCurrentPrice()` delegates to `processReserve`; `updateInternalValuation()` is `@deprecated` no-op |
 | `token.module.ts` | ✅ `EmissionService` registered as provider and exported |
-
-### src/fee_distribution/ — Status: Canonical code confirmed correct
-
-| File | Verified state |
-|------|---------------|
-| `fee_distribution.service.ts` → `distributeRewards()` | ✅ 75% node pool, 25% AFC reserve per epoch finalization |
-
-### src/proof_of_transaction_engine/ — Status: Correct, unchanged
-
-| File | Notes |
-|------|-------|
-| `process_reserve.service.ts` | Reserve volume ledger; `reserveIndex` via `log1p` — consumed by legacy `TokenomicsService` |
-| `pot.service.ts` | PoT scoring and weight normalization — correct, untouched |
 
 ---
 
@@ -64,11 +55,31 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 | Epoch fees also 75/25 | Yes | ✅ `FeeDistributionService.distributeRewards()` |
 | Net circulating supply change = 0 | Yes | ✅ `SupplySnapshot`: `totalMinted == totalBurned` per cycle |
 
-**Result: Code FULLY MATCHES canonical model. No rewrites required.**
+**Result: Code FULLY MATCHES canonical model. One documentation file corrected (see §3).**
 
 ---
 
-## 3. Implementation Detail
+## 3. Change Applied This Session
+
+### `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` — Corrected
+
+**Problem:** File (dated 2025-08-24, status "Draft") contained the obsolete distribution formula:
+```
+60% validators, 30% attesters, 10% burn
+```
+This contradicts the canonical 75/25 model across all other documentation and code.
+
+**Fix:** Replaced with the canonical formula:
+```
+Commission = TX Amount × rate
+Node Pool  = Commission × 0.75   (75% → nodes, split by PoT weight)
+AFC Reserve= Commission × 0.25   (25% → SYSTEM_AFC_RESERVE)
+```
+Added reference implementation showing canonical Python logic. No code changes were required — the discrepancy was documentation-only.
+
+---
+
+## 4. Implementation Detail
 
 ### EmissionService — Canonical lifecycle (`src/token/emission.service.ts`)
 
@@ -102,7 +113,7 @@ All four ledger operations execute atomically within a single `QueryRunner` tran
 
 ---
 
-## 4. Example: $10,000 Transaction
+## 5. Example: $10,000 Transaction
 
 ```
 TX Amount      = 10,000 ARO
@@ -120,7 +131,7 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 5. Invariants
+## 6. Invariants
 
 1. `emissionAmount == transactionAmount` (enforced in `calculate()`, throws on violation)
 2. `nodeShare + afcShare == commission` (exact split, no rounding loss beyond float precision)
@@ -130,7 +141,7 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 6. Open Issues (non-blocking)
+## 7. Open Issues (non-blocking)
 
 | # | Issue | Priority |
 |---|-------|----------|
@@ -141,11 +152,12 @@ After 12.50 AFC accumulated:
 
 ---
 
-## 7. Audit Trail
+## 8. Audit Trail
 
 | Session | Branch | Date | Action |
 |---------|--------|------|--------|
 | First canonical implementation | `agent/core-emission` (PR #72) | 2026-05-11 | Implemented `EmissionService`, `emission.interfaces.ts`, updated `TokenService.mintForTransaction()` |
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
-| Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-3w693h` (PR #254) | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification + doc fix | `claude/inspiring-cannon-7p2gm7` | 2026-06-15 | Full re-audit confirmed code canonical; fixed `pot_tx_incentive_distribution.md` (old 60/30/10 → canonical 75/25) |

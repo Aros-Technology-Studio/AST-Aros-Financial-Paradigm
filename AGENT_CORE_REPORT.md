@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
-**Date:** 2026-06-15  
+**Branch:** `claude/inspiring-cannon-7xqyif`  
+**Date:** 2026-06-16  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
 ---
@@ -21,10 +21,15 @@
 
 **Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/emission.service.ts`.
 
-### 10_proof_of_transaction_engine — Status: Documentation only
+### 10_proof_of_transaction_engine — Status: Documentation corrected (2026-06-16)
 
 Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
 Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic in this module.
+
+| File | Status |
+|------|--------|
+| `pot_tx_incentive_distribution.md` | ❌→✅ Was "60% validators / 30% attesters / 10% burn" (old model). **Fixed** to canonical 75% node pool / 25% AFC reserve. |
+| All other `.md` files | ✅ No emission formula conflicts |
 
 ### src/token/ — Status: Canonical code confirmed correct
 
@@ -149,3 +154,4 @@ After 12.50 AFC accumulated:
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
 | Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Doc fix + verification | `claude/inspiring-cannon-7xqyif` | 2026-06-16 | Audit found `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` still referenced old 60/30/10 split; updated to canonical 75/25. All code confirmed fully canonical. |

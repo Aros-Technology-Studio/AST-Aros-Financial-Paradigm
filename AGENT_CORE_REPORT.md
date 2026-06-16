@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
-**Date:** 2026-06-15  
+**Branch:** `claude/inspiring-cannon-gjeh1b`  
+**Date:** 2026-06-16  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
 ---
@@ -26,6 +26,8 @@
 Contains `.md` spec files for PoT validation, slashing, signature model, incentive distribution.  
 Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic in this module.
 
+**Note:** `pot_tx_incentive_distribution.md` carries a stale draft split (60% validators / 30% attesters / 10% burn) that predates the canonical 75/25 model. The file is marked **Status: Draft** and the live code in `fee_distribution.service.ts` correctly implements 75% node pool / 25% AFC reserve. The draft doc has been updated in this session to reflect the canonical split.
+
 ### src/token/ — Status: Canonical code confirmed correct
 
 | File | Verified state |
@@ -40,13 +42,13 @@ Actual PoT code lives in `src/proof_of_transaction_engine/`. No emission logic i
 
 | File | Verified state |
 |------|---------------|
-| `fee_distribution.service.ts` → `distributeRewards()` | ✅ 75% node pool, 25% AFC reserve per epoch finalization |
+| `fee_distribution.service.ts` → `distributeRewards()` | ✅ `NODE_SHARE_RATIO = 0.75`, `AFC_SHARE_RATIO = 0.25` — epoch-level 75/25 split |
 
 ### src/proof_of_transaction_engine/ — Status: Correct, unchanged
 
 | File | Notes |
 |------|-------|
-| `process_reserve.service.ts` | Reserve volume ledger; `reserveIndex` via `log1p` — consumed by legacy `TokenomicsService` |
+| `process_reserve.service.ts` | Legacy volume tracker; `reserveIndex` via `log1p` — consumed by `TokenomicsService` for bridge-path pricing only |
 | `pot.service.ts` | PoT scoring and weight normalization — correct, untouched |
 
 ---
@@ -135,7 +137,7 @@ After 12.50 AFC accumulated:
 | # | Issue | Priority |
 |---|-------|----------|
 | 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium |
-| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` commented out — when activated should call `mintForTransaction()` for canonical flow. | Medium |
+| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` (commented out) — when activated should call `mintForTransaction()` for canonical flow. | Medium |
 | 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, zero-amount guard. | Low |
 | 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
 
@@ -148,4 +150,5 @@ After 12.50 AFC accumulated:
 | First canonical implementation | `agent/core-emission` (PR #72) | 2026-05-11 | Implemented `EmissionService`, `emission.interfaces.ts`, updated `TokenService.mintForTransaction()` |
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
-| Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-3w693h` (PR #254) | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass + doc fix | `claude/inspiring-cannon-gjeh1b` | 2026-06-16 | Full audit confirmed code canonical; fixed stale 60/30/10 split in `pot_tx_incentive_distribution.md` |

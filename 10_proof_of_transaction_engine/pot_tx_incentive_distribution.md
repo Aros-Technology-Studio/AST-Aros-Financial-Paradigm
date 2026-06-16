@@ -8,13 +8,13 @@
 Distributes incentives (fees/emission) to validating nodes post-PoT confirmation in NodeChain.
 
 ## 2. Principles
-- Merit-Based: Proportional to weight/role in NodeChain.
-- Deflationary: Portion burned.
+- Merit-Based: Proportional to PoT weight/role in NodeChain.
+- AFC-Backed: 25% of every fee epoch grows the AFC reserve, raising the emission price index.
 
 ## 3. Distribution Logic
 1. Collect fees from NodeChain TX.
-2. Allocate: 60% validators, 30% attesters, 10% burn.
-3. Disburse per weight.
+2. Canonical split: 75% → node pool (all participating validators/attesters, weighted by PoT score), 25% → AFC reserve contract.
+3. Disburse node pool share per PoT weight.
 
 ## 4. Formula
 Node Incentive = total_incentives * (node_weight / total_weights)

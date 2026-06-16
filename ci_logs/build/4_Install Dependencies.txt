@@ -1,0 +1,32 @@
+﻿2026-05-12T12:09:04.7851593Z ##[group]Run npm ci
+2026-05-12T12:09:04.7851976Z [36;1mnpm ci[0m
+2026-05-12T12:09:04.7884684Z shell: /usr/bin/bash -e {0}
+2026-05-12T12:09:04.7884998Z ##[endgroup]
+2026-05-12T12:09:08.0083636Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2026-05-12T12:09:08.1307671Z npm warn deprecated supertest@6.3.4: Please upgrade to supertest v7.1.3+, see release notes at https://github.com/forwardemail/supertest/releases/tag/v7.1.3 - maintenance is supported by Forward Email @ https://forwardemail.net
+2026-05-12T12:09:08.1547400Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+2026-05-12T12:09:08.1659186Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+2026-05-12T12:09:08.2639969Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+2026-05-12T12:09:08.2741575Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+2026-05-12T12:09:09.1386372Z npm warn deprecated superagent@8.1.2: Please upgrade to superagent v10.2.2+, see release notes at https://github.com/forwardemail/superagent/releases/tag/v10.2.2 - maintenance is supported by Forward Email @ https://forwardemail.net
+2026-05-12T12:09:11.5971449Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2026-05-12T12:09:14.1077010Z 
+2026-05-12T12:09:14.1078130Z > aros-paradigm-ast@0.1.0 prepare
+2026-05-12T12:09:14.1078600Z > npx husky install
+2026-05-12T12:09:14.1078766Z 
+2026-05-12T12:09:15.1086394Z husky - install command is DEPRECATED
+2026-05-12T12:09:15.1388187Z 
+2026-05-12T12:09:15.1388999Z added 834 packages, and audited 835 packages in 10s
+2026-05-12T12:09:15.1393831Z 
+2026-05-12T12:09:15.1394172Z 152 packages are looking for funding
+2026-05-12T12:09:15.1394723Z   run `npm fund` for details
+2026-05-12T12:09:15.4252493Z 
+2026-05-12T12:09:15.4253470Z 41 vulnerabilities (6 low, 14 moderate, 21 high)
+2026-05-12T12:09:15.4253942Z 
+2026-05-12T12:09:15.4254388Z To address issues that do not require attention, run:
+2026-05-12T12:09:15.4254966Z   npm audit fix
+2026-05-12T12:09:15.4255193Z 
+2026-05-12T12:09:15.4255606Z To address all issues (including breaking changes), run:
+2026-05-12T12:09:15.4256307Z   npm audit fix --force
+2026-05-12T12:09:15.4256568Z 
+2026-05-12T12:09:15.4256809Z Run `npm audit` for details.

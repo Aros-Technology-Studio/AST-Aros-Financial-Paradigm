@@ -13,9 +13,23 @@ import { EmissionService } from './emission.service';
 import { ProcessReserveLedgerService } from '../proof_of_transaction_engine/process_reserve.service';
 
 const mockEmissionService = {
-    calculate: jest.fn().mockReturnValue({ emissionAmount: 100, commission: 0.5, nodeShare: 0.375, afcReserveShare: 0.125 }),
-    processTransactionEmission: jest.fn().mockResolvedValue({ emissionAmount: 100 }),
-    updateAfcReserve: jest.fn().mockResolvedValue(undefined),
+    calculate: jest.fn().mockReturnValue({
+        transactionAmount: 100,
+        emissionAmount: 100,
+        commission: 0.5,
+        nodeShare: 0.375,
+        afcReserveShare: 0.125,
+        commissionRate: 0.005,
+    }),
+    processTransactionEmission: jest.fn().mockResolvedValue({
+        transactionAmount: 100,
+        emissionAmount: 100,
+        commission: 0.5,
+        nodeShare: 0.375,
+        afcReserveShare: 0.125,
+        commissionRate: 0.005,
+    }),
+    getCurrentEmissionPrice: jest.fn().mockReturnValue(1.0),
 };
 
 const mockTokenomicsService = {
@@ -122,6 +136,39 @@ describe('TokenService', () => {
                 .rejects.toThrow('Ledger Error');
 
             expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        });
+    });
+
+    describe('mintForTransaction', () => {
+        it('should delegate to EmissionService and emit canonical event', async () => {
+            const result = await service.mintForTransaction(10000, 'RECIPIENT_1', 'REF_CANONICAL_1');
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                10000,
+                'RECIPIENT_1',
+                'REF_CANONICAL_1',
+                undefined,
+            );
+            expect(mockEmissionService.getCurrentEmissionPrice).toHaveBeenCalled();
+            expect(result.emissionAmount).toBe(100);
+        });
+
+        it('should throw BadRequestException for zero or negative amount', async () => {
+            await expect(service.mintForTransaction(0, 'RECIPIENT_1', 'REF_1'))
+                .rejects.toThrow(BadRequestException);
+            await expect(service.mintForTransaction(-5, 'RECIPIENT_1', 'REF_2'))
+                .rejects.toThrow(BadRequestException);
+        });
+
+        it('should pass optional commissionRate through to EmissionService', async () => {
+            await service.mintForTransaction(5000, 'RECIPIENT_2', 'REF_RATE', 0.01);
+
+            expect(mockEmissionService.processTransactionEmission).toHaveBeenCalledWith(
+                5000,
+                'RECIPIENT_2',
+                'REF_RATE',
+                0.01,
+            );
         });
     });
 

@@ -132,12 +132,12 @@ After 12.50 AFC accumulated:
 
 ## 6. Open Issues (non-blocking)
 
-| # | Issue | Priority |
-|---|-------|----------|
-| 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium |
-| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` commented out — when activated should call `mintForTransaction()` for canonical flow. | Medium |
-| 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, zero-amount guard. | Low |
-| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
+| # | Issue | Priority | Status |
+|---|-------|----------|--------|
+| 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium | Open |
+| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` commented out — when activated should call `mintForTransaction()` for canonical flow. | Medium | Open |
+| 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, zero-amount guard. | Low | **Resolved 2026-06-17** |
+| 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low | Open |
 
 ---
 
@@ -149,3 +149,4 @@ After 12.50 AFC accumulated:
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
 | Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification + test coverage | `claude/inspiring-cannon-x16337` | 2026-06-17 | Full re-audit confirmed canonical compliance. Fixed `token.service.spec.ts` mock (removed private `updateAfcReserve`, added `getCurrentEmissionPrice`). Added `mintForTransaction` tests. Created `emission.service.spec.ts` with 14 tests covering `calculate()`, `processTransactionEmission()`, `updateCommissionRate()`, and `getAfcReserveState()`. Resolved Open Issue #3. |

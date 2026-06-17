@@ -16,6 +16,7 @@
     "generate:client": "npx @openapitools/openapi-generator-cli generate -i docs/api/openapi.yaml -g typescript-fetch -o client",
     "prepare": "npx husky install",
     "test": "jest",
+    "check:prohibitions": "bash scripts/check-prohibitions.sh",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:e2e": "jest --config ./tests/jest-e2e.json",

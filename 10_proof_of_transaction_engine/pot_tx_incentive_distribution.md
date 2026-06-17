@@ -9,11 +9,11 @@ Distributes incentives (fees/emission) to validating nodes post-PoT confirmation
 
 ## 2. Principles
 - Merit-Based: Proportional to weight/role in NodeChain.
-- Deflationary: Portion burned.
+- Canonical Split: 75% to processing nodes, 25% to AFC reserve.
 
 ## 3. Distribution Logic
 1. Collect fees from NodeChain TX.
-2. Allocate: 60% validators, 30% attesters, 10% burn.
+2. Allocate: 75% node pool (split by PoT weight), 25% AFC reserve contract.
 3. Disburse per weight.
 
 ## 4. Formula
@@ -31,7 +31,8 @@ def distribute(total_incentives: float, nodes: list[dict]) -> dict:
 ```
 
 ## 6. Dependencies
-- 01_coin_engine/payment_distribution.md (fee splits).
+- 01_coin_engine/payment_distribution.md (canonical 75/25 fee splits).
+- src/token/emission.service.ts (canonical EmissionService implementation).
 - 08_emission_layer/epoch_allocation_model.md (emission tie-in).
 
 ## 7. Notes

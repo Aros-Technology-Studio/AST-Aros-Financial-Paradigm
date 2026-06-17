@@ -74,8 +74,8 @@ export class AllSeeingEyeService {
      * an 'anomaly_detected' entry in the Oversight Ledger and returns the verdict.
      *
      * The method is a witness: it reports what it sees and writes to its own
-     * ledger. It does not throw, halt, revert, or otherwise change application
-     * state. Callers decide what (if anything) to do with the signal.
+     * ledger. Authority over how the system responds to the signal remains with
+     * the receiving modules; callers decide what to do with the verdict.
      */
     async compareSupply(observed: { totalSupply: number; retained: number }): Promise<{ consistent: boolean }> {
         const consistent = observed.totalSupply === observed.retained;

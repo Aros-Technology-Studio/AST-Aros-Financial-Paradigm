@@ -1,0 +1,53 @@
+# AST machine-readable rules (Model 1). Agents MUST satisfy every invariant and avoid every prohibition.
+model: 1
+authority_order: [agent_specs, reference_impl, this_file]
+non_authoritative: [notion_project, existing_repo_code]   # Model-A, historical
+reference_impl: reference/ast-core/
+specs_dir: docs/specs/
+
+invariants:            # each is an automated acceptance test
+  - { id: I1,  rule: "value exists only when PoT verified == 1",                      test: "inadmissible/unverified process mints nothing" }
+  - { id: I2,  rule: "every emission bound to a confirmed process",                   test: "mint(authorized=false) throws" }
+  - { id: I3,  rule: "every significant event recorded in NodeChain",                 test: "completeness check blocks advancement when events missing" }
+  - { id: I4,  rule: "deterministic execution: same input -> same result",            test: "repeat run yields identical verdicts/supply" }
+  - { id: I5,  rule: "earned retained; process part burned; processNet -> 0",         test: "processMinted == processBurned after completion" }
+  - { id: I6,  rule: "totalSupply derivable = (minted-burned)+earnedRetained",        test: "totalSupply == earnedRetained after burns" }
+  - { id: I7,  rule: "commission pool reconciles: sum(payments)+margin == sum(fees)", test: "finalizeEpoch reconciled == true" }
+  - { id: I8,  rule: "NodeChain append-only and hash-continuous",                     test: "reconstruct().ok == true; tamper breaks it" }
+  - { id: I9,  rule: "node influence from work+reputation, not balance",              test: "no stake field; weight derives from reputation" }
+  - { id: I10, rule: "All-Seeing Eye passive: signals only, no state change",         test: "eye operations never mutate other entities" }
+
+prohibitions:          # grep/AST gates - presence is a build failure
+  - { id: P1, forbid: "staking / stakedBalance / stake_freeze" }
+  - { id: P2, forbid: "slashing against balance or stake" }
+  - { id: P3, forbid: "token-weighted governance / vote-by-token-balance" }
+  - { id: P4, forbid: "farming / passive yield for holding" }
+  - { id: P5, forbid: "mint-on-deposit / crypto_to_aroscoin custodial conversion" }
+  - { id: P6, forbid: "All-Seeing Eye halting/reverting/voting/state-change/enforcement" }
+  - { id: P7, forbid: "emission outside confirmed-process logic (manual/scheduled mint)" }
+  - { id: P8, forbid: "defining entities by negation in comments/docs (positive only)" }
+
+entities:              # name : { spec, reference_module, target_nest_module }
+  NodeChain:           { spec: AST_NodeChain_AGENT_EN.md,      ref: nodechain.ts,      module: src/nodechain }
+  StateRecording:      { spec: AST_StateRecording_AGENT_EN.md, ref: stateRecording.ts, module: src/state-recording }
+  PoT:                 { spec: AST_PoT_AGENT_EN.md,            ref: pot.ts,            module: src/pot }
+  ArosCoin:            { spec: AST_ArosCoin_AGENT_EN.md,       ref: aroscoin.ts,       module: src/aroscoin }
+  Emission:            { spec: AST_Emission_AGENT_EN.md,       ref: emission.ts,       module: src/emission }
+  Commission:          { spec: AST_Commission_AGENT_EN.md,     ref: commission.ts,     module: src/commission }
+  Reserve:             { spec: AST_Reserve_AGENT_EN.md,        ref: reserve.ts,        module: src/reserve }
+  Release:             { spec: AST_Release_AGENT_EN.md,        ref: release.ts,        module: src/release }
+  Nodes:               { spec: AST_Nodes_AGENT_EN.md,          ref: nodes.ts,          module: src/nodes }
+  AllSeeingEye:        { spec: AST_AllSeeingEye_AGENT_EN.md,   ref: allSeeingEye.ts,   module: src/all-seeing-eye }
+  ProcessOrchestrator: { spec: AST_Ontology_FULL_AGENT_EN.md,  ref: orchestrator.ts,   module: src/orchestrator }
+
+migration_A_to_1:
+  remove: [validator_staking, stake_freeze_unlock, slashing_and_penalty, staking_governance_interface,
+           crypto_to_aroscoin_conversion, mint_on_deposit_bridge, token_weighted_governance]
+  keep_align: [emission_layer, pot_engine_core, tx_nodechain_recording, all_seeing_eye]
+  rewrite: [node_incentives_to_reputation, governance_to_role_based, ai_agents_to_passive_observation]
+
+definition_of_done:
+  - module_compiles_and_wired
+  - relevant_invariants_pass_as_tests
+  - no_prohibition_present
+  - positive_language_comments

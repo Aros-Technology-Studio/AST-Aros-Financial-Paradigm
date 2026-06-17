@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
-**Date:** 2026-06-15  
+**Branch:** `claude/inspiring-cannon-1n1tly`  
+**Date:** 2026-06-17  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
 ---
@@ -149,3 +149,4 @@ After 12.50 AFC accumulated:
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
 | Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-1n1tly` | 2026-06-17 | Full re-audit of `src/token/emission.service.ts`, `emission.interfaces.ts`, and all module docs; code FULLY MATCHES canonical model; no changes required |

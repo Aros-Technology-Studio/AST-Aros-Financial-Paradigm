@@ -123,7 +123,6 @@ export class CommissionService {
         const totalWeight = [...confirmedWeights.values()].reduce((sum, w) => sum + w, 0);
 
         const total = epoch.totalFees;
-        const margin = total * this.marginRate;
         const distributable = total * (1 - this.marginRate);
 
         const distributionLog: DistributionEntry[] = [];

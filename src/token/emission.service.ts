@@ -197,6 +197,17 @@ export class EmissionService {
     }
 
     /**
+     * Records an AFC reserve contribution from epoch-level fee distribution.
+     * Keeps the in-memory reserveIndex in sync with epoch finalization payouts,
+     * not just per-transaction emissions.
+     */
+    recordEpochAfcContribution(amount: number): void {
+        if (amount <= 0) return;
+        this.updateAfcReserve(amount);
+        this.logger.log(`[AFC Reserve] Epoch contribution: +${amount.toFixed(8)} → Index=${this.afcReserveState.reserveIndex.toFixed(6)}`);
+    }
+
+    /**
      * Allows governance to update the commission rate.
      */
     updateCommissionRate(newRate: number): void {

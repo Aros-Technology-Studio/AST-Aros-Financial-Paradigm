@@ -36,7 +36,7 @@ ok('I-CM-4 — комиссионный пул сведён', epoch.reconciled);
 ok('I-NC — целостность NodeChain', ast.chain.reconstruct().ok);
 
 // 14.6 / I-ND-2: у ноды нет поля стейка (влияние из работы, не из баланса)
-const n = ast.nodes.list()[0] as Record<string, unknown>;
+const n = ast.nodes.list()[0] as unknown as Record<string, unknown>;
 ok('14.6 — у ноды отсутствует stake/stakedBalance', !('stake' in n) && !('stakedBalance' in n));
 
 // I-EYE-1/2: Eye пассивен — наблюдал, но не менял супплай

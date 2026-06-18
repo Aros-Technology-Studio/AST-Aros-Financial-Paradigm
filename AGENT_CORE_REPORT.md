@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
-**Date:** 2026-06-15  
+**Branch:** `claude/inspiring-cannon-y77fv9`  
+**Date:** 2026-06-18  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
 ---
@@ -15,8 +15,8 @@
 |------|-------|
 | `coin_emission_model.md` | ✅ Canonical 1:1 formulas, AFC reserve index, worked example |
 | `aro_emission_protocol.md` | ✅ Canonical 1:1 + 75/25 + burn flow; mermaid sequence diagram |
-| `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula; historical note on old 60/15/15/5/5 split |
-| `burn_and_mint_rules.md` | ✅ Non-contradictory; left as-is |
+| `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula |
+| `burn_and_mint_rules.md` | ✅ Non-contradictory; correct guards |
 | `README.md` | ✅ Architecture overview; no formula conflicts |
 
 **Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/emission.service.ts`.
@@ -135,7 +135,7 @@ After 12.50 AFC accumulated:
 | # | Issue | Priority |
 |---|-------|----------|
 | 1 | `AfcReserveState` is in-memory — lost on restart. Add `AfcReserveEntity` table with periodic snapshots. | Medium |
-| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` commented out — when activated should call `mintForTransaction()` for canonical flow. | Medium |
+| 2 | `IngestionService.ingestAsset()` calls `tokenService.mint()` (commented out) — when activated should call `mintForTransaction()` for canonical flow. | Medium |
 | 3 | No unit tests for `EmissionService.calculate()` — should cover dust amounts, max commission rate, zero-amount guard. | Low |
 | 4 | `FeeDistributionService.distributeRewards()` records AFC reserve on ledger but does not call `EmissionService.updateAfcReserve()` — in-memory index not updated after epoch finalization. | Low |
 
@@ -148,4 +148,5 @@ After 12.50 AFC accumulated:
 | First canonical implementation | `agent/core-emission` (PR #72) | 2026-05-11 | Implemented `EmissionService`, `emission.interfaces.ts`, updated `TokenService.mintForTransaction()` |
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
-| Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-3w693h` (PR #254) | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-y77fv9` | 2026-06-18 | Full audit: 01_coin_engine (docs only, not deprecated), 10_proof_of_transaction_engine (docs only), src/token/ (EmissionService fully canonical). Code MATCHES model — no rewrites needed. |

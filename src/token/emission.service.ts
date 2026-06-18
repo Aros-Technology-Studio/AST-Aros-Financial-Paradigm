@@ -167,6 +167,11 @@ export class EmissionService {
      * Public so that FeeDistributionService can sync epoch-level AFC contributions.
      */
     updateAfcReserve(afcAmount: number): void {
+        if (!Number.isFinite(afcAmount) || afcAmount < 0) {
+            throw new BadRequestException(`Invalid AFC reserve contribution: ${afcAmount}`);
+        }
+        if (afcAmount === 0) return;
+
         this.afcReserveState.totalReserve     += afcAmount;
         this.afcReserveState.transactionCount += 1;
         this.afcReserveState.lastUpdated       = Date.now();

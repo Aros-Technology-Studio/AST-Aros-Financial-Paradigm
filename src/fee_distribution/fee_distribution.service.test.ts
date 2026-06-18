@@ -49,6 +49,10 @@ describe('FeeDistributionService', () => {
         ]),
     };
 
+    const mockEmissionService = {
+        updateAfcReserve: jest.fn(),
+    };
+
     const mockQueryRunner = {
         connect: jest.fn(),
         startTransaction: jest.fn(),
@@ -74,7 +78,7 @@ describe('FeeDistributionService', () => {
                 { provide: PoTService, useValue: mockPoTService },
                 { provide: TokenService, useValue: mockTokenService },
                 { provide: NodeChainService, useValue: mockNodeChainService },
-                { provide: EmissionService, useValue: { updateAfcReserve: jest.fn() } },
+                { provide: EmissionService, useValue: mockEmissionService },
                 { provide: SmartContractIntegration, useValue: { validateReserve: jest.fn().mockResolvedValue({ isValid: true, onChainSupply: 100 }) } },
                 { provide: DataSource, useValue: mockDataSource },
             ],
@@ -115,6 +119,9 @@ describe('FeeDistributionService', () => {
             // Verify Distribution (DataSource Transaction)
             expect(mockDataSource.createQueryRunner).toHaveBeenCalled();
             expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+
+            // Verify epoch AFC contribution syncs the in-memory price index (25% of 100.00)
+            expect(mockEmissionService.updateAfcReserve).toHaveBeenCalledWith(25);
         });
     });
 });

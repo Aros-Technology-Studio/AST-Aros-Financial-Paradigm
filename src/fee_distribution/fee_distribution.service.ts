@@ -115,7 +115,9 @@ export class FeeDistributionService {
                 }
                 this.logger.log(`Smart Contract Reserve verified. Supply: ${onChainSupply}`);
 
-                await this.distributeRewards(epoch, totalFees, weights);
+                const afcContribution = await this.distributeRewards(epoch, totalFees, weights);
+                // Update in-memory price index only after DB commit succeeds (no rollback risk)
+                this.emissionService.updateAfcReserve(afcContribution);
             }
 
             epoch.totalFeesCollected = totalFees.toString();
@@ -149,7 +151,7 @@ export class FeeDistributionService {
     private readonly NODE_SHARE_RATIO = 0.75;
     private readonly AFC_SHARE_RATIO  = 0.25;
 
-    private async distributeRewards(epoch: EpochEntity, totalFees: number, weights: Map<string, number>) {
+    private async distributeRewards(epoch: EpochEntity, totalFees: number, weights: Map<string, number>): Promise<number> {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
@@ -178,9 +180,6 @@ export class FeeDistributionService {
                 status:       TransactionStatus.CONFIRMED,
                 metadata:     { type: 'AFC_RESERVE_25PCT', epoch: epoch.epochNumber },
             });
-
-            // Sync epoch AFC contribution into the in-memory price index
-            this.emissionService.updateAfcReserve(afcReserve);
 
             let distributedSum = 0;
 
@@ -222,6 +221,7 @@ export class FeeDistributionService {
             await queryRunner.manager.save(epoch);
 
             await queryRunner.commitTransaction();
+            return afcReserve;
         } catch (err) {
             await queryRunner.rollbackTransaction();
             throw err;

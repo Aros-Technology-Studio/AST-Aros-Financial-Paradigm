@@ -32,6 +32,9 @@ const RECONCILE_EPSILON = 1e-9;
 /** Recipient label for the AFC reserve allocation. */
 const MARGIN_RECIPIENT = 'AFC_RESERVE';
 
+/** Distribution log reason for node work-weight payments. */
+const REASON_WORK = 'work_weight';
+
 /**
  * CommissionService — the settlement controller of AST.
  *
@@ -145,10 +148,10 @@ export class CommissionService {
             }
         }
 
-        // The AFC reserve share (25 %) is the pool remainder after node payments. It is routed
-        // to the Reserve layer via the `commission.epoch.finalized` NodeChain event (spec
-        // `margin_to: Reserve`) and does not enter the ArosCoin earned-retained supply.
+        // The AFC reserve share (25 %) is the pool remainder after node payments. Route it to
+        // ReserveService so the capitalization index grows (spec `margin_to: Reserve`, I-RS-1/4).
         const allocatedMargin = total - paid;
+        await this.reserve.addAfcAccrual(allocatedMargin);
         distributionLog.push({
             nodeId: MARGIN_RECIPIENT,
             amount: allocatedMargin,

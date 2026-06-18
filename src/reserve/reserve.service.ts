@@ -33,6 +33,9 @@ export class ReserveService {
     /** Event type Commission records on epoch finalization; its `operationalMargin` field is the AFC reserve share. */
     private static readonly COMMISSION_EPOCH_EVENT = 'commission.epoch.finalized';
 
+    /** Event type appended by Commission via `addAfcAccrual` for each epoch's AFC share. */
+    private static readonly AFC_ACCRUAL_EVENT = 'reserve.afc.accrual';
+
     constructor(private readonly chain: NodeChainService) { }
 
     /**

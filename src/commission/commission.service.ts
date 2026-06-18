@@ -6,6 +6,7 @@ import { ClockService } from '../common/clock.service';
 import { NodeChainService } from '../nodechain/nodechain.service';
 import { NodesService } from '../nodes/nodes.service';
 import { PotService } from '../pot/pot.service';
+import { ReserveService } from '../reserve/reserve.service';
 import { DistributionEntry, Epoch } from './entities/epoch.entity';
 
 /** One unit of confirmed participation: a node took part in a given process within an epoch. */
@@ -28,26 +29,35 @@ export interface FinalizeResult {
 /** Tolerance for the reconciliation identity, mirroring the reference's 1e-9 bound. */
 const RECONCILE_EPSILON = 1e-9;
 
-/** Recipient label for the operational margin allocated to AST. */
-const MARGIN_RECIPIENT = 'AST';
+/** Recipient label for the 25% AFC commission share routed to the Reserve. */
+const MARGIN_RECIPIENT = 'AFC_RESERVE';
+
+/** Distribution-log reason tag for node work payments. */
+const REASON_WORK = 'work_weight';
+
+/** Distribution-log reason tag for the AFC reserve allocation. */
+const REASON_AFC = 'afc_reserve';
 
 /**
  * CommissionService — the settlement controller of AST.
  *
  * Commission computes the operation fee, consolidates fees into a per-epoch operational
- * pool, and on epoch finalization distributes payment to nodes post-factum by their
- * PoT-confirmed participation weight, allocating the operational margin to AST. It mirrors
- * `reference/ast-core/src/commission.ts`:
- *   - `computeFee(amount)`        = amount * feeRate (optionally scaled by an overload rate).
+ * pool, and on epoch finalization distributes payment by the canonical 75/25 split:
+ *   - 75% to nodes, proportional to their PoT-confirmed participation weight.
+ *   - 25% to the AFC Reserve (via `ReserveService.addAfcAccrual`), growing the capitalization
+ *     index and raising the internal price of the next emission cycle.
+ *
+ * It mirrors `reference/ast-core/src/commission.ts`:
+ *   - `computeFee(amount)`        = amount × feeRate (default 0.5%; optionally scaled by overloadRate).
  *   - `accrue(epoch, fee, parts)` adds the fee to the open epoch pool and remembers which
  *                                 nodes participated in which process for that fee.
- *   - `finalizeEpoch(epoch)`      pays nodes proportionally to weight, allocates margin, and
+ *   - `finalizeEpoch(epoch)`      pays nodes proportionally to weight, routes the AFC share, and
  *                                 records the distribution in NodeChain.
  *
  * Payment is strictly post-factum and gated by PoT: a participation counts toward weight only
  * when its process carries a verdict with `verified === 1` (spec I-CM-1/I-CM-2, project
  * P2/I2). Presence or readiness alone earns nothing — only confirmed work does (I-CM-5).
- * The pool reconciles to zero remainder: Σ(payments) + operationalMargin == Σ(fees) per
+ * The pool reconciles to zero remainder: Σ(payments) + afcMargin == Σ(fees) per
  * epoch (project I7, spec I-CM-4). Distribution is deterministic for identical inputs (I4).
  *
  * Spec: docs/specs/AST_Commission_AGENT_EN.md
@@ -55,11 +65,11 @@ const MARGIN_RECIPIENT = 'AST';
  */
 @Injectable()
 export class CommissionService {
-    /** Fee fraction of the operation amount. */
-    readonly feeRate = 0.01;
+    /** Fee fraction of the operation amount (canonical default 0.5%). */
+    readonly feeRate = 0.005;
 
-    /** Share of the pool allocated to AST as operational-layer funding (margin). */
-    readonly marginRate = 0.2;
+    /** Share of the pool routed to the AFC Reserve (canonical 25%). The remaining 75% pays nodes. */
+    readonly marginRate = 0.25;
 
     /**
      * Confirmed participations remembered per open epoch, in insertion order. Mirrors the
@@ -74,6 +84,7 @@ export class CommissionService {
         private readonly pot: PotService,
         private readonly chain: NodeChainService,
         private readonly coin: ArosCoinService,
+        private readonly reserve: ReserveService,
         private readonly clock: ClockService,
     ) { }
 
@@ -108,10 +119,10 @@ export class CommissionService {
 
     /**
      * Finalize an epoch post-factum: keep only PoT-confirmed participation (verified === 1),
-     * sum each node's confirmed-participation weight, distribute the distributable pool
-     * proportionally (`paymentToNode = (weight * distributable) / Σweights`), allocate the
-     * operational margin to AST, record the distribution in NodeChain, and mark the epoch
-     * finalized. The pool reconciles with no remainder (I7).
+     * sum each node's confirmed-participation weight, distribute 75% of the pool proportionally
+     * to nodes (`paymentToNode = (weight * distributable) / Σweights`), route the canonical
+     * 25% AFC share to the Reserve so the capitalization index grows, record the distribution
+     * in NodeChain, and mark the epoch finalized. The pool reconciles with no remainder (I7).
      */
     async finalizeEpoch(epochNumber: number): Promise<FinalizeResult> {
         const epoch = await this.requireEpoch(epochNumber);
@@ -123,7 +134,7 @@ export class CommissionService {
         const totalWeight = [...confirmedWeights.values()].reduce((sum, w) => sum + w, 0);
 
         const total = epoch.totalFees;
-        const distributable = total * (1 - this.marginRate);
+        const distributable = total * (1 - this.marginRate); // 75% to nodes
 
         const distributionLog: DistributionEntry[] = [];
         let paid = 0;
@@ -137,18 +148,19 @@ export class CommissionService {
                 await this.nodes.receivePayment(nodeId, amount);
                 await this.coin.recordEarned(amount);
                 paid += amount;
-                distributionLog.push({ nodeId, amount, reason: 'work_weight' });
+                distributionLog.push({ nodeId, amount, reason: REASON_WORK });
             }
         }
 
-        // Any distributable amount without confirmed weight stays with AST as margin, so the
-        // pool always reconciles to zero remainder.
+        // The 25% AFC share (plus any distributable not absorbed by nodes when weight == 0)
+        // routes to the Reserve, growing the capitalization index and raising the next
+        // emission price. The pool always reconciles to zero remainder (I7).
         const allocatedMargin = total - paid;
-        await this.coin.recordEarned(allocatedMargin);
+        await this.reserve.addAfcAccrual(allocatedMargin);
         distributionLog.push({
             nodeId: MARGIN_RECIPIENT,
             amount: allocatedMargin,
-            reason: 'operational_margin',
+            reason: REASON_AFC,
         });
 
         epoch.distributionLog = distributionLog;
@@ -235,7 +247,7 @@ export class CommissionService {
 
     private toResult(epoch: Epoch): FinalizeResult {
         const paid = epoch.distributionLog
-            .filter((e) => e.reason !== 'operational_margin')
+            .filter((e) => e.reason !== REASON_AFC)
             .reduce((sum, e) => sum + e.amount, 0);
         const reconciled = Math.abs(paid + epoch.operationalMargin - epoch.totalFees) < RECONCILE_EPSILON;
         return {

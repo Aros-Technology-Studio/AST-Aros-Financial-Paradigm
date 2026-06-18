@@ -71,10 +71,10 @@ describe('CommissionService', () => {
         await moduleRef.close();
     });
 
-    // computeFee: fee = amount * feeRate.
+    // computeFee: fee = amount * feeRate (canonical 0.5%).
     it('computeFee returns amount * feeRate', () => {
-        expect(service.computeFee(1000)).toBeCloseTo(10, 9);
-        expect(service.computeFee(1000, 0.5)).toBeCloseTo(15, 9); // dynamicFee
+        expect(service.computeFee(1000)).toBeCloseTo(5, 9);         // 1000 * 0.005
+        expect(service.computeFee(1000, 0.5)).toBeCloseTo(7.5, 9); // dynamicFee: 5 * 1.5
     });
 
     // I7: after finalize, Σ(payments) + operationalMargin == Σ(fees) for the epoch.

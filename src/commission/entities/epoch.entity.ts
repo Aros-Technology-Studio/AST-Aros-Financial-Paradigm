@@ -12,11 +12,11 @@ const numericTransformer = {
 
 /** One entry of an epoch's distribution: which node received how much, and on what basis. */
 export interface DistributionEntry {
-    /** Recipient identifier: a node id, or 'AST' for the operational margin allocation. */
+    /** Recipient identifier: a node id, or 'AFC_RESERVE' for the canonical 25% reserve share. */
     nodeId: string;
     /** Amount paid to the recipient for this epoch. */
     amount: number;
-    /** Positive basis for the payment (e.g. 'work_weight', 'operational_margin'). */
+    /** Positive basis for the payment (e.g. 'work_weight', 'afc_reserve'). */
     reason: string;
 }
 
@@ -27,9 +27,9 @@ export type EpochStatus = 'open' | 'finalized' | 'archived';
  * Epoch — the per-epoch operational pool record of Commission.
  *
  * An epoch accumulates operation fees while `open`, then on finalization distributes the
- * pool post-factum to nodes by PoT-confirmed participation weight and allocates the
- * operational margin to AST. The `distributionLog` captures the full settlement so it can be
- * recorded in NodeChain and reconciled: Σ(payments) + operationalMargin == totalFees (I7).
+ * pool post-factum by the canonical 75/25 split: 75% to nodes by PoT-confirmed participation
+ * weight, and 25% to the AFC Reserve. The `distributionLog` captures the full settlement so
+ * it can be recorded in NodeChain and reconciled: Σ(payments) + afcMargin == totalFees (I7).
  *
  * Spec: docs/specs/AST_Commission_AGENT_EN.md (data_model.EpochEntity).
  * Reference: reference/ast-core/src/commission.ts.

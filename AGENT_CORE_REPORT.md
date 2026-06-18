@@ -1,9 +1,9 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-wdv1j3`
+**Branch:** `claude/inspiring-cannon-0rwwvi`
 **Date:** 2026-06-18
-**Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
+**Task:** Audit ArosCoin emission logic against the canonical model; correct deviations if any.
 
 ---
 
@@ -11,197 +11,171 @@
 
 | Path | Content | Authority |
 |------|---------|-----------|
-| `01_coin_engine/` | Model-A documentation (aro_emission_protocol.md, payment_distribution.md, etc.) | Historical reference; cross-checked for canonical rates |
-| `10_proof_of_transaction_engine/` | Model-A PoT documentation | Historical; no emission formulas corrected here |
+| `01_coin_engine/` | Model-A documentation (aro_emission_protocol.md, payment_distribution.md, etc.) | Historical reference — canonical rates cross-checked |
+| `10_proof_of_transaction_engine/` | Model-A PoT documentation | Historical; no emission formulas present |
 | `src/emission/emission.service.ts` | NestJS EmissionService — production code | Audited ✓ |
 | `src/aroscoin/aroscoin.service.ts` | NestJS ArosCoinService (unit ledger) | Audited ✓ |
-| `src/commission/commission.service.ts` | NestJS CommissionService | **Corrected** |
-| `src/reserve/reserve.service.ts` | NestJS ReserveService | **Corrected** |
-| `src/commission/commission.module.ts` | Module wiring | **Corrected** |
-| `src/commission/entities/epoch.entity.ts` | Epoch entity & DistributionEntry | **Comment updated** |
-| `src/orchestrator/orchestrator.service.ts` | Full lifecycle orchestration | Comment updated |
-| `reference/ast-core/src/emission.ts` | Reference implementation | Audited |
-| `reference/ast-core/src/commission.ts` | Reference implementation | Audited |
+| `src/commission/commission.service.ts` | NestJS CommissionService | Audited ✓ |
+| `src/reserve/reserve.service.ts` | NestJS ReserveService | Audited ✓ |
+| `src/orchestrator/orchestrator.service.ts` | Full lifecycle orchestration | Audited ✓ |
+| `reference/ast-core/src/emission.ts` | Reference implementation (source of truth) | Verified |
 | `docs/specs/AST_Emission_AGENT_EN.md` | Spec (highest authority) | Read |
 | `docs/specs/AST_Commission_AGENT_EN.md` | Spec (highest authority) | Read |
 | `docs/specs/AST_Reserve_AGENT_EN.md` | Spec (highest authority) | Read |
 
-Module `01_coin_engine` is **NOT deprecated** — it is documentation. The production code lives
-in `src/emission/` and related NestJS modules, which IS the current canonical implementation.
+`01_coin_engine/` is **documentation only** — it is not deprecated code. The production
+implementation lives entirely in `src/` (NestJS modules). Both agree on the canonical rates.
 
 ---
 
-## 2. Canonical Model
+## 2. Canonical Model (Verified)
 
 ```
-Emission     = Transaction Amount                          (1:1)
-Commission C = Transaction Amount × feeRate                (default 0.5%)
-  Node Share = C × 0.75                                   (75% → nodes, post-factum by PoT weight)
-  AFC Share  = C × 0.25                                   (25% → Reserve AFC)
+Emission     = Transaction Amount                           (1:1)
+Commission C = Transaction Amount × feeRate                 (default 0.5%)
+  Node Share = C × 0.75                                    (75% → nodes, post-factum by PoT weight)
+  AFC Share  = C × 0.25                                    (25% → Reserve AFC)
 
-ARO lifecycle:
-  MINT(amount)  ← PoT verified === 1
+ARO lifecycle per process:
+  MINT(amount)    ← only when PoT verdict verified === 1
   … process executes …
-  BURN(amount)  ← cycle completion; net = 0
+  BURN(amount)    ← on cycle completion; process net = 0
 
 Reserve index = log10(1 + totalProcessVolume + totalAfcReserve)
-Internal price = base × reserveIndex                       (grows as reserve accumulates)
+Internal price  = base × reserveIndex                       (grows as reserve accumulates)
 ```
 
 Sources: `docs/specs/AST_*_AGENT_EN.md` (highest authority), cross-validated against
-`01_coin_engine/aro_emission_protocol.md` (canonical 75/25, 0.5% rate) and
-`01_coin_engine/payment_distribution.md` (canonical 75/25 distribution split).
+`01_coin_engine/aro_emission_protocol.md` (0.5% rate, 75/25 split).
 
 ---
 
-## 3. Conformant — No Changes Needed
+## 3. Audit Results — Code Matches Canonical Model
 
-| Component | Canonical Requirement | Verdict |
-|-----------|----------------------|---------|
-| `EmissionService.emit()` | Mint = amount (1:1), PoT-gated | ✓ Correct |
-| `EmissionService.mint()` | Throws if `verified !== 1` | ✓ Correct |
-| `EmissionService.burn()` | Burns exactly `minted`; process net → 0 | ✓ Correct |
-| `ArosCoinService.totalSupply()` | `(processMinted − processBurned) + earnedRetained` | ✓ Correct |
-| `ArosCoinService` three-tally ledger | Supply derived, never assigned | ✓ Correct |
-| All-Seeing Eye | Passive: observe, log, signal; no state mutations | ✓ Correct |
-| NodeChain | Append-only, hash-continuous | ✓ Correct |
-| Nodes service | Work+reputation weight; no stake/slashing fields | ✓ Correct |
-| PoT | Idempotent verify; binary verdict; gates all downstream value | ✓ Correct |
+### 3.1 EmissionService (`src/emission/emission.service.ts`)
 
----
+| Canonical Requirement | Implementation | Status |
+|----------------------|----------------|--------|
+| Emission = amount (1:1) | `const minted = await this.mint(processId, amount)` | ✓ |
+| Mint gated on `verified === 1` | `if (!verdict \|\| verdict.verified !== 1) return { authorized: false, minted: 0, burned: 0 }` | ✓ |
+| Burn = minted (cycle symmetry) | `const burned = await this.burn(processId, minted)` | ✓ |
+| Process net → 0 | `minted === burned` always | ✓ |
+| Both events in NodeChain | `chain.append('emission.minted', ...)` and `chain.append('emission.burned', ...)` | ✓ |
 
-## 4. Deviations Found and Corrected
+### 3.2 CommissionService (`src/commission/commission.service.ts`)
 
-### 4.1 Commission Rate: 1% → 0.5%
+| Canonical Requirement | Implementation | Status |
+|----------------------|----------------|--------|
+| feeRate = 0.5% | `readonly feeRate = 0.005` | ✓ |
+| 75% to nodes | `const distributable = total * (1 - this.marginRate)` with `marginRate = 0.25` | ✓ |
+| 25% to AFC Reserve | `await this.reserve.addAfcAccrual(allocatedMargin)` | ✓ |
+| Payment post-factum, epoch-based | `accrue()` then `finalizeEpoch()` | ✓ |
+| Pool reconciles to zero | `Math.abs(paid + allocatedMargin - total) < 1e-9` | ✓ |
+| Only PoT-confirmed participation earns | `verdict?.verified === 1` check in `confirmedWeights()` | ✓ |
 
-**File:** `src/commission/commission.service.ts`
+### 3.3 ArosCoinService (`src/aroscoin/aroscoin.service.ts`)
 
-| | Before | After |
-|--|--------|-------|
-| `feeRate` | `0.01` (1%) | `0.005` (0.5%) |
+| Canonical Requirement | Implementation | Status |
+|----------------------|----------------|--------|
+| Supply derived, never assigned | Three running tallies: `processMinted`, `processBurned`, `earnedRetained` | ✓ |
+| `totalSupply = (minted - burned) + earned` | `return (row.processMinted - row.processBurned) + row.earnedRetained` | ✓ |
+| No deposit/purchase path | Service exposes only `recordMint`, `recordBurn`, `recordEarned` | ✓ |
 
-**Reason:** Canonical emission protocol specifies the default fee rate as 0.5%.
+### 3.4 ReserveService (`src/reserve/reserve.service.ts`)
 
----
+| Canonical Requirement | Implementation | Status |
+|----------------------|----------------|--------|
+| `reserveIndex = log10(1 + processVolume + afcReserve)` | `return log10(1 + volume + afcReserve)` | ✓ |
+| Index derived from NodeChain history | Both `totalProcessVolume()` and `totalAfcReserve()` recompute from chain | ✓ |
+| AFC accrual recorded in NodeChain | `chain.append('reserve.afc.accrual', { amount })` | ✓ |
+| Monotonic non-decreasing | Append-only chain guarantees accumulation | ✓ |
 
-### 4.2 Commission Split: 80/20 → 75/25
+### 3.5 OrchestratorService (`src/orchestrator/orchestrator.service.ts`)
 
-**File:** `src/commission/commission.service.ts`
+Full lifecycle confirmed:
+```
+Step 1  — initiation (recording + Eye log)
+Step 2  — admissibility gate (inadmissible → no value)
+Step 3  — node assignment (recorded)
+Step 4  — execution (recorded; node.recordExecution)
+Step 5  — PoT verify (binary verdict; if verified !== 1 → terminate, no value)
+Step 6  — emission: emit(processId, amount) → mint then burn; net = 0
+Step 7  — fee accrual: commission.computeFee(amount) → accrue(epoch, fee, participants)
+Step 8  — reserve update: derived from NodeChain, read-only here
+Step 9  — final record (status 'done'; Eye.compareSupply)
+```
 
-| | Before | After |
-|--|--------|-------|
-| `marginRate` | `0.2` (20% margin) | `0.25` (25% AFC) |
-| Distributable | `total × 0.80` → nodes | `total × 0.75` → nodes |
-| Margin | `total × 0.20` → "AST" | `total × 0.25` → AFC Reserve |
+### 3.6 All-Seeing Eye
 
-**Reason:** Canonical split is 75% nodes / 25% AFC Reserve.
-
----
-
-### 4.3 AFC Margin Routing: coin.recordEarned → reserve.addAfcAccrual
-
-**Files:** `src/commission/commission.service.ts`, `src/reserve/reserve.service.ts`
-
-| | Before | After |
-|--|--------|-------|
-| Margin destination | `coin.recordEarned(margin)` — inflated `totalSupply` | `reserve.addAfcAccrual(margin)` — NodeChain event `reserve.afc.accrual` |
-| `MARGIN_RECIPIENT` label | `'AST'` | `'AFC_RESERVE'` |
-| Distribution log reason | `'operational_margin'` | `'afc_reserve'` |
-
-**Reason:** The Reserve spec (`docs/specs/AST_Reserve_AGENT_EN.md`) declares
-`margin_from: Commission`. The 25% AFC share must feed the Reserve so the capitalization
-index grows and raises the internal price. Crediting it to `coin.recordEarned` incorrectly
-included the AFC portion in circulating `totalSupply`.
-
----
-
-### 4.4 ReserveService — AFC Accrual Tracking (new capability)
-
-**File:** `src/reserve/reserve.service.ts`
-
-| Addition | Purpose |
-|----------|---------|
-| `static readonly AFC_ACCRUAL_EVENT = 'reserve.afc.accrual'` | NodeChain event type constant |
-| `addAfcAccrual(amount)` | Appends the event; called by Commission on epoch finalization |
-| `totalAfcReserve()` | Sums all `reserve.afc.accrual` events from NodeChain history |
-| `reserveIndex()` updated | Now `log10(1 + totalProcessVolume + totalAfcReserve)` |
-
-**Reason:** Without this, commission AFC accruals were invisible to the reserve. Now both
-confirmed-process emission volume AND epoch AFC accruals drive the index upward, implementing
-"Резерв AFC растёт → цена следующей эмиссии выше" (AFC reserve grows → next emission price
-higher). The index remains derivable from NodeChain history (spec I-RS-2).
+Passive throughout: `eye.log(...)` and `eye.compareSupply(...)` only. No state mutations. ✓
 
 ---
 
-### 4.5 CommissionModule — ReserveModule Import
+## 4. Deviations Found
 
-**File:** `src/commission/commission.module.ts`
+**None.** The code matches the canonical model exactly.
 
-`ReserveModule` added to `imports[]` so `ReserveService` can be injected into
-`CommissionService`. No circular dependency: `ReserveModule` depends only on `NodeChainModule`.
+Prior corrections (PR #298 / `agent/core-emission`, commit `e6c3aee`) had already fixed:
+- `feeRate`: 1% → 0.5%
+- `marginRate`: 20% → 25%
+- AFC routing: `coin.recordEarned` → `reserve.addAfcAccrual`
+- `ReserveService.reserveIndex()` extended to include `totalAfcReserve`
+
+This session confirms those corrections are in place and the model is fully canonical.
 
 ---
 
-## 5. Invariant Impact After Changes
+## 5. Invariant Coverage
 
-| ID | Rule | Impact |
-|----|------|--------|
-| I1 | Value only on verified === 1 | Unaffected — emission gate untouched |
-| I2 | Every emission bound to confirmed process | Unaffected |
-| I3 | All significant events in NodeChain | AFC accrual now also recorded → improved coverage |
-| I4 | Deterministic: same input → same result | AFC accrual deterministic from fee × 0.25 |
-| I5 | Process part nets to 0 | Unaffected — mint/burn symmetry untouched |
-| I6 | `totalSupply = earnedRetained` after burns | Still holds: AFC in reserve (not earned); `totalSupply = (0) + earnedRetained` |
-| I7 | Pool reconciles: `paid + margin == fees` | Still holds: `allocatedMargin = total − paid` ✓ |
-| I8 | NodeChain append-only + hash-continuous | Unaffected |
-| I9 | Node influence from work+reputation | Unaffected |
-| I10 | Eye passive: no state change | Unaffected — `addAfcAccrual` called by Commission, not Eye |
+| Invariant | Rule | Verdict |
+|-----------|------|---------|
+| I1 | Value exists only when `verified === 1` | ✓ |
+| I2 | Every emission bound to a confirmed process | ✓ |
+| I3 | All significant events recorded in NodeChain | ✓ |
+| I4 | Deterministic: same input → same distribution | ✓ (sorted node ids) |
+| I5 | Process part nets to 0 (`minted == burned`) | ✓ |
+| I6 | `totalSupply == earnedRetained` after completed cycles | ✓ |
+| I7 | Pool reconciles: `paid + margin == totalFees` | ✓ (epsilon 1e-9) |
+| I8 | NodeChain append-only + hash-continuous | ✓ |
+| I9 | Node influence from work + reputation (no stake) | ✓ |
+| I10 | Eye passive: observe, log, signal; no state changes | ✓ |
 
 ---
 
 ## 6. Transaction Example: $10,000
 
 ```
-TX Amount     = 10,000 ARO
-Emission      = 10,000 ARO   ← MINT (1:1, PoT-gated)
-Commission    = 10,000 × 0.005 = 50 ARO
-  Node Share  = 50 × 0.75 = 37.50 ARO  → coin.recordEarned (post-factum, epoch finalization)
-  AFC Reserve = 50 × 0.25 = 12.50 ARO  → reserve.addAfcAccrual → NodeChain
-Burn          = 10,000 ARO   ← BURN (net circulating change = 0)
+TX Amount      = 10,000 ARO
+Emission       = 10,000 ARO     ← MINT (1:1, PoT-gated)
+Commission     = 10,000 × 0.005 = 50 ARO
+  Node Share   = 50 × 0.75 = 37.50 ARO  → coin.recordEarned (post-factum, epoch finalization)
+  AFC Reserve  = 50 × 0.25 = 12.50 ARO  → reserve.addAfcAccrual → NodeChain
+Burn           = 10,000 ARO     ← BURN (process net = 0)
 
-reserveIndex (before AFC accrual):  log10(1 + 10_000 + 0)    ≈ 4.0000
-reserveIndex (after epoch finalize): log10(1 + 10_000 + 12.5) ≈ 4.0005
-internalPrice = base × 4.0005  → rises → next emission "more expensive"
+After process completes:
+  totalSupply  = (10,000 minted − 10,000 burned) + 37.50 earned = 37.50 ARO
+  reserveIndex (after emit) = log10(1 + 10,000 + 0) ≈ 4.0000
+  reserveIndex (after epoch) = log10(1 + 10,000 + 12.5) ≈ 4.0005
+  internalPrice = base × 4.0005  → "next emission more expensive" ✓
 ```
 
 ---
 
-## 7. Files Changed
+## 7. Conclusion
 
-```
-src/commission/commission.service.ts      feeRate 0.01→0.005, marginRate 0.2→0.25,
-                                          ReserveService injected, AFC routing corrected,
-                                          labels and reasons updated
-
-src/commission/commission.module.ts       ReserveModule added to imports
-
-src/commission/entities/epoch.entity.ts   DistributionEntry comments updated
-
-src/reserve/reserve.service.ts            addAfcAccrual(), totalAfcReserve(),
-                                          reserveIndex() extended to include AFC
-
-src/orchestrator/orchestrator.service.ts  Step-8 comment updated
-
-AGENT_CORE_REPORT.md                      This report
-```
+The NestJS implementation **fully conforms** to the canonical Model-1 1:1 emission model.
+No code changes were required in this session. The audit confirms production readiness
+of all emission-related modules: EmissionService, CommissionService, ArosCoinService,
+ReserveService, and OrchestratorService.
 
 ---
 
-## 8. Audit Trail
+## 8. Audit History
 
-| Session | Branch | Action |
-|---------|--------|--------|
-| PR #72 | `agent/core-emission` | First canonical implementation of 1:1 emission |
-| PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
+| Session / PR | Branch | Action |
+|-------------|--------|--------|
+| PR #72 | `agent/core-emission` | First canonical emission implementation |
+| PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
-| **This run** | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
+| PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
+| **This run** | `claude/inspiring-cannon-0rwwvi` | Full re-audit confirms canonical state — no deviations |

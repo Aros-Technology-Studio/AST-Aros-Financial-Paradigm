@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-3w693h`  
-**Date:** 2026-06-15  
+**Branch:** `claude/inspiring-cannon-0mru8m`  
+**Date:** 2026-06-18  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
 ---
@@ -15,8 +15,8 @@
 |------|-------|
 | `coin_emission_model.md` | ✅ Canonical 1:1 formulas, AFC reserve index, worked example |
 | `aro_emission_protocol.md` | ✅ Canonical 1:1 + 75/25 + burn flow; mermaid sequence diagram |
-| `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula; historical note on old 60/15/15/5/5 split |
-| `burn_and_mint_rules.md` | ✅ Non-contradictory; left as-is |
+| `payment_distribution.md` | ✅ Canonical 75/25 split; validator weight formula |
+| `burn_and_mint_rules.md` | ✅ Non-contradictory; lifecycle guards correct |
 | `README.md` | ✅ Architecture overview; no formula conflicts |
 
 **Module 01 is NOT deprecated.** It is pure documentation. Canonical source code lives in `src/token/emission.service.ts`.
@@ -149,3 +149,4 @@ After 12.50 AFC accumulated:
 | Documentation alignment | `claude/inspiring-cannon-4qbjK` (PR #79) | 2026-05-12 | Replaced `E = F/N` with 1:1 formulas in `coin_emission_model.md`; replaced load-index in `aro_emission_protocol.md`; replaced 60/15/15/5/5 with 75/25 in `payment_distribution.md` |
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
 | Verification pass | `claude/inspiring-cannon-3w693h` | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
+| Verification pass | `claude/inspiring-cannon-0mru8m` | 2026-06-18 | Full re-audit confirmed code and docs remain canonical; all 8 canonical rules verified; no changes required |

@@ -1,7 +1,7 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-4m9xnj`
+**Branch:** `agent/core-emission`
 **Date:** 2026-06-18
 **Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
 
@@ -11,28 +11,25 @@
 
 | Path | Content | Authority |
 |------|---------|-----------|
-| `01_coin_engine/` | Documentation (aro_emission_protocol.md, coin_emission_model.md, etc.) | Historical Model-A docs; rates cross-checked |
+| `01_coin_engine/` | Documentation (aro_emission_protocol.md, coin_emission_model.md, etc.) | Historical Model-A docs; no executable code |
 | `10_proof_of_transaction_engine/` | PoT documentation | Historical; no emission formulas |
 | `src/emission/emission.service.ts` | NestJS EmissionService — production code | Audited ✓ |
 | `src/aroscoin/aroscoin.service.ts` | NestJS ArosCoinService (unit ledger) | Audited ✓ |
 | `src/commission/commission.service.ts` | NestJS CommissionService | Audited ✓ |
-| `src/reserve/reserve.service.ts` | NestJS ReserveService | **Corrected** |
+| `src/reserve/reserve.service.ts` | NestJS ReserveService | Audited ✓ |
 | `src/orchestrator/orchestrator.service.ts` | Full lifecycle orchestration | Audited ✓ |
-| `src/invariants/invariants.spec.ts` | I1–I10 automated tests | Audited ✓ |
-| `reference/ast-core/src/emission.ts` | Reference implementation | Read |
-| `reference/ast-core/src/commission.ts` | Reference implementation | Read |
-| `reference/ast-core/src/reserve.ts` | Reference implementation | **Key deviation source** |
-| `reference/ast-core/src/orchestrator.ts` | Reference implementation | Read |
+| `reference/ast-core/src/emission.ts` | Reference implementation | Audited |
+| `reference/ast-core/src/commission.ts` | Reference implementation | **Corrected** |
+| `reference/ast-core/src/orchestrator.ts` | Reference implementation | Audited |
 | `docs/specs/AST_Emission_AGENT_EN.md` | Spec (highest authority) | Read |
 | `docs/specs/AST_Commission_AGENT_EN.md` | Spec (highest authority) | Read |
-| `docs/specs/AST_Reserve_AGENT_EN.md` | Spec (highest authority) | **Definitive on formula** |
+| `docs/specs/AST_Reserve_AGENT_EN.md` | Spec (highest authority) | Read |
 
-`src/token/` does not exist — there is no legacy `token/` module. The production
-emission logic lives entirely in `src/emission/`, `src/aroscoin/`, `src/commission/`,
-and `src/reserve/`.
+`src/token/` does not exist. The production emission logic lives entirely in
+`src/emission/`, `src/aroscoin/`, `src/commission/`, and `src/reserve/`.
 
-Module `01_coin_engine/` is documentation only, not deprecated code. No executable
-content resides there.
+The folders `01_coin_engine/` and `10_proof_of_transaction_engine/` are documentation
+only, not deprecated modules. No executable content resides there.
 
 ---
 
@@ -52,7 +49,7 @@ ARO lifecycle per confirmed process:
 Reserve:
   reserveIndex   = log10(1 + totalProcessVolume)              ← spec formula, confirmed volume only
   internalPrice  = base × reserveIndex                        ← rises as confirmed work accumulates
-  AFC accruals   → NodeChain (audit trail), not in formula
+  AFC accruals   → NodeChain (audit trail), not in index formula
 ```
 
 Sources of authority (highest first): `docs/specs/AST_Reserve_AGENT_EN.md`,
@@ -60,7 +57,7 @@ Sources of authority (highest first): `docs/specs/AST_Reserve_AGENT_EN.md`,
 
 ---
 
-## 3. Conformant — No Changes Needed
+## 3. Production NestJS Code — Fully Conformant
 
 | Component | Canonical Requirement | Verdict |
 |-----------|----------------------|---------|
@@ -68,72 +65,72 @@ Sources of authority (highest first): `docs/specs/AST_Reserve_AGENT_EN.md`,
 | `EmissionService.mint()` | Throws if `verified !== 1` | ✓ Correct |
 | `EmissionService.burn()` | Burns exactly `minted`; process net → 0 | ✓ Correct |
 | `ArosCoinService` three-tally ledger | `totalSupply = (processMinted − processBurned) + earnedRetained` | ✓ Correct |
-| `CommissionService.feeRate` | 0.005 (0.5%) | ✓ Correct |
-| `CommissionService.marginRate` | 0.25 (25% → AFC) | ✓ Correct |
+| `CommissionService.feeRate` | `0.005` (0.5%) | ✓ Correct |
+| `CommissionService.marginRate` | `0.25` (25% → AFC) | ✓ Correct |
 | Commission 75/25 distribution | 75% to nodes via `coin.recordEarned`, 25% via `reserve.addAfcAccrual` | ✓ Correct |
 | Commission pool reconciliation | `paid + margin == total` per epoch | ✓ Correct (I7) |
 | PoT gate | Idempotent verify; binary verdict; gates all downstream value | ✓ Correct (I1/I2) |
 | NodeChain | Append-only, hash-continuous | ✓ Correct (I8) |
 | Nodes | Work+reputation weight; no stake/slashing fields | ✓ Correct (I9) |
 | All-Seeing Eye | Passive: observe, log, signal; no state mutations | ✓ Correct (I10) |
+| `ReserveService.reserveIndex()` | `log10(1 + totalProcessVolume)` | ✓ Correct (I-RS-1) |
+
+No changes were required in the production NestJS services.
 
 ---
 
 ## 4. Deviation Found and Corrected
 
-### 4.1 ReserveService — `reserveIndex()` Formula
+### 4.1 Reference Commission Parameters
 
-**File:** `src/reserve/reserve.service.ts`
+**File:** `reference/ast-core/src/commission.ts`
 
-**Spec authority:** `docs/specs/AST_Reserve_AGENT_EN.md`:
-```yaml
-formulas:
-  reserveIndex: "reserveIndex = log10(1 + totalProcessVolume)"
-```
+The reference implementation used different constants from the canonical model:
 
-**Reference authority:** `reference/ast-core/src/reserve.ts`:
+| Parameter | Was (diverged) | Now (canonical) |
+|-----------|---------------|----------------|
+| `feeRate` | `0.01` (1%) | `0.005` (0.5%) |
+| `marginRate` | `0.2` (20% AFC / 80% nodes) | `0.25` (25% AFC / 75% nodes) |
+
+The production NestJS `CommissionService` already had the correct canonical values.
+The reference was updated to align so that `reference/ast-core/` and `src/` are
+consistent on all parameters.
+
+**Fix applied:** `reference/ast-core/src/commission.ts` lines 8–9:
 ```typescript
-reserveIndex(): number { return log10(1 + this.totalProcessVolume); }
+// Before
+readonly feeRate = 0.01;
+readonly marginRate = 0.2; // operational layer funding (7.4)
+
+// After
+readonly feeRate = 0.005;   // canonical 0.5 % per spec
+readonly marginRate = 0.25; // canonical 25 % AFC share; remaining 75 % to nodes (7.4)
 ```
-
-Both the highest-authority spec and the reference are unambiguous: the formula uses
-`totalProcessVolume` only.
-
-| | Before (deviated) | After (spec-correct) |
-|--|------|------|
-| Formula | `log10(1 + totalProcessVolume + totalAfcReserve)` | `log10(1 + totalProcessVolume)` |
-| AFC input | Included in index computation | Recorded in NodeChain only (audit) |
-
-**Root cause:** A previous agent added `totalAfcReserve` to the formula to implement
-"AFC Reserve grows → price rises". This is correct in intent — the price does rise as
-confirmed work accumulates — but the mechanism is already present through
-`totalProcessVolume`, which grows with every verified process. Including `totalAfcReserve`
-additionally contradicts spec I-RS-1 ("grows only from confirmed volume") because AFC
-accruals are commission derivatives, not direct confirmed process volume.
-
-**What stays unchanged:** `addAfcAccrual()` still records the AFC event in NodeChain
-(correct per I3 — every significant event recorded). `totalAfcReserve()` still reads that
-history for querying. The event routing from Commission is correct and untouched.
 
 ---
 
-## 5. Invariant Impact After Change
+## 5. Emission Flow — Verified Against Orchestrator
 
-| ID | Rule | Impact |
-|----|------|--------|
-| I1 | Value only on verified === 1 | Unaffected — emission gate untouched |
-| I2 | Every emission bound to confirmed process | Unaffected |
-| I3 | All significant events in NodeChain | AFC accrual still recorded → compliant |
-| I4 | Deterministic: same input → same result | `reserveIndex` still deterministic from NodeChain |
-| I5 | Process part nets to 0 | Unaffected |
-| I6 | `totalSupply = earnedRetained` after burns | Unaffected — AFC not in coin ledger |
-| I7 | Pool reconciles: `paid + margin == fees` | Unaffected |
-| I8 | NodeChain append-only | Unaffected |
-| I9 | Node influence from work+reputation | Unaffected |
-| I10 | Eye passive: no state change | Unaffected |
-| I-RS-1 | Grows only from confirmed volume | Now correct — formula uses only process volume |
-| I-RS-2 | Derivable from NodeChain | Still holds — recomputed from history each call |
-| I-RS-4 | Monotonic non-decreasing | Still holds — log(1 + volume) is monotonic |
+`src/orchestrator/orchestrator.service.ts:99–196` implements the canonical lifecycle:
+
+```
+Step 1  — initiation: StateRecording.capture('initiation', { amount })
+Step 2  — admissibility: if not admissible → terminate (no value, no emission)
+Step 3  — node assignment: capture 'task_assignment'
+Step 4  — execution: capture 'stage_transition', 'execution_complete'; nodes.recordExecution()
+Step 5  — PoT verify: pot.verify() → verdict.verified ∈ {0, 1}; recorded in NodeChain + StateRecording
+Step 6  — EMISSION (only if verified === 1):
+            emission.emit(processId, amount)
+              → mint(amount): coin.recordMint(amount); chain.append('emission.minted')
+              → burn(minted):  coin.recordBurn(amount); chain.append('emission.burned')
+            processNet += amount − amount = 0
+Step 7  — fee accrual: commission.computeFee(amount) = amount × 0.005; commission.accrue(epoch, fee)
+Step 8  — reserve index read (derived, not mutated per-process)
+Step 9  — final record: StateRecording.capture('final_status'); Eye.compareSupply()
+```
+
+The All-Seeing Eye observes passively at each step via `eye.log()` and `eye.compareSupply()`.
+It never mutates state (I10).
 
 ---
 
@@ -149,23 +146,56 @@ Burn          = 10,000 ARO   ← BURN (net circulating change = 0)
 
 reserveIndex (after process):     log10(1 + 10_000) ≈ 4.0000
 internalPrice = base × 4.0000    → rises with each additional confirmed process
+totalSupply after = 0 (process part burned) + earnedRetained (from node payments)
 ```
 
 ---
 
-## 7. Files Changed
+## 7. Model-A Remnants Check
+
+Searched for prohibited constructs per `AST_RULES.yaml`:
+
+| Prohibition | Found | Status |
+|-------------|-------|--------|
+| `staking` / `stakedBalance` / `stake_freeze` | No | Clean |
+| `slashing` against balance or stake | No | Clean |
+| Token-weighted governance / `vote-by-token-balance` | No | Clean |
+| Farming / passive yield for holding | No | Clean |
+| `mint-on-deposit` / `crypto_to_aroscoin` | No | Clean |
+| All-Seeing Eye halting / voting / state-change | No | Clean (passive only) |
+| Emission outside confirmed-process logic | No | Clean (PoT gate enforced) |
+
+---
+
+## 8. Invariant Status
+
+| ID | Invariant | Status |
+|----|-----------|--------|
+| I1 | Value exists only when PoT verified == 1 | ✓ Confirmed |
+| I2 | Every emission bound to a confirmed process | ✓ Confirmed |
+| I3 | Every significant event recorded in NodeChain | ✓ Confirmed |
+| I4 | Deterministic execution: same input → same result | ✓ Confirmed |
+| I5 | Earned retained; process part burned; processNet → 0 | ✓ Confirmed |
+| I6 | `totalSupply` derivable = (minted−burned)+earnedRetained | ✓ Confirmed |
+| I7 | Commission pool reconciles: Σ(payments) + margin == Σ(fees) | ✓ Confirmed |
+| I8 | NodeChain append-only and hash-continuous | ✓ Confirmed |
+| I9 | Node influence from work+reputation, not balance | ✓ Confirmed |
+| I10 | All-Seeing Eye passive (observe → log → signal only) | ✓ Confirmed |
+
+---
+
+## 9. Files Changed
 
 ```
-src/reserve/reserve.service.ts    reserveIndex() formula corrected:
-                                  log10(1 + totalProcessVolume + totalAfcReserve)
-                                  → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
+reference/ast-core/src/commission.ts   feeRate: 0.01 → 0.005 (canonical 0.5%)
+                                        marginRate: 0.2 → 0.25 (canonical 25% AFC share)
 
-AGENT_CORE_REPORT.md              This report (updated)
+AGENT_CORE_REPORT.md                   This report
 ```
 
 ---
 
-## 8. Audit Trail
+## 10. Audit Trail
 
 | Session | Branch | Action |
 |---------|--------|--------|
@@ -173,4 +203,5 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| PR #N-1 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec |
+| **This run** | `agent/core-emission` | Full audit confirmed; reference commission.ts corrected (feeRate + marginRate) |

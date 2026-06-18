@@ -39,23 +39,41 @@ export class ArosCoinService {
     /** Base used to derive internal price from the reserve index (spec formula). */
     readonly base = 1;
 
+    /**
+     * Shared one-time initialization of the single ledger row. Concurrent callers (e.g. the
+     * parallel reads in a metrics snapshot on a fresh ledger) await this one promise, so the
+     * zeroed row is created exactly once rather than each caller racing to insert it.
+     */
+    private initialization: Promise<void> | null = null;
+
     constructor(
         @InjectRepository(ArosCoinLedger)
         private readonly repo: Repository<ArosCoinLedger>,
         private readonly clock: ClockService,
     ) { }
 
-    /** Read the ledger row, creating the single zeroed row on first access. */
+    /** Ensure the single zeroed ledger row exists, creating it once on first access. */
+    private async ensureLedger(): Promise<void> {
+        if (!this.initialization) {
+            this.initialization = (async () => {
+                const existing = await this.repo.findOne({ where: { id: ArosCoinLedger.LEDGER_ID } });
+                if (!existing) {
+                    await this.repo.save(this.repo.create({
+                        id: ArosCoinLedger.LEDGER_ID,
+                        processMinted: 0,
+                        processBurned: 0,
+                        earnedRetained: 0,
+                    }));
+                }
+            })();
+        }
+        return this.initialization;
+    }
+
+    /** Read the single ledger row, creating it on first access. */
     private async ledger(): Promise<ArosCoinLedger> {
-        const existing = await this.repo.findOne({ where: { id: ArosCoinLedger.LEDGER_ID } });
-        if (existing) return existing;
-        const fresh = this.repo.create({
-            id: ArosCoinLedger.LEDGER_ID,
-            processMinted: 0,
-            processBurned: 0,
-            earnedRetained: 0,
-        });
-        return this.repo.save(fresh);
+        await this.ensureLedger();
+        return this.repo.findOneOrFail({ where: { id: ArosCoinLedger.LEDGER_ID } });
     }
 
     /** Record issuance of the process part. Called by Emission for a verified process. */

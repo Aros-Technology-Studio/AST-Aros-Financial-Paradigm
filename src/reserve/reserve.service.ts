@@ -59,13 +59,44 @@ export class ReserveService {
     }
 
     /**
-     * The capitalization index: `reserveIndex = log10(1 + totalProcessVolume)`. The log gives
-     * soft long-term growth. With zero confirmed volume the index is `log10(1) = 0`.
+     * Aggregate AFC reserve accrued from Commission epoch finalization. Sums the `amount`
+     * of every `reserve.afc.accrual` snapshot appended by Commission when it routes the
+     * canonical 25% AFC share of each epoch's fee pool. Growing with epoch settlements drives
+     * the price index upward over time (spec `margin_from: Commission`).
+     */
+    async totalAfcReserve(): Promise<number> {
+        const history = await this.chain.list();
+        let total = 0;
+        for (const snapshot of history) {
+            if (snapshot.eventType === ReserveService.AFC_ACCRUAL_EVENT) {
+                const amount = Number(snapshot.payload['amount'] ?? 0);
+                if (Number.isFinite(amount)) total += amount;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Record an AFC commission accrual into NodeChain. Called by Commission on epoch
+     * finalization for the canonical 25% AFC share so the reserve index grows with each
+     * settled epoch (spec `margin_from: Commission`, I-RS-1/I-RS-4).
+     */
+    async addAfcAccrual(amount: number): Promise<void> {
+        await this.chain.append(ReserveService.AFC_ACCRUAL_EVENT, { amount });
+    }
+
+    /**
+     * The capitalization index: `reserveIndex = log10(1 + totalProcessVolume + totalAfcReserve)`.
+     * Both confirmed process volume and the accumulated AFC commission share drive the index
+     * upward. The log gives soft long-term growth. With zero volume the index is `log10(1) = 0`.
      * Monotonic non-decreasing in volume (spec I-RS-4).
      */
     async reserveIndex(): Promise<number> {
-        const volume = await this.totalProcessVolume();
-        return log10(1 + volume);
+        const [volume, afcReserve] = await Promise.all([
+            this.totalProcessVolume(),
+            this.totalAfcReserve(),
+        ]);
+        return log10(1 + volume + afcReserve);
     }
 
     /**

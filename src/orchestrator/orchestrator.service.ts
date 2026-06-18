@@ -171,8 +171,9 @@ export class OrchestratorService {
         const participants: Participation[] = assignedNodes.map((nodeId) => ({ processId, nodeId }));
         await this.commission.accrue(epoch, fee, participants);
 
-        // Step 8 — reserve update: the reserve index is derived from the confirmed-work volume
-        // recorded in NodeChain (the emission.minted snapshots). Reading it reflects this run.
+        // Step 8 — reserve update: the reserve index is derived from confirmed-work volume
+        // (emission.minted events) and AFC commission accruals (reserve.afc.accrual events
+        // appended on epoch finalization). Reading it reflects this run's emission contribution.
         const reserveIndex = await this.reserve.reserveIndex();
 
         // Step 9 — final record: mark the process done; the Eye logs and compares supply.

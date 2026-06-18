@@ -6,6 +6,7 @@ import { ClockService } from '../common/clock.service';
 import { NodeChainService } from '../nodechain/nodechain.service';
 import { NodesService } from '../nodes/nodes.service';
 import { PotService } from '../pot/pot.service';
+import { ReserveService } from '../reserve/reserve.service';
 import { DistributionEntry, Epoch } from './entities/epoch.entity';
 
 /** One unit of confirmed participation: a node took part in a given process within an epoch. */
@@ -57,8 +58,8 @@ const MARGIN_RECIPIENT = 'AFC_RESERVE';
  */
 @Injectable()
 export class CommissionService {
-    /** Fee fraction of the operation amount. */
-    readonly feeRate = 0.01;
+    /** Fee fraction of the operation amount (canonical default 0.5%). */
+    readonly feeRate = 0.005;
 
     /** Share of the epoch pool routed to the AFC reserve fund (canonical 75/25 split). */
     readonly marginRate = 0.25;
@@ -76,6 +77,7 @@ export class CommissionService {
         private readonly pot: PotService,
         private readonly chain: NodeChainService,
         private readonly coin: ArosCoinService,
+        private readonly reserve: ReserveService,
         private readonly clock: ClockService,
     ) { }
 
@@ -110,10 +112,10 @@ export class CommissionService {
 
     /**
      * Finalize an epoch post-factum: keep only PoT-confirmed participation (verified === 1),
-     * sum each node's confirmed-participation weight, distribute the distributable pool
-     * proportionally (`paymentToNode = (weight * distributable) / Σweights`), allocate the
-     * operational margin to AST, record the distribution in NodeChain, and mark the epoch
-     * finalized. The pool reconciles with no remainder (I7).
+     * sum each node's confirmed-participation weight, distribute 75% of the pool proportionally
+     * to nodes (`paymentToNode = (weight * distributable) / Σweights`), route the canonical
+     * 25% AFC share to the Reserve so the capitalization index grows, record the distribution
+     * in NodeChain, and mark the epoch finalized. The pool reconciles with no remainder (I7).
      */
     async finalizeEpoch(epochNumber: number): Promise<FinalizeResult> {
         const epoch = await this.requireEpoch(epochNumber);
@@ -125,7 +127,7 @@ export class CommissionService {
         const totalWeight = [...confirmedWeights.values()].reduce((sum, w) => sum + w, 0);
 
         const total = epoch.totalFees;
-        const distributable = total * (1 - this.marginRate);
+        const distributable = total * (1 - this.marginRate); // 75% to nodes
 
         const distributionLog: DistributionEntry[] = [];
         let paid = 0;
@@ -139,7 +141,7 @@ export class CommissionService {
                 await this.nodes.receivePayment(nodeId, amount);
                 await this.coin.recordEarned(amount);
                 paid += amount;
-                distributionLog.push({ nodeId, amount, reason: 'work_weight' });
+                distributionLog.push({ nodeId, amount, reason: REASON_WORK });
             }
         }
 

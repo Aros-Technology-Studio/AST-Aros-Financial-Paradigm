@@ -83,17 +83,15 @@ export class ReserveService {
     }
 
     /**
-     * The capitalization index: `reserveIndex = log10(1 + totalProcessVolume + totalAfcReserve)`.
-     * Both confirmed process volume and the accumulated AFC commission share drive the index
-     * upward. The log gives soft long-term growth. With zero volume the index is `log10(1) = 0`.
-     * Monotonic non-decreasing in volume (spec I-RS-4).
+     * The capitalization index: `reserveIndex = log10(1 + totalProcessVolume)`.
+     * Derived solely from confirmed process volume recorded in NodeChain; soft log growth gives
+     * meaningful scale at high volume while staying bounded (spec formula I-RS-2, I-RS-4).
+     * With zero volume the index is `log10(1) = 0`. Monotonic non-decreasing in volume.
+     * AFC accruals are recorded separately for audit but do not enter this formula (spec I-RS-1).
      */
     async reserveIndex(): Promise<number> {
-        const [volume, afcReserve] = await Promise.all([
-            this.totalProcessVolume(),
-            this.totalAfcReserve(),
-        ]);
-        return log10(1 + volume + afcReserve);
+        const volume = await this.totalProcessVolume();
+        return log10(1 + volume);
     }
 
     /**

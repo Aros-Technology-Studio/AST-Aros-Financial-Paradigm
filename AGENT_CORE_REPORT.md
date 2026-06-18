@@ -27,7 +27,7 @@
 | `docs/specs/AST_Reserve_AGENT_EN.md` | Spec (highest authority) | Read |
 
 Module `01_coin_engine` is documentation. The production code lives in `src/emission/` and
-related NestJS modules, which is the canonical implementation.
+related NestJS modules, verified to conform to the canonical specs.
 
 ---
 
@@ -160,9 +160,11 @@ the index remains monotonic non-decreasing (I-RS-4).
 ## 5. Reference Implementation vs. Production
 
 The reference `commission.ts` still carries Model-A values (`feeRate = 0.01`, `marginRate = 0.2`).
-This is expected: the reference is the historical baseline in `reference/ast-core/`, not the
-current production implementation. Per `CLAUDE.md` authority order, specs and the production
-code are the authority; the reference files show what was, not what is.
+This is a discrepancy: per `CLAUDE.md`, the reference implementation (`reference/ast-core/`) is
+second-highest authority after the specs, but the specs are unambiguous — `feeRate = 0.005` and
+the 75/25 split apply. The reference `commission.ts` reflects the pre-migration Model-A baseline
+and has not been updated to Model-1 values. The production code correctly follows the specs
+(highest authority) over the outdated reference values in this specific case.
 
 ---
 

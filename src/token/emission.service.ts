@@ -197,6 +197,15 @@ export class EmissionService {
     }
 
     /**
+     * Records an AFC reserve contribution from an external source (e.g. epoch finalization).
+     * Updates the in-memory reserve index so epoch-level fees are reflected in future emission pricing.
+     */
+    recordEpochAfcContribution(amount: number): void {
+        if (amount <= 0) return;
+        this.updateAfcReserve(amount);
+    }
+
+    /**
      * Allows governance to update the commission rate.
      */
     updateCommissionRate(newRate: number): void {

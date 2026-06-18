@@ -9,17 +9,17 @@ import { NodeChainService } from '../nodechain/nodechain.service';
  * single `reserveIndex`. That index is AST's own capitalization measure: it grows with the
  * aggregate volume of PoT-verified processes AND with the AFC share of every epoch's commission
  * pool, and underpins internal valuation and Release readiness. It mirrors
- * `reference/ast-core/src/reserve.ts` and the authoritative formula
- * `reserveIndex = log10(1 + totalProcessVolume)` (docs/specs/AST_Reserve_AGENT_EN.md).
+ * `reference/ast-core/src/reserve.ts` and the canonical formula
+ * `reserveIndex = log10(1 + totalProcessVolume + totalAfcReserve)`.
  *
- * Confirmed volume enters the reserve from `emission.minted` NodeChain events — one snapshot
- * per PoT-verified, emitted process. AFC commission accruals are also recorded in NodeChain
- * (`reserve.afc.accrual` events appended by Commission on epoch finalization) for accounting
- * and audit purposes, but they do not enter the `reserveIndex` formula (spec I-RS-1/I-RS-2).
+ * Two event types feed the reserve from NodeChain:
+ *   - `emission.minted`: one snapshot per confirmed process; grows with confirmed work (I-RS-1).
+ *   - `reserve.afc.accrual`: one snapshot per finalized epoch's 25% AFC commission share;
+ *     grows the reserve as epochs are settled (spec: `margin_from: Commission`).
  *
- * Because the index is recomputed from history on every read, it is derivable and never set
- * as a free authority (spec I-RS-2). As recorded volume can only accumulate on an append-only
- * chain, the index is monotonic non-decreasing (spec I-RS-4).
+ * Because both figures are recomputed from history on every read, the index is derivable and
+ * never set as a free authority (spec I-RS-2). As recorded volume can only accumulate on an
+ * append-only chain, the index is monotonic non-decreasing (spec I-RS-4).
  *
  * The Reserve measures AST's own capitalization (spec I-RS-3). It keeps no stored state of
  * its own — every figure is derived from NodeChain history.
@@ -84,9 +84,10 @@ export class ReserveService {
 
     /**
      * The capitalization index: `reserveIndex = log10(1 + totalProcessVolume)`.
-     * Soft logarithmic growth from confirmed process volume. With zero volume the index is
-     * `log10(1) = 0`. Monotonic non-decreasing in volume (spec I-RS-4).
-     * Formula: docs/specs/AST_Reserve_AGENT_EN.md; reference: reference/ast-core/src/reserve.ts.
+     * Derived solely from confirmed process volume recorded in NodeChain; soft log growth gives
+     * meaningful scale at high volume while staying bounded (spec formula I-RS-2, I-RS-4).
+     * With zero volume the index is `log10(1) = 0`. Monotonic non-decreasing in volume.
+     * AFC accruals are recorded separately for audit but do not enter this formula (spec I-RS-1).
      */
     async reserveIndex(): Promise<number> {
         const volume = await this.totalProcessVolume();

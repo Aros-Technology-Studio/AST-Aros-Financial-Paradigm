@@ -25,6 +25,9 @@ jobs:
     - name: Build NestJS
       run: npm run build
 
+    - name: Check Model-1 Prohibitions (P1-P8)
+      run: npm run check:prohibitions
+
     - name: Run Tests
       run: npm test
 

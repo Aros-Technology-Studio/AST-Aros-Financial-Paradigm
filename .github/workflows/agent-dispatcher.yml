@@ -39,12 +39,19 @@ jobs:
           node-version: '20'
 
       - name: Install Claude Code
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Run assigned agents
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ASSIGNED_AGENTS: ${{ steps.changes.outputs.agents }}
         run: |
           echo "Запускаю агентов: $ASSIGNED_AGENTS"
-          claude --print "Запущены агенты: $ASSIGNED_AGENTS. PR содержит изменения в соответствующих модулях. Проверь изменения, запусти тесты, отчитайся." || true
+          claude --print "Запущены агенты: $ASSIGNED_AGENTS. PR содержит изменения в соответствующих модулях. Проверь изменения, запусти тесты, отчитайся."
+
+      - name: Skip assigned agents without API key
+        if: ${{ secrets.ANTHROPIC_API_KEY == '' }}
+        run: echo "ANTHROPIC_API_KEY is not configured; skipping Claude agent dispatch."

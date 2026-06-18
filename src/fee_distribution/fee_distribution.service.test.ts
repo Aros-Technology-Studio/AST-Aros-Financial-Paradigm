@@ -7,6 +7,7 @@ import { DistributionLogEntity } from './distribution_log.entity';
 import { Transaction } from '../ledger/entities/transaction.entity';
 import { PoTService } from '../proof_of_transaction_engine/pot.service';
 import { TokenService } from '../token/token.service';
+import { EmissionService } from '../token/emission.service';
 import { NodeChainService } from '../nodechain_engine/nodechain.service';
 import { SmartContractIntegration } from '../integration/smart_contract.integration';
 import { DataSource } from 'typeorm';
@@ -41,6 +42,10 @@ describe('FeeDistributionService', () => {
 
     const mockTokenService = {};
 
+    const mockEmissionService = {
+        updateAfcReserve: jest.fn(),
+    };
+
     const mockNodeChainService = {
         getConnectedNodes: jest.fn().mockReturnValue([
             { id: 'node1', metrics: { uptime: 100, batchesValidated: 10, missedVotes: 0, batchesProposed: 2 } },
@@ -72,6 +77,7 @@ describe('FeeDistributionService', () => {
                 { provide: getRepositoryToken(Transaction), useValue: mockTransactionRepo },
                 { provide: PoTService, useValue: mockPoTService },
                 { provide: TokenService, useValue: mockTokenService },
+                { provide: EmissionService, useValue: mockEmissionService },
                 { provide: NodeChainService, useValue: mockNodeChainService },
                 { provide: SmartContractIntegration, useValue: { validateReserve: jest.fn().mockResolvedValue({ isValid: true, onChainSupply: 100 }) } },
                 { provide: DataSource, useValue: mockDataSource },

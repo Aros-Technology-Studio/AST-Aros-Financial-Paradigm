@@ -28,27 +28,29 @@ export interface FinalizeResult {
 /** Tolerance for the reconciliation identity, mirroring the reference's 1e-9 bound. */
 const RECONCILE_EPSILON = 1e-9;
 
-/** Recipient label for the operational margin allocated to AST. */
-const MARGIN_RECIPIENT = 'AST';
+/** Recipient label for the AFC reserve allocation. */
+const MARGIN_RECIPIENT = 'AFC_RESERVE';
 
 /**
  * CommissionService — the settlement controller of AST.
  *
  * Commission computes the operation fee, consolidates fees into a per-epoch operational
  * pool, and on epoch finalization distributes payment to nodes post-factum by their
- * PoT-confirmed participation weight, allocating the operational margin to AST. It mirrors
- * `reference/ast-core/src/commission.ts`:
+ * PoT-confirmed participation weight, routing the AFC reserve share to the Reserve layer.
+ * It mirrors `reference/ast-core/src/commission.ts`:
  *   - `computeFee(amount)`        = amount * feeRate (optionally scaled by an overload rate).
  *   - `accrue(epoch, fee, parts)` adds the fee to the open epoch pool and remembers which
  *                                 nodes participated in which process for that fee.
- *   - `finalizeEpoch(epoch)`      pays nodes proportionally to weight, allocates margin, and
- *                                 records the distribution in NodeChain.
+ *   - `finalizeEpoch(epoch)`      pays nodes proportionally to weight (75 %), allocates the
+ *                                 AFC reserve share (25 %), and records the distribution in
+ *                                 NodeChain. The AFC share is tracked by ReserveService via
+ *                                 the `commission.epoch.finalized` event (spec `margin_to: Reserve`).
  *
  * Payment is strictly post-factum and gated by PoT: a participation counts toward weight only
  * when its process carries a verdict with `verified === 1` (spec I-CM-1/I-CM-2, project
  * P2/I2). Presence or readiness alone earns nothing — only confirmed work does (I-CM-5).
- * The pool reconciles to zero remainder: Σ(payments) + operationalMargin == Σ(fees) per
- * epoch (project I7, spec I-CM-4). Distribution is deterministic for identical inputs (I4).
+ * The pool reconciles to zero remainder: Σ(payments) + afcMargin == Σ(fees) per epoch
+ * (project I7, spec I-CM-4). Distribution is deterministic for identical inputs (I4).
  *
  * Spec: docs/specs/AST_Commission_AGENT_EN.md
  * Reference: reference/ast-core/src/commission.ts
@@ -58,8 +60,8 @@ export class CommissionService {
     /** Fee fraction of the operation amount. */
     readonly feeRate = 0.01;
 
-    /** Share of the pool allocated to AST as operational-layer funding (margin). */
-    readonly marginRate = 0.2;
+    /** Share of the epoch pool routed to the AFC reserve fund (canonical 75/25 split). */
+    readonly marginRate = 0.25;
 
     /**
      * Confirmed participations remembered per open epoch, in insertion order. Mirrors the
@@ -141,14 +143,14 @@ export class CommissionService {
             }
         }
 
-        // Any distributable amount without confirmed weight stays with AST as margin, so the
-        // pool always reconciles to zero remainder.
+        // The AFC reserve share (25 %) is the pool remainder after node payments. It is routed
+        // to the Reserve layer via the `commission.epoch.finalized` NodeChain event (spec
+        // `margin_to: Reserve`) and does not enter the ArosCoin earned-retained supply.
         const allocatedMargin = total - paid;
-        await this.coin.recordEarned(allocatedMargin);
         distributionLog.push({
             nodeId: MARGIN_RECIPIENT,
             amount: allocatedMargin,
-            reason: 'operational_margin',
+            reason: 'afc_reserve',
         });
 
         epoch.distributionLog = distributionLog;
@@ -235,7 +237,7 @@ export class CommissionService {
 
     private toResult(epoch: Epoch): FinalizeResult {
         const paid = epoch.distributionLog
-            .filter((e) => e.reason !== 'operational_margin')
+            .filter((e) => e.reason !== 'afc_reserve')
             .reduce((sum, e) => sum + e.amount, 0);
         const reconciled = Math.abs(paid + epoch.operationalMargin - epoch.totalFees) < RECONCILE_EPSILON;
         return {

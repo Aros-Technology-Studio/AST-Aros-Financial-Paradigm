@@ -146,4 +146,33 @@ describe('ReserveService', () => {
         const index = await reserve.reserveIndex();
         expect(await reserve.internalPrice(2)).toBeCloseTo(2 * index, 10);
     });
+
+    // Canonical 75/25 split: AFC reserve margin from commission.epoch.finalized events feeds
+    // totalProcessVolume so the reserveIndex grows as more fees are collected (spec
+    // `margin_from: Commission`). A fake finalized-epoch event is injected directly via
+    // NodeChain so the test stays isolated from CommissionService.
+    it('AFC reserve margin from commission.epoch.finalized grows totalProcessVolume and reserveIndex', async () => {
+        // Establish baseline from a confirmed process.
+        await confirmAndEmit('afc-base', 1000);
+        const volumeBefore = await reserve.totalProcessVolume();
+        const indexBefore = await reserve.reserveIndex();
+
+        // Simulate CommissionService recording its epoch-finalized event with an AFC margin.
+        const afcMargin = 50; // the 25 % share that routes to Reserve
+        await chain.append('commission.epoch.finalized', {
+            epochNumber: 1,
+            totalFees: 200,
+            operationalMargin: afcMargin,
+            paid: 150,
+            reconciled: true,
+            distributionLog: [],
+        });
+
+        const volumeAfter = await reserve.totalProcessVolume();
+        const indexAfter = await reserve.reserveIndex();
+
+        expect(volumeAfter).toBeCloseTo(volumeBefore + afcMargin, 10);
+        expect(indexAfter).toBeCloseTo(log10(1 + volumeAfter), 10);
+        expect(indexAfter).toBeGreaterThan(indexBefore);
+    });
 });

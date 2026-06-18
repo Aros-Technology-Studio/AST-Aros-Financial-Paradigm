@@ -1,7 +1,7 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model
 
 **Agent:** AGENT-CORE  
-**Branch:** `claude/inspiring-cannon-9niouj`  
+**Branch:** `agent/core-emission`  
 **Date:** 2026-06-18  
 **Task:** Audit ArosCoin emission logic against the canonical model; confirm or rewrite code
 
@@ -167,3 +167,86 @@ After 12.50 AFC accumulated:
 | Verification pass | `claude/inspiring-cannon-7sksc6` (PR #243) | 2026-06-14 | Full audit confirmed code and docs canonical; no changes required |
 | Verification pass | `claude/inspiring-cannon-3w693h` (PR #254) | 2026-06-15 | Full re-audit confirmed code and docs remain canonical; no changes required |
 | PoT doc fix + verification | `claude/inspiring-cannon-9niouj` | 2026-06-18 | Fixed stale 60/30/10 split in `pot_tx_incentive_distribution.md`; all other code and docs confirmed canonical |
+| NestJS core audit + fix | `agent/core-emission` | 2026-06-18 | Found 3 violations in NestJS services: marginRate 0.2→0.25, AFC margin removed from coin.recordEarned, Reserve now reads commission margin from NodeChain. 24/24 tests pass. |
+
+---
+
+## 9. NestJS Core Audit (2026-06-18)
+
+_Previous audit sections (1–7) describe `src/token/` which is a legacy structure. The active
+NestJS production code lives in `src/emission/`, `src/commission/`, `src/reserve/`, etc._
+
+### Findings: 3 violations found in NestJS services
+
+Actual production modules audited:
+
+| Module | File |
+|---|---|
+| Emission | `src/emission/emission.service.ts` |
+| Commission | `src/commission/commission.service.ts` |
+| Reserve | `src/reserve/reserve.service.ts` |
+| ArosCoin Ledger | `src/aroscoin/aroscoin.service.ts` |
+| Orchestrator | `src/orchestrator/orchestrator.service.ts` |
+
+#### Violation 1 — Wrong commission split ratio
+
+**File:** `src/commission/commission.service.ts:59`  
+**Was:** `readonly marginRate = 0.2;` → 80% nodes / 20% AST  
+**Fixed:** `readonly marginRate = 0.25;` → 75% nodes / 25% AFC Reserve
+
+Violates: `docs/specs/AST_Commission_AGENT_EN.md` → `margin_to: Reserve`
+
+#### Violation 2 — AFC margin routed to circulating supply
+
+**File:** `src/commission/commission.service.ts`  
+**Was:** `await this.coin.recordEarned(allocatedMargin)` — 20% added to `earnedRetained` (part of `totalSupply`)  
+**Fixed:** Removed. AFC margin is recorded via `commission.epoch.finalized` NodeChain event only; it does not enter `earnedRetained`.
+
+Violates: `docs/specs/AST_Reserve_AGENT_EN.md` → `margin_from: Commission`
+
+#### Violation 3 — Reserve did not track AFC commission margin
+
+**File:** `src/reserve/reserve.service.ts`  
+**Was:** `totalProcessVolume()` summed only `emission.minted` events  
+**Fixed:** Now also sums `operationalMargin` from `commission.epoch.finalized` events so that AFC reserve inflows grow the `reserveIndex` and raise the internal emission price.
+
+Violates: `docs/specs/AST_Reserve_AGENT_EN.md` → `margin_from: Commission` + canonical rule "AFC Reserve grows → next emission price higher"
+
+### Changes made
+
+| File | Change |
+|---|---|
+| `src/commission/commission.service.ts` | `marginRate` 0.2→0.25; remove `coin.recordEarned(margin)`; reason `'operational_margin'`→`'afc_reserve'`; recipient `'AST'`→`'AFC_RESERVE'`; update docstrings |
+| `src/reserve/reserve.service.ts` | Add `COMMISSION_EPOCH_EVENT` constant; `totalProcessVolume()` now sums AFC margin from commission events; update docstrings |
+| `src/reserve/reserve.service.spec.ts` | New test: AFC margin from `commission.epoch.finalized` grows `totalProcessVolume` and `reserveIndex` |
+
+### Final emission flow (canonical)
+
+```
+Transaction amount = X
+│
+├─ Emission.emit(processId, X)          [PoT verified=1 required]
+│   ├─ mint(X)  → processMinted += X
+│   └─ burn(X)  → processBurned += X    processNet = 0 (I5)
+│
+├─ Commission fee = X × 0.01
+│   └─ finalizeEpoch:
+│       ├─ 75% → nodes → coin.recordEarned()   → earnedRetained ↑ → totalSupply ↑
+│       └─ 25% → AFC_RESERVE → [commission.epoch.finalized NodeChain event]
+│
+└─ Reserve.totalProcessVolume() = Σ emission.minted + Σ commission[operationalMargin]
+    └─ reserveIndex = log10(1 + totalProcessVolume)
+        └─ internalPrice = base × reserveIndex   ← grows with AFC reserve ✓
+```
+
+`totalSupply = (processMinted − processBurned) + earnedRetained = 0 + 75%-of-fees` (I6 ✓)
+
+### Test results
+
+```
+PASS src/commission/commission.service.spec.ts  (8 tests)
+PASS src/reserve/reserve.service.spec.ts        (6 tests, 1 new)
+PASS src/invariants/invariants.spec.ts          (10 tests, I1–I10)
+
+Tests: 24 passed, 24 total
+```

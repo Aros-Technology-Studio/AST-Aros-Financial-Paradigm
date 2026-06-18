@@ -34,6 +34,7 @@ jobs:
           echo "Assigned agents: $AGENTS"
 
       - name: Setup Node
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -44,14 +45,15 @@ jobs:
 
       - name: Run assigned agents
         if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
-        continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ASSIGNED_AGENTS: ${{ steps.changes.outputs.agents }}
         run: |
           echo "Запускаю агентов: $ASSIGNED_AGENTS"
-          claude --print "Запущены агенты: $ASSIGNED_AGENTS. PR содержит изменения в соответствующих модулях. Проверь изменения, запусти тесты, отчитайся."
+          if ! claude --print "Запущены агенты: $ASSIGNED_AGENTS. PR содержит изменения в соответствующих модулях. Проверь изменения, запусти тесты, отчитайся."; then
+            echo "::warning::Claude dispatch skipped because ANTHROPIC_API_KEY is invalid or unavailable."
+          fi
 
-      - name: Skip assigned agents without API key
+      - name: Skip assigned agents (missing API key)
         if: ${{ secrets.ANTHROPIC_API_KEY == '' }}
-        run: echo "ANTHROPIC_API_KEY is not configured; skipping Claude agent dispatch."
+        run: echo "::warning::Skipping Claude agent dispatch because ANTHROPIC_API_KEY is not configured."

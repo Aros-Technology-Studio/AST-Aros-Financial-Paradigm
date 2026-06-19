@@ -32,15 +32,20 @@ Burn           = 10,000 ARO  (destroyed after TX completes)
 Net circulating change = 0
 ```
 
-## AFC Reserve Price Index
+## AFC Reserve and Internal Price Index
 
-As the AFC reserve accumulates, the effective price of the next emission rises:
+As confirmed process volume accumulates in NodeChain, the capitalization index rises:
 
 ```
-reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000
+reserveIndex = log10(1 + totalProcessVolume)
 ```
 
-Sub-linear growth: stable at low volume, meaningful at scale.
+Soft logarithmic growth: meaningful at scale, bounded against runaway inflation.
+`internalPrice = base × reserveIndex` — internal valuation follows confirmed work.
+
+AFC reserve accruals (the 25% share per epoch) are recorded in NodeChain as
+`reserve.afc.accrual` events and are auditable independently; they grow alongside
+confirmed work because both originate from the same transaction volume.
 
 ## Anti-Inflationary Measures
 
@@ -74,12 +79,16 @@ The emission logic includes:
 
 ## Reference Implementation
 
-Canonical code: `src/token/emission.service.ts` — `EmissionService`
+Canonical code: `src/emission/emission.service.ts` — `EmissionService`
 
 Key methods:
-- `calculate(txAmount, rate?)` — pure calculation, no side effects
-- `processTransactionEmission(txAmount, recipient, refId, rate?)` — full lifecycle
-- `getAfcReserveState()` — current reserve snapshot
-- `getCurrentEmissionPrice()` — current `reserveIndex`
+- `calculate(txAmount, commissionRate?)` — pure canonical formula, no side effects
+- `emit(processId, amount)` — PoT-gated mint then burn cycle for a confirmed process
+- `mint(processId, amount)` — mint step; throws when process not PoT-verified
+- `burn(processId, amount)` — burn step on cycle completion
+- `totalSupply()` — current derived supply from the unit ledger
+
+Reserve index: `src/reserve/reserve.service.ts` — `ReserveService.reserveIndex()`
+Commission split: `src/commission/commission.service.ts` — `CommissionService.finalizeEpoch()`
 
 ⸻

@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-4m9xnj`
-**Date:** 2026-06-18
+**Branch:** `agent/core-emission`
+**Date:** 2026-06-19 (updated — see §9 for this session's additions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
 
 ---
@@ -173,4 +173,80 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| 2026-06-18 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| **2026-06-19** | `agent/core-emission` | Comment bug fixed, docs corrected, `calculate()` added — see §9 |
+
+---
+
+## 9. 2026-06-19 Session Additions (branch: agent/core-emission)
+
+### 9.1 Directories re-surveyed
+
+- `01_coin_engine/` — docs only, confirmed. No deprecated code.
+- `10_proof_of_transaction_engine/` — docs only, confirmed. No code.
+- `src/token/` — does NOT exist (confirmed again). All emission logic is in `src/emission/`.
+
+### 9.2 ReserveService class-level comment bug
+
+**File:** `src/reserve/reserve.service.ts`
+
+The previous session fixed the `reserveIndex()` implementation. However the class-level doc
+comment at line 12 still contained `+ totalAfcReserve` in the formula description —
+inconsistent with both the method comment and the implementation.
+
+**Fixed:** Class-level doc now reads `log10(1 + totalProcessVolume)` consistently.
+
+### 9.3 EmissionService — `calculate()` pure method added
+
+Added `EmissionService.calculate(txAmount, commissionRate?)` — a pure, side-effect-free
+method that explicitly returns the canonical emission cycle values:
+
+```typescript
+calculate(txAmount, commissionRate = 0.005) → {
+    emission:   txAmount,              // 1:1
+    commission: txAmount × rate,       // 0.5% default
+    nodeShare:  commission × 0.75,     // 75% → nodes
+    afcShare:   commission × 0.25,     // 25% → AFC reserve
+    net:        0,                     // minted then burned
+}
+```
+
+This makes the canonical formula explicitly visible and testable without infrastructure.
+
+### 9.4 `01_coin_engine/coin_emission_model.md` — two issues corrected
+
+| Issue | Before | After |
+|-------|--------|-------|
+| reserveIndex formula | `1.0 + sqrt(totalAfcReserve) / 10_000` (Model-A) | `log10(1 + totalProcessVolume)` (spec-correct) |
+| Code path reference | `src/token/emission.service.ts` (does not exist) | `src/emission/emission.service.ts` |
+| API methods | Stale (Model-A surface) | Updated to actual EmissionService public API |
+
+### 9.5 `01_coin_engine/burn_and_mint_rules.md` — Model-A constructs removed
+
+File was written against Model-A. Contained multiple prohibited constructs:
+
+| Prohibited construct | Rule violated |
+|---------------------|---------------|
+| Mint triggered by fiat tokenization | P5 (mint-on-deposit) |
+| Validator quorum (≥ 67%) for mint authorization | P3 (token-weighted governance) |
+| `fraudPenaltyBurn` burning 100% of stake | P2 (slashing against balance) |
+| "All-Seeing Eye has override authority for emergency mint freeze" | P6 (Eye changing state) |
+| Daily hard-cap, airdrops, bounty issuance | Not in Model-1 spec |
+
+**Action:** Rewritten from scratch to Model-1 canonical mint/burn rules. All prohibited
+constructs removed. References to stake, quorum, fiat conversion, Eye enforcement removed.
+
+### 9.6 Canonical conformance — unchanged conclusion
+
+The production emission logic in `src/` remains fully compliant with the canonical 1:1
+emission model. No logic rewrite was required. All I1–I10 invariants hold.
+
+### 9.7 Files changed in this session
+
+```
+src/reserve/reserve.service.ts          Comment bug fix (class-level formula)
+src/emission/emission.service.ts        Added calculate() pure canonical formula method
+01_coin_engine/coin_emission_model.md   reserveIndex formula + code path corrected
+01_coin_engine/burn_and_mint_rules.md   Rewritten: Model-A constructs removed
+AGENT_CORE_REPORT.md                    This update
+```

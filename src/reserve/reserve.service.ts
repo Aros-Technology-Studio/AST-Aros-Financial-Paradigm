@@ -10,7 +10,7 @@ import { NodeChainService } from '../nodechain/nodechain.service';
  * aggregate volume of PoT-verified processes AND with the AFC share of every epoch's commission
  * pool, and underpins internal valuation and Release readiness. It mirrors
  * `reference/ast-core/src/reserve.ts` and the canonical formula
- * `reserveIndex = log10(1 + totalProcessVolume + totalAfcReserve)`.
+ * `reserveIndex = log10(1 + totalProcessVolume)` (AFC accruals audited separately).
  *
  * Two event types feed the reserve from NodeChain:
  *   - `emission.minted`: one snapshot per confirmed process; grows with confirmed work (I-RS-1).

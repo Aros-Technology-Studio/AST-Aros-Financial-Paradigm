@@ -12,17 +12,14 @@ import { NodeChainService } from '../nodechain/nodechain.service';
  * `reference/ast-core/src/reserve.ts` and the canonical formula
  * `reserveIndex = log10(1 + totalProcessVolume + totalAfcReserve)`.
  *
- * Two event types feed the reserve from NodeChain:
- *   - `emission.minted`: one snapshot per confirmed process; grows with confirmed work (I-RS-1).
- *   - `reserve.afc.accrual`: one snapshot per finalized epoch's 25% AFC commission share;
- *     grows the reserve as epochs are settled (spec: `margin_from: Commission`).
+ * The canonical formula is `reserveIndex = log10(1 + totalProcessVolume)` (spec I-RS-2,
+ * reference/ast-core/src/reserve.ts). The index is recomputed from NodeChain history on every
+ * read, so it is derivable and never set as a free authority. As recorded volume can only
+ * accumulate on an append-only chain, the index is monotonic non-decreasing (spec I-RS-4).
  *
- * Because both figures are recomputed from history on every read, the index is derivable and
- * never set as a free authority (spec I-RS-2). As recorded volume can only accumulate on an
- * append-only chain, the index is monotonic non-decreasing (spec I-RS-4).
- *
- * The Reserve measures AST's own capitalization (spec I-RS-3). It keeps no stored state of
- * its own — every figure is derived from NodeChain history.
+ * The 25% AFC commission share (appended as `reserve.afc.accrual` by Commission on epoch
+ * finalization) is tracked in NodeChain for audit and reconciliation but does not enter the
+ * `reserveIndex` formula — only PoT-confirmed process volume feeds capitalization (spec I-RS-1).
  *
  * Spec: docs/specs/AST_Reserve_AGENT_EN.md
  * Reference: reference/ast-core/src/reserve.ts

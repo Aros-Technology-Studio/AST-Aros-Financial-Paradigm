@@ -259,3 +259,17 @@ src/reserve/reserve.service.ts          Class-level comment bug fixed
 01_coin_engine/burn_and_mint_rules.md   Rewritten: Model-A constructs removed
 AGENT_CORE_REPORT.md                    This update
 ```
+
+---
+
+## 10. 2026-06-19 Verification Run (branch: agent/core-emission, session 2)
+
+Full re-audit of canonical 1:1 emission model. All components verified against:
+- `docs/specs/AST_Emission_AGENT_EN.md` / `AST_Reserve_AGENT_EN.md` / `AST_Commission_AGENT_EN.md`
+- `reference/ast-core/src/emission.ts` / `reserve.ts` / `commission.ts`
+- `src/orchestrator/orchestrator.service.ts` (full lifecycle trace)
+
+**Result: canonical model fully in place. No new code changes required.**
+
+All checks from §3 and §5 pass. All prohibitions from §6 remain clean.
+Audit trail updated to reflect re-confirmation of this session.

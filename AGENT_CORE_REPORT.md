@@ -186,9 +186,25 @@ Searched for prohibited constructs per `AST_RULES.yaml`:
 
 ## 9. Files Changed
 
+**Run on branch `claude/inspiring-cannon-4m9xnj` (2026-06-18):**
 ```
+<<<<<<< HEAD
 reference/ast-core/src/commission.ts   feeRate: 0.01 → 0.005 (canonical 0.5%)
                                         marginRate: 0.2 → 0.25 (canonical 25% AFC share)
+=======
+src/reserve/reserve.service.ts    reserveIndex() formula corrected:
+                                  log10(1 + totalProcessVolume + totalAfcReserve)
+                                  → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
+```
+
+**Run on branch `agent/core-emission` (2026-06-19):**
+```
+src/reserve/reserve.service.ts    Class-level JSDoc corrected: formula comment still
+                                  referenced `+ totalAfcReserve` even though the code
+                                  was already fixed. Docstring now matches the spec and
+                                  the implementation. AFC accrual role clarified as
+                                  audit-trail-only (does not enter reserveIndex formula).
+>>>>>>> 0962020 (feat: canonical 1:1 emission model implementation)
 
 AGENT_CORE_REPORT.md                   This report
 ```
@@ -203,5 +219,10 @@ AGENT_CORE_REPORT.md                   This report
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
+<<<<<<< HEAD
 | PR #N-1 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec; reference commission.ts corrected (feeRate + marginRate) |
 | **This run** | `agent/core-emission` | Re-audit (2026-06-19): confirmed all production logic correct; corrected class docstring in `reserve.service.ts` that had re-introduced the erroneous `+ totalAfcReserve` description |
+=======
+| PR prior | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| **This run** | `agent/core-emission` | Class-level JSDoc in `reserve.service.ts` corrected to match spec formula; all 29 tests green |
+>>>>>>> 0962020 (feat: canonical 1:1 emission model implementation)

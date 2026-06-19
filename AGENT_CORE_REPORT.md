@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-4m9xnj`
-**Date:** 2026-06-18
+**Branch:** `claude/inspiring-cannon-7tjmhv`
+**Date:** 2026-06-19
 **Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
 
 ---
@@ -12,16 +12,16 @@
 | Path | Content | Authority |
 |------|---------|-----------|
 | `01_coin_engine/` | Documentation (aro_emission_protocol.md, coin_emission_model.md, etc.) | Historical Model-A docs; rates cross-checked |
-| `10_proof_of_transaction_engine/` | PoT documentation | Historical; no emission formulas |
+| `10_proof_of_transaction_engine/` | PoT documentation (incl. pot_tx_incentive_distribution.md) | Corrected stale paths |
 | `src/emission/emission.service.ts` | NestJS EmissionService — production code | Audited ✓ |
 | `src/aroscoin/aroscoin.service.ts` | NestJS ArosCoinService (unit ledger) | Audited ✓ |
 | `src/commission/commission.service.ts` | NestJS CommissionService | Audited ✓ |
-| `src/reserve/reserve.service.ts` | NestJS ReserveService | **Corrected** |
+| `src/reserve/reserve.service.ts` | NestJS ReserveService | **Comment corrected** |
 | `src/orchestrator/orchestrator.service.ts` | Full lifecycle orchestration | Audited ✓ |
 | `src/invariants/invariants.spec.ts` | I1–I10 automated tests | Audited ✓ |
 | `reference/ast-core/src/emission.ts` | Reference implementation | Read |
 | `reference/ast-core/src/commission.ts` | Reference implementation | Read |
-| `reference/ast-core/src/reserve.ts` | Reference implementation | **Key deviation source** |
+| `reference/ast-core/src/reserve.ts` | Reference implementation | **Definitive on formula** |
 | `reference/ast-core/src/orchestrator.ts` | Reference implementation | Read |
 | `docs/specs/AST_Emission_AGENT_EN.md` | Spec (highest authority) | Read |
 | `docs/specs/AST_Commission_AGENT_EN.md` | Spec (highest authority) | Read |
@@ -52,7 +52,7 @@ ARO lifecycle per confirmed process:
 Reserve:
   reserveIndex   = log10(1 + totalProcessVolume)              ← spec formula, confirmed volume only
   internalPrice  = base × reserveIndex                        ← rises as confirmed work accumulates
-  AFC accruals   → NodeChain (audit trail), not in formula
+  AFC accruals   → NodeChain (audit trail), not in index formula
 ```
 
 Sources of authority (highest first): `docs/specs/AST_Reserve_AGENT_EN.md`,
@@ -60,7 +60,7 @@ Sources of authority (highest first): `docs/specs/AST_Reserve_AGENT_EN.md`,
 
 ---
 
-## 3. Conformant — No Changes Needed
+## 3. Conformant — Code Verified Correct
 
 | Component | Canonical Requirement | Verdict |
 |-----------|----------------------|---------|
@@ -72,6 +72,7 @@ Sources of authority (highest first): `docs/specs/AST_Reserve_AGENT_EN.md`,
 | `CommissionService.marginRate` | 0.25 (25% → AFC) | ✓ Correct |
 | Commission 75/25 distribution | 75% to nodes via `coin.recordEarned`, 25% via `reserve.addAfcAccrual` | ✓ Correct |
 | Commission pool reconciliation | `paid + margin == total` per epoch | ✓ Correct (I7) |
+| `ReserveService.reserveIndex()` implementation | `log10(1 + totalProcessVolume)` | ✓ Correct |
 | PoT gate | Idempotent verify; binary verdict; gates all downstream value | ✓ Correct (I1/I2) |
 | NodeChain | Append-only, hash-continuous | ✓ Correct (I8) |
 | Nodes | Work+reputation weight; no stake/slashing fields | ✓ Correct (I9) |
@@ -79,11 +80,14 @@ Sources of authority (highest first): `docs/specs/AST_Reserve_AGENT_EN.md`,
 
 ---
 
-## 4. Deviation Found and Corrected
+## 4. Deviations Found and Corrected (this session)
 
-### 4.1 ReserveService — `reserveIndex()` Formula
+### 4.1 ReserveService — Wrong Formula in Class-Level JSDoc
 
 **File:** `src/reserve/reserve.service.ts`
+
+The `reserveIndex()` method implementation was already correct (`log10(1 + totalProcessVolume)`),
+but the class-level JSDoc retained the wrong formula from a previous draft.
 
 **Spec authority:** `docs/specs/AST_Reserve_AGENT_EN.md`:
 ```yaml
@@ -96,20 +100,10 @@ formulas:
 reserveIndex(): number { return log10(1 + this.totalProcessVolume); }
 ```
 
-Both the highest-authority spec and the reference are unambiguous: the formula uses
-`totalProcessVolume` only.
-
 | | Before (deviated) | After (spec-correct) |
 |--|------|------|
-| Formula | `log10(1 + totalProcessVolume + totalAfcReserve)` | `log10(1 + totalProcessVolume)` |
-| AFC input | Included in index computation | Recorded in NodeChain only (audit) |
-
-**Root cause:** A previous agent added `totalAfcReserve` to the formula to implement
-"AFC Reserve grows → price rises". This is correct in intent — the price does rise as
-confirmed work accumulates — but the mechanism is already present through
-`totalProcessVolume`, which grows with every verified process. Including `totalAfcReserve`
-additionally contradicts spec I-RS-1 ("grows only from confirmed volume") because AFC
-accruals are commission derivatives, not direct confirmed process volume.
+| Class JSDoc formula | `log10(1 + totalProcessVolume + totalAfcReserve)` | `log10(1 + totalProcessVolume)` (spec I-RS-1) |
+| AFC input | Claimed to enter index computation | Correctly documented as NodeChain audit trail only |
 
 **What stays unchanged:** `addAfcAccrual()` still records the AFC event in NodeChain
 (correct per I3 — every significant event recorded). `totalAfcReserve()` still reads that
@@ -117,7 +111,24 @@ history for querying. The event routing from Commission is correct and untouched
 
 ---
 
-## 5. Invariant Impact After Change
+### 4.2 pot_tx_incentive_distribution.md — Stale Module Paths
+
+**File:** `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md`
+
+The file referenced `src/token/emission.service.ts` and `src/fee_distribution/fee_distribution.service.ts`,
+both of which are Model-A modules that were removed during the Model-1 rewrite.
+
+| | Before (stale) | After (correct) |
+|--|------|------|
+| Implementation path | `src/token/emission.service.ts` | `src/commission/commission.service.ts` |
+| Epoch distribution | `FeeDistributionService.distributeRewards()` | `CommissionService.finalizeEpoch()` |
+| Spec reference | `01_coin_engine/payment_distribution.md` | `docs/specs/AST_Commission_AGENT_EN.md` |
+| Reserve path | `src/fee_distribution/fee_distribution.service.ts` | `src/reserve/reserve.service.ts` |
+| NodeChain event | `FEE_DISTRIBUTION` ledger entry | `commission.epoch.finalized` |
+
+---
+
+## 5. Invariant Impact After Changes
 
 | ID | Rule | Impact |
 |----|------|--------|
@@ -126,12 +137,12 @@ history for querying. The event routing from Commission is correct and untouched
 | I3 | All significant events in NodeChain | AFC accrual still recorded → compliant |
 | I4 | Deterministic: same input → same result | `reserveIndex` still deterministic from NodeChain |
 | I5 | Process part nets to 0 | Unaffected |
-| I6 | `totalSupply = earnedRetained` after burns | Unaffected — AFC not in coin ledger |
+| I6 | `totalSupply` derivable | Unaffected — AFC not in coin ledger |
 | I7 | Pool reconciles: `paid + margin == fees` | Unaffected |
 | I8 | NodeChain append-only | Unaffected |
 | I9 | Node influence from work+reputation | Unaffected |
 | I10 | Eye passive: no state change | Unaffected |
-| I-RS-1 | Grows only from confirmed volume | Now correct — formula uses only process volume |
+| I-RS-1 | Grows only from confirmed volume | Comment now matches implementation |
 | I-RS-2 | Derivable from NodeChain | Still holds — recomputed from history each call |
 | I-RS-4 | Monotonic non-decreasing | Still holds — log(1 + volume) is monotonic |
 
@@ -153,14 +164,22 @@ internalPrice = base × 4.0000    → rises with each additional confirmed proce
 
 ---
 
-## 7. Files Changed
+## 7. Files Changed (this session)
 
 ```
-src/reserve/reserve.service.ts    reserveIndex() formula corrected:
-                                  log10(1 + totalProcessVolume + totalAfcReserve)
-                                  → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
+src/reserve/reserve.service.ts
+    Class-level JSDoc formula corrected:
+      log10(1 + totalProcessVolume + totalAfcReserve)
+      → log10(1 + totalProcessVolume)   [spec I-RS-1, comment only; implementation was already correct]
 
-AGENT_CORE_REPORT.md              This report (updated)
+10_proof_of_transaction_engine/pot_tx_incentive_distribution.md
+    Stale Model-A module paths replaced with current Model-1 paths:
+      src/token/emission.service.ts → src/commission/commission.service.ts
+      src/fee_distribution/ → src/reserve/reserve.service.ts
+      01_coin_engine/payment_distribution.md → docs/specs/AST_Commission_AGENT_EN.md
+
+AGENT_CORE_REPORT.md
+    Updated to reflect this session's audit (branch claude/inspiring-cannon-7tjmhv)
 ```
 
 ---
@@ -173,4 +192,5 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| PR #306 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` implementation aligned with spec; class JSDoc not yet fixed |
+| **This run** | `claude/inspiring-cannon-7tjmhv` | Class-level JSDoc formula corrected; stale paths in pot_tx_incentive_distribution.md fixed |

@@ -273,3 +273,33 @@ Full re-audit of canonical 1:1 emission model. All components verified against:
 
 All checks from §3 and §5 pass. All prohibitions from §6 remain clean.
 Audit trail updated to reflect re-confirmation of this session.
+
+---
+
+## 11. 2026-06-19 Full Re-Audit (branch: agent/core-emission, session 3)
+
+Fresh deep audit requested — surveyed `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/aroscoin/`, `src/emission/`, `src/commission/`, `src/reserve/`, `src/orchestrator/`
+plus spec docs and reference implementation.
+
+### Canonical Model Verification (all 9 requirements)
+
+| Requirement | Evidence | Status |
+|-------------|----------|--------|
+| Emission 1:1 (tx amount = minted ARO) | `orchestrator.service.ts:161` → `emission.emit(processId, amount)` | CONFIRMED |
+| $10 000 tx → 10 000 ARO | `emission.service.ts:111` `emission = txAmount` | CONFIRMED |
+| Commission = tx × 0.5% | `commission.service.ts:69` `feeRate = 0.005` | CONFIRMED |
+| 75% → nodes | `commission.service.ts:137` `distributable = total * 0.75` | CONFIRMED |
+| 25% → AFC Reserve | `commission.service.ts:159` `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| ARO burned after completion | `emission.service.ts:61–62` mint then burn same cycle | CONFIRMED |
+| processNet → 0 | Invariant I5 test `invariants.spec.ts:186–188` | CONFIRMED |
+| PoT gate required | `emission.service.ts:57` `if (!verdict \|\| verified !== 1)` | CONFIRMED |
+| Reserve grows → higher price | `reserve.service.ts:111–113` `internalPrice = base × reserveIndex` | CONFIRMED |
+
+### `src/token/` does NOT exist
+All emission logic resides in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+`01_coin_engine/` and `10_proof_of_transaction_engine/` are spec documentation only (no runnable code).
+
+### Result
+**No new deviations found.** Canonical 1:1 emission model fully in place.
+All prior fixes (§4, §9) confirmed in place. AGENT_CORE_REPORT.md updated.

@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-18
+**Date:** 2026-06-19 (updated; original 2026-06-18)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
 
 ---
@@ -203,5 +203,5 @@ AGENT_CORE_REPORT.md                   This report
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| PR #N-1 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec |
-| **This run** | `agent/core-emission` | Full audit confirmed; reference commission.ts corrected (feeRate + marginRate) |
+| PR #N-1 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec; reference commission.ts corrected (feeRate + marginRate) |
+| **This run** | `agent/core-emission` | Re-audit (2026-06-19): confirmed all production logic correct; corrected class docstring in `reserve.service.ts` that had re-introduced the erroneous `+ totalAfcReserve` description |

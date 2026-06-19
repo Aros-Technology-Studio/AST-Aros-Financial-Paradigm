@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-4m9xnj`
-**Date:** 2026-06-18
+**Branch:** `claude/inspiring-cannon-qnl7cn`
+**Date:** 2026-06-19
 **Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
 
 ---
@@ -156,16 +156,34 @@ internalPrice = base × 4.0000    → rises with each additional confirmed proce
 ## 7. Files Changed
 
 ```
-src/reserve/reserve.service.ts    reserveIndex() formula corrected:
-                                  log10(1 + totalProcessVolume + totalAfcReserve)
-                                  → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
+src/reserve/reserve.service.ts          reserveIndex() formula corrected [previous run]:
+                                        log10(1 + totalProcessVolume + totalAfcReserve)
+                                        → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
 
-AGENT_CORE_REPORT.md              This report (updated)
+reference/ast-core/src/commission.ts   Commission rates aligned to canonical model [this run]:
+                                        feeRate:    0.01  → 0.005   (1% → 0.5%)
+                                        marginRate: 0.2   → 0.25    (20% margin/80% nodes → 25% AFC/75% nodes)
+
+AGENT_CORE_REPORT.md                   This report (updated 2026-06-19)
 ```
 
 ---
 
-## 8. Audit Trail
+## 8. Reference Implementation vs NestJS Services
+
+The reference (`reference/ast-core/`) had mismatched commission rates compared to the
+canonical model. The NestJS services already implemented the canonical rates correctly.
+
+| | Reference (before fix) | NestJS service | Canonical |
+|--|--|--|--|
+| `feeRate` | 0.01 (1%) | 0.005 (0.5%) ✅ | 0.005 (0.5%) |
+| `marginRate` | 0.2 (20% margin) | 0.25 (25% AFC) ✅ | 0.25 (25% AFC) |
+| Node share | 80% | 75% ✅ | 75% |
+| AFC share | 20% | 25% ✅ | 25% |
+
+---
+
+## 9. Audit Trail
 
 | Session | Branch | Action |
 |---------|--------|--------|
@@ -173,4 +191,5 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| PR #306 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| **This run** | `claude/inspiring-cannon-qnl7cn` | Reference `commission.ts` rates fixed: 1%/20% → 0.5%/25% |

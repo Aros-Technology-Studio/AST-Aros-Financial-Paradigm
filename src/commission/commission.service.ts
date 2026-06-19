@@ -29,36 +29,32 @@ export interface FinalizeResult {
 /** Tolerance for the reconciliation identity, mirroring the reference's 1e-9 bound. */
 const RECONCILE_EPSILON = 1e-9;
 
-/** Recipient label for the 25% AFC commission share routed to the Reserve. */
+/** Recipient label for the AFC reserve allocation. */
 const MARGIN_RECIPIENT = 'AFC_RESERVE';
 
-/** Distribution-log reason tag for node work payments. */
+/** Distribution log reason for node work-weight payments. */
 const REASON_WORK = 'work_weight';
-
-/** Distribution-log reason tag for the AFC reserve allocation. */
-const REASON_AFC = 'afc_reserve';
 
 /**
  * CommissionService — the settlement controller of AST.
  *
  * Commission computes the operation fee, consolidates fees into a per-epoch operational
- * pool, and on epoch finalization distributes payment by the canonical 75/25 split:
- *   - 75% to nodes, proportional to their PoT-confirmed participation weight.
- *   - 25% to the AFC Reserve (via `ReserveService.addAfcAccrual`), growing the capitalization
- *     index and raising the internal price of the next emission cycle.
- *
+ * pool, and on epoch finalization distributes payment to nodes post-factum by their
+ * PoT-confirmed participation weight, routing the AFC reserve share to the Reserve layer.
  * It mirrors `reference/ast-core/src/commission.ts`:
- *   - `computeFee(amount)`        = amount × feeRate (default 0.5%; optionally scaled by overloadRate).
+ *   - `computeFee(amount)`        = amount * feeRate (optionally scaled by an overload rate).
  *   - `accrue(epoch, fee, parts)` adds the fee to the open epoch pool and remembers which
  *                                 nodes participated in which process for that fee.
- *   - `finalizeEpoch(epoch)`      pays nodes proportionally to weight, routes the AFC share, and
- *                                 records the distribution in NodeChain.
+ *   - `finalizeEpoch(epoch)`      pays nodes proportionally to weight (75 %), allocates the
+ *                                 AFC reserve share (25 %), and records the distribution in
+ *                                 NodeChain. The AFC share is tracked by ReserveService via
+ *                                 the `commission.epoch.finalized` event (spec `margin_to: Reserve`).
  *
  * Payment is strictly post-factum and gated by PoT: a participation counts toward weight only
  * when its process carries a verdict with `verified === 1` (spec I-CM-1/I-CM-2, project
  * P2/I2). Presence or readiness alone earns nothing — only confirmed work does (I-CM-5).
- * The pool reconciles to zero remainder: Σ(payments) + afcMargin == Σ(fees) per
- * epoch (project I7, spec I-CM-4). Distribution is deterministic for identical inputs (I4).
+ * The pool reconciles to zero remainder: Σ(payments) + afcMargin == Σ(fees) per epoch
+ * (project I7, spec I-CM-4). Distribution is deterministic for identical inputs (I4).
  *
  * Spec: docs/specs/AST_Commission_AGENT_EN.md
  * Reference: reference/ast-core/src/commission.ts
@@ -68,7 +64,7 @@ export class CommissionService {
     /** Fee fraction of the operation amount (canonical default 0.5%). */
     readonly feeRate = 0.005;
 
-    /** Share of the pool routed to the AFC Reserve (canonical 25%). The remaining 75% pays nodes. */
+    /** Share of the epoch pool routed to the AFC reserve fund (canonical 75/25 split). */
     readonly marginRate = 0.25;
 
     /**
@@ -152,15 +148,14 @@ export class CommissionService {
             }
         }
 
-        // The 25% AFC share (plus any distributable not absorbed by nodes when weight == 0)
-        // routes to the Reserve, growing the capitalization index and raising the next
-        // emission price. The pool always reconciles to zero remainder (I7).
+        // The AFC reserve share (25 %) is the pool remainder after node payments. Route it to
+        // ReserveService so the capitalization index grows (spec `margin_to: Reserve`, I-RS-1/4).
         const allocatedMargin = total - paid;
         await this.reserve.addAfcAccrual(allocatedMargin);
         distributionLog.push({
             nodeId: MARGIN_RECIPIENT,
             amount: allocatedMargin,
-            reason: REASON_AFC,
+            reason: 'afc_reserve',
         });
 
         epoch.distributionLog = distributionLog;
@@ -247,7 +242,7 @@ export class CommissionService {
 
     private toResult(epoch: Epoch): FinalizeResult {
         const paid = epoch.distributionLog
-            .filter((e) => e.reason !== REASON_AFC)
+            .filter((e) => e.reason !== 'afc_reserve')
             .reduce((sum, e) => sum + e.amount, 0);
         const reconciled = Math.abs(paid + epoch.operationalMargin - epoch.totalFees) < RECONCILE_EPSILON;
         return {

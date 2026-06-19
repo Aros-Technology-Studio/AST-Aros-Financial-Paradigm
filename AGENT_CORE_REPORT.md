@@ -3,7 +3,7 @@
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
 **Date:** 2026-06-19
-**Task:** Audit ArosCoin emission logic against the canonical model; verify or correct all deviations.
+**Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
 
@@ -84,11 +84,53 @@ that correction is in place and all other components pass.
 | NodeChain | Append-only, hash-continuous | `src/nodechain/nodechain.service.ts` | Correct (I8) |
 | Nodes | Work+reputation weight; no stake/slashing fields | `src/nodes/nodes.service.ts` | Correct (I9) |
 | All-Seeing Eye | Passive: observe, log, signal; no state mutations | `src/all-seeing-eye/all-seeing-eye.service.ts` | Correct (I10) |
-| Full lifecycle orchestration | initiation -> admissibility -> assign -> execute -> PoT -> emit -> fee -> reserve -> record | `src/orchestrator/orchestrator.service.ts:99` | Correct |
+| Orchestrator burn ordering | mint → commission.accrue → burn (reference canonical order) | `src/orchestrator/orchestrator.service.ts` | **Fixed this run** |
+| `coin_emission_model.md` code path | `src/emission/emission.service.ts` | `01_coin_engine/coin_emission_model.md` | **Fixed this run** |
+| `coin_emission_model.md` reserveIndex | `log10(1 + totalProcessVolume)` | `01_coin_engine/coin_emission_model.md` | **Fixed this run** |
 
 ---
 
-## 4. Transaction Example: $10,000
+## 4. Deviations Corrected This Run
+
+### 4.1 Orchestrator: Burn Ordering (`src/orchestrator/orchestrator.service.ts`)
+
+The orchestrator previously called `emission.emit()` which bundles mint + burn atomically,
+then called commission accrual. This inverted the reference canonical order: burn happened
+before commission, where the reference burns after.
+
+**Reference canonical order** (`reference/ast-core/src/orchestrator.ts` lines 57–68):
+```
+mint(amount) → commission.accrue(fee) → reserve.addConfirmedVolume → burn(amount)
+```
+
+**Before:** `emission.emit()` → commission.accrue (burn already done inside emit)
+
+**After:** `emission.mint()` → commission.accrue → `emission.burn()` (canonical order)
+
+Economic outcome is identical (processNet → 0 either way). Both `mint()` and `burn()` already
+existed as public methods on `EmissionService`; no new API was added.
+
+### 4.2 Documentation: `01_coin_engine/coin_emission_model.md`
+
+**Error 1 — wrong code path** (Model-A remnant):
+```
+Before: src/token/emission.service.ts   (never existed)
+After:  src/emission/emission.service.ts
+```
+
+**Error 2 — wrong reserveIndex formula** (from a different model variant):
+```
+Before: reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000
+After:  reserveIndex = log10(1 + totalProcessVolume)
+```
+The agent spec (`docs/specs/AST_Reserve_AGENT_EN.md`) and reference both define the log10 formula.
+
+**Error 3 — wrong API methods** (referenced non-existent methods):
+Updated to reflect the actual `EmissionService` API and the canonical 3-step lifecycle order.
+
+---
+
+## 5. Transaction Example: $10,000
 
 ```
 TX Amount     = 10,000 ARO
@@ -112,7 +154,7 @@ internalPrice = base x 4.0000    -> rises monotonically with each confirmed proc
 | I2 | Every emission bound to a confirmed process | `EmissionService.mint()` throws on unverified |
 | I3 | All significant events in NodeChain | Full lifecycle events appended |
 | I4 | Deterministic: same input -> same result | Sorted node iteration; log formula |
-| I5 | Process part nets to 0 (`processNet -> 0`) | burn(minted) called immediately after mint |
+| I5 | Process part nets to 0 (`processNet -> 0`) | burn(minted) called after commission accrual |
 | I6 | `totalSupply = earnedRetained` after burns | Tally identity holds |
 | I7 | Pool reconciles: `paid + margin == fees` | Epsilon check in `finalizeEpoch()` |
 | I8 | NodeChain append-only, hash-continuous | `reconstruct()` breaks on tamper |
@@ -146,10 +188,10 @@ No prohibited construct found in production code (`src/`):
 ## 7. Files Changed
 
 ```
-AGENT_CORE_REPORT.md    Updated with 2026-06-19 audit (no code deviations found)
+src/orchestrator/orchestrator.service.ts   Burn ordering: emit() → separate mint + commission + burn
+01_coin_engine/coin_emission_model.md      reserveIndex formula + code path + API corrected
+AGENT_CORE_REPORT.md                       Updated with this run's findings (supersedes previous run)
 ```
-
-No production code was modified. The canonical model is fully implemented.
 
 ---
 
@@ -162,4 +204,4 @@ No production code was modified. The canonical model is fully implemented.
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
 | PR #306 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec (removed `totalAfcReserve`; commit `dad29bd`) |
-| **This run** | `agent/core-emission` | Full re-audit 2026-06-19: all components canonical, no further changes needed |
+| **This run** | `agent/core-emission` | Orchestrator burn ordering fixed; coin_emission_model.md corrected |

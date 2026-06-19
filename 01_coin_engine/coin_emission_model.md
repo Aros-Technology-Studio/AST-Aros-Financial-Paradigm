@@ -32,15 +32,15 @@ Burn           = 10,000 ARO  (destroyed after TX completes)
 Net circulating change = 0
 ```
 
-## AFC Reserve Price Index
+## Capitalization Index (reserveIndex)
 
-As the AFC reserve accumulates, the effective price of the next emission rises:
+As confirmed process volume accumulates, the capitalization index rises, driving the internal price of ArosCoin upward:
 
 ```
-reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000
+reserveIndex = log10(1 + totalProcessVolume)
 ```
 
-Sub-linear growth: stable at low volume, meaningful at scale.
+Logarithmic growth: meaningful at scale while staying bounded. Derived entirely from confirmed-work history in NodeChain; never set as a free authority (I-RS-2). Monotonically non-decreasing in volume (I-RS-4).
 
 ## Anti-Inflationary Measures
 
@@ -74,12 +74,17 @@ The emission logic includes:
 
 ## Reference Implementation
 
-Canonical code: `src/token/emission.service.ts` — `EmissionService`
+Canonical code: `src/emission/emission.service.ts` — `EmissionService`
 
 Key methods:
-- `calculate(txAmount, rate?)` — pure calculation, no side effects
-- `processTransactionEmission(txAmount, recipient, refId, rate?)` — full lifecycle
-- `getAfcReserveState()` — current reserve snapshot
-- `getCurrentEmissionPrice()` — current `reserveIndex`
+- `emit(processId, amount)` — full PoT-gated lifecycle; returns `EmitResult`
+- `mint(processId, amount)` — mint the process part; throws if PoT verdict is not `verified === 1`
+- `burn(processId, amount)` — burn the process part on cycle completion; records burn in NodeChain
+- `totalSupply()` — derived total supply via the ArosCoin ledger
+
+Canonical lifecycle order (reference orchestrator):
+1. `emission.mint(processId, amount)` — mints `amount` ARO 1:1
+2. `commission.accrue(epoch, fee, participants)` — pools the operation fee
+3. `emission.burn(processId, minted)` — burns the process part; `processNet → 0`
 
 ⸻

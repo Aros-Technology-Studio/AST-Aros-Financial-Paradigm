@@ -58,8 +58,8 @@ export class ReserveService {
     /**
      * Aggregate AFC reserve accrued from Commission epoch finalization. Sums the `amount`
      * of every `reserve.afc.accrual` snapshot appended by Commission when it routes the
-     * canonical 25% AFC share of each epoch's fee pool. Growing with epoch settlements drives
-     * the price index upward over time (spec `margin_from: Commission`).
+     * canonical 25% AFC share of each epoch's fee pool. Provided for audit queries; this
+     * figure does not enter the reserveIndex formula (spec I-RS-1).
      */
     async totalAfcReserve(): Promise<number> {
         const history = await this.chain.list();
@@ -75,8 +75,8 @@ export class ReserveService {
 
     /**
      * Record an AFC commission accrual into NodeChain. Called by Commission on epoch
-     * finalization for the canonical 25% AFC share so the reserve index grows with each
-     * settled epoch (spec `margin_from: Commission`, I-RS-1/I-RS-4).
+     * finalization for the canonical 25% AFC share. The event is an audit record (spec I3);
+     * it does not enter the reserveIndex formula (spec I-RS-1).
      */
     async addAfcAccrual(amount: number): Promise<void> {
         await this.chain.append(ReserveService.AFC_ACCRUAL_EVENT, { amount });

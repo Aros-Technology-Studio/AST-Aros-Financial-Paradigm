@@ -303,3 +303,35 @@ All emission logic resides in `src/emission/`, `src/aroscoin/`, `src/commission/
 ### Result
 **No new deviations found.** Canonical 1:1 emission model fully in place.
 All prior fixes (§4, §9) confirmed in place. AGENT_CORE_REPORT.md updated.
+
+---
+
+## 12. 2026-06-19 Deep Re-Audit (branch: agent/core-emission, session 4)
+
+Full independent re-audit requested. Surveyed all modules against the canonical formula:
+
+```
+Emission = TX Amount (1:1); Commission = TX Amount × 0.5%;
+Node pool = Commission × 0.75; AFC reserve = Commission × 0.25;
+ARO burned on completion (processNet → 0); reserveIndex = log10(1 + totalProcessVolume)
+```
+
+### Files inspected this session
+
+- `src/emission/emission.service.ts` — `emit()`, `mint()`, `burn()`, `calculate()`
+- `src/commission/commission.service.ts` — `computeFee()`, `finalizeEpoch()`, 75/25 split
+- `src/aroscoin/aroscoin.service.ts` — three-tally ledger, `totalSupply()` formula
+- `src/reserve/reserve.service.ts` — `reserveIndex()`, `addAfcAccrual()`
+- `src/orchestrator/orchestrator.service.ts` — full lifecycle (mint → accrue → burn order)
+- `reference/ast-core/src/reserve.ts` — confirms `log10(1 + totalProcessVolume)` (no AFC)
+- `docs/specs/AST_Reserve_AGENT_EN.md` — canonical formula authority
+
+### Findings
+
+All 9 canonical requirements verified in production code. All 10 invariants (I1–I10) and
+8 prohibitions (P1–P8) confirmed passing. No new deviations found.
+
+The stale class-level JSDoc in `ReserveService` (described in §9.2) is confirmed resolved
+on this branch. `reserveIndex()` body and all JSDoc are consistent with spec.
+
+**Result: CONFIRMED CANONICAL. No code changes required this session.**

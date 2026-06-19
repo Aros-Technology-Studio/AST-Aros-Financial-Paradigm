@@ -3,22 +3,22 @@ import { log10 } from '../common/hash.util';
 import { NodeChainService } from '../nodechain/nodechain.service';
 
 /**
- * ReserveService — AST's own capitalization, derived from confirmed work and commission accrual.
+ * ReserveService — AST's own capitalization, derived from confirmed PoT-verified work.
  *
  * The Reserve expresses how much confirmed value the economy has processed, condensed into a
  * single `reserveIndex`. That index is AST's own capitalization measure: it grows with the
- * aggregate volume of PoT-verified processes AND with the AFC share of every epoch's commission
- * pool, and underpins internal valuation and Release readiness. It mirrors
- * `reference/ast-core/src/reserve.ts` and the canonical formula
- * `reserveIndex = log10(1 + totalProcessVolume)` (AFC accruals audited separately).
+ * aggregate volume of PoT-verified processes and underpins internal valuation and Release
+ * readiness. It mirrors `reference/ast-core/src/reserve.ts` and the canonical formula
+ * `reserveIndex = log10(1 + totalProcessVolume)`.
  *
- * Two event types feed the reserve from NodeChain:
- *   - `emission.minted`: one snapshot per confirmed process; grows with confirmed work (I-RS-1).
- *   - `reserve.afc.accrual`: one snapshot per finalized epoch's 25% AFC commission share;
- *     grows the reserve as epochs are settled (spec: `margin_from: Commission`).
+ * The capitalization index derives from confirmed process volume only:
+ *   `reserveIndex = log10(1 + totalProcessVolume)`
+ * where `totalProcessVolume` is the sum of `minted` amounts from `emission.minted` snapshots.
+ * AFC commission accruals (`reserve.afc.accrual` snapshots) are recorded for audit purposes
+ * but do not enter the index formula (spec I-RS-1, reference/ast-core/src/reserve.ts).
  *
- * Because both figures are recomputed from history on every read, the index is derivable and
- * never set as a free authority (spec I-RS-2). As recorded volume can only accumulate on an
+ * Because the index is recomputed from history on every read, it is derivable and never set
+ * as a free authority (spec I-RS-2). As recorded volume can only accumulate on an
  * append-only chain, the index is monotonic non-decreasing (spec I-RS-4).
  *
  * The Reserve measures AST's own capitalization (spec I-RS-3). It keeps no stored state of
@@ -58,8 +58,8 @@ export class ReserveService {
     /**
      * Aggregate AFC reserve accrued from Commission epoch finalization. Sums the `amount`
      * of every `reserve.afc.accrual` snapshot appended by Commission when it routes the
-     * canonical 25% AFC share of each epoch's fee pool. Growing with epoch settlements drives
-     * the price index upward over time (spec `margin_from: Commission`).
+     * canonical 25% AFC share of each epoch's fee pool. Provided for audit queries; this
+     * figure does not enter the reserveIndex formula (spec I-RS-1).
      */
     async totalAfcReserve(): Promise<number> {
         const history = await this.chain.list();
@@ -75,8 +75,8 @@ export class ReserveService {
 
     /**
      * Record an AFC commission accrual into NodeChain. Called by Commission on epoch
-     * finalization for the canonical 25% AFC share so the reserve index grows with each
-     * settled epoch (spec `margin_from: Commission`, I-RS-1/I-RS-4).
+     * finalization for the canonical 25% AFC share. The event is an audit record (spec I3);
+     * it does not enter the reserveIndex formula (spec I-RS-1).
      */
     async addAfcAccrual(amount: number): Promise<void> {
         await this.chain.append(ReserveService.AFC_ACCRUAL_EVENT, { amount });

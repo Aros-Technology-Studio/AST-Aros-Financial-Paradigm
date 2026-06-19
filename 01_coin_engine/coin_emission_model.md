@@ -32,20 +32,19 @@ Burn           = 10,000 ARO  (destroyed after TX completes)
 Net circulating change = 0
 ```
 
-## AFC Reserve and Internal Price Index
-
-As confirmed process volume accumulates in NodeChain, the capitalization index rises:
+## Capitalization Index and Internal Price
 
 ```
 reserveIndex = log10(1 + totalProcessVolume)
 ```
 
-Soft logarithmic growth: meaningful at scale, bounded against runaway inflation.
-`internalPrice = base × reserveIndex` — internal valuation follows confirmed work.
+Logarithmic growth: meaningful at scale while staying bounded. Derived entirely from confirmed-work history in NodeChain; never set as a free authority (I-RS-2). Monotonically non-decreasing in volume (I-RS-4).
 
-AFC reserve accruals (the 25% share per epoch) are recorded in NodeChain as
-`reserve.afc.accrual` events and are auditable independently; they grow alongside
-confirmed work because both originate from the same transaction volume.
+`internalPrice = base × reserveIndex` — internal valuation follows confirmed work, not a market quote.
+
+AFC reserve accruals (the 25% commission share routed per epoch) are recorded in NodeChain as
+`reserve.afc.accrual` events for audit; they do not enter the `reserveIndex` formula directly
+(spec I-RS-1). Both confirmed-work volume and AFC accruals grow with transaction activity.
 
 ## Anti-Inflationary Measures
 
@@ -83,10 +82,10 @@ Canonical code: `src/emission/emission.service.ts` — `EmissionService`
 
 Key methods:
 - `calculate(txAmount, commissionRate?)` — pure canonical formula, no side effects
-- `emit(processId, amount)` — PoT-gated mint then burn cycle for a confirmed process
-- `mint(processId, amount)` — mint step; throws when process not PoT-verified
-- `burn(processId, amount)` — burn step on cycle completion
-- `totalSupply()` — current derived supply from the unit ledger
+- `emit(processId, amount)` — full PoT-gated lifecycle; returns `EmitResult`
+- `mint(processId, amount)` — mint the process part; throws if PoT verdict is not `verified === 1`
+- `burn(processId, amount)` — burn the process part on cycle completion; records burn in NodeChain
+- `totalSupply()` — derived total supply via the ArosCoin ledger
 
 Reserve index: `src/reserve/reserve.service.ts` — `ReserveService.reserveIndex()`
 Commission split: `src/commission/commission.service.ts` — `CommissionService.finalizeEpoch()`

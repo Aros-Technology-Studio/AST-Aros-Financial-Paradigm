@@ -43,31 +43,34 @@ PoT weight is normalized so that `Σ node_weight = 1.0` across all active nodes.
 
 ## 5. TypeScript Reference
 
-The canonical implementation lives in `src/token/emission.service.ts`:
+The canonical implementation lives in `src/commission/commission.service.ts`:
 
 ```typescript
-// Per-TX split
-const nodeShare = commission * 0.75;  // → SYSTEM_NODE_POOL
-const afcShare  = commission * 0.25;  // → SYSTEM_AFC_RESERVE
+// CommissionService.finalizeEpoch() — per-epoch split (canonical 75/25)
+const distributable = total * (1 - this.marginRate); // 75% to nodes
+// nodes paid proportionally to confirmed PoT weight; remainder routes to reserve:
+const allocatedMargin = total - paid;               // 25% → AFC reserve
+await this.reserve.addAfcAccrual(allocatedMargin);
 ```
 
-Epoch-level distribution uses the same ratios via `FeeDistributionService.distributeRewards()`.
+Per-process fee is computed in `CommissionService.computeFee()` and accrued via
+`CommissionService.accrue()`; distribution happens at epoch finalization.
 
 ## 6. Example: $10,000 Transaction
 
 ```
 commission  = 10,000 × 0.005 = 50 ARO
 nodePool    = 50 × 0.75      = 37.50 ARO  (split by PoT weight across active nodes)
-afcReserve  = 50 × 0.25      = 12.50 ARO  (locked in AFC reserve)
+afcReserve  = 50 × 0.25      = 12.50 ARO  (recorded in NodeChain via reserve.afc.accrual)
 ```
 
 ## 7. Dependencies
 
-- `01_coin_engine/payment_distribution.md` — canonical 75/25 split specification.
-- `src/token/emission.service.ts` — per-TX implementation (`EmissionService`).
-- `src/fee_distribution/fee_distribution.service.ts` — epoch-level implementation.
+- `docs/specs/AST_Commission_AGENT_EN.md` — canonical 75/25 split specification (Model-1 authority).
+- `src/commission/commission.service.ts` — per-epoch implementation (`CommissionService`).
+- `src/reserve/reserve.service.ts` — AFC accrual recording (`ReserveService.addAfcAccrual`).
 
 ## 8. Notes
 
-- **Epoch-End:** Distribution runs at epoch close in NodeChain via `FeeDistributionService`.
-- **Audit:** Every split is recorded as a `FEE_DISTRIBUTION` ledger entry; fed to the All-Seeing Eye.
+- **Epoch-End:** Distribution runs at epoch close via `CommissionService.finalizeEpoch()`.
+- **Audit:** Every split is recorded as a NodeChain event (`commission.epoch.finalized`); observed by All-Seeing Eye.

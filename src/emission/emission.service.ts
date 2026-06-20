@@ -88,6 +88,31 @@ export class EmissionService {
         return amount;
     }
 
+    /**
+     * Pure calculation of the canonical emission breakdown for a given transaction amount.
+     * No state is read or written; this is a deterministic formula lookup. Default rate is 0.5%.
+     *
+     * Returns:
+     *   emission   = txAmount        (1:1, minted then burned within the confirmed process)
+     *   commission = txAmount × rate (operation fee; accrued into the epoch pool)
+     *   nodeShare  = commission × 0.75  (75% distributed to nodes by PoT weight at epoch end)
+     *   afcReserve = commission × 0.25  (25% routed to AFC Reserve; raises the emission price)
+     */
+    calculate(txAmount: number, rate = 0.005): {
+        emission: number;
+        commission: number;
+        nodeShare: number;
+        afcReserve: number;
+    } {
+        const commission = txAmount * rate;
+        return {
+            emission: txAmount,
+            commission,
+            nodeShare: commission * 0.75,
+            afcReserve: commission * 0.25,
+        };
+    }
+
     /** Current derived total supply, read through the unit ledger. */
     async totalSupply(): Promise<number> {
         return this.coin.totalSupply();

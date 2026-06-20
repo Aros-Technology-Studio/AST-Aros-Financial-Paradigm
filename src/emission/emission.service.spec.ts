@@ -129,6 +129,25 @@ describe('EmissionService', () => {
         expect(burned?.payload).toMatchObject({ processId: 'p-2', burned: 100 });
     });
 
+    // calculate() is a pure, side-effect-free breakdown of the canonical emission formula.
+    it('calculate() returns canonical 1:1 emission breakdown', () => {
+        const result = emission.calculate(10_000);
+        expect(result.emission).toBe(10_000);          // 1:1
+        expect(result.commission).toBeCloseTo(50, 9);  // 0.5%
+        expect(result.nodeShare).toBeCloseTo(37.5, 9); // 75% of commission
+        expect(result.afcReserve).toBeCloseTo(12.5, 9); // 25% of commission
+
+        // nodeShare + afcReserve == commission (reconciles)
+        expect(result.nodeShare + result.afcReserve).toBeCloseTo(result.commission, 9);
+    });
+
+    it('calculate() accepts a custom rate', () => {
+        const result = emission.calculate(1000, 0.01);
+        expect(result.commission).toBeCloseTo(10, 9);
+        expect(result.nodeShare).toBeCloseTo(7.5, 9);
+        expect(result.afcReserve).toBeCloseTo(2.5, 9);
+    });
+
     // I4: the same verified process and amount yield the same supply outcome.
     it('I4: identical verified emissions yield identical supply outcomes', async () => {
         await verifyProcess('det-a');

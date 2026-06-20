@@ -128,16 +128,32 @@ describe('ReserveService', () => {
         const after = await reserve.reserveIndex();
 
         // Recompute independently from the chain to confirm pure derivation.
+        // Formula: log10(1 + totalProcessVolume + totalAfcReserve); AFC = 0 here.
         const history = await chain.list();
-        const summed = history
+        const summedVolume = history
             .filter((s) => s.eventType === 'emission.minted')
             .reduce((acc, s) => acc + Number(s.payload['minted'] ?? 0), 0);
+        const summedAfc = history
+            .filter((s) => s.eventType === 'reserve.afc.accrual')
+            .reduce((acc, s) => acc + Number(s.payload['amount'] ?? 0), 0);
 
-        expect(summed).toBe(1000);
-        expect(after).toBeCloseTo(log10(1 + 1000), 10);
+        expect(summedVolume).toBe(1000);
+        expect(after).toBeCloseTo(log10(1 + summedVolume + summedAfc), 10);
         expect(after).toBeGreaterThan(before);
         // No mutator exists on the service to set the index.
         expect((reserve as unknown as Record<string, unknown>)['setReserveIndex']).toBeUndefined();
+    });
+
+    // Canonical model: AFC Reserve grows → emission price rises. Each epoch finalization routes
+    // 25% of fees to the AFC Reserve, which feeds the index and raises the next emission price.
+    it('AFC accrual raises the emission price index', async () => {
+        const before = await reserve.reserveIndex();
+        await reserve.addAfcAccrual(1000);
+        const after = await reserve.reserveIndex();
+
+        expect(after).toBeGreaterThan(before);
+        expect(await reserve.getCurrentEmissionPrice()).toBeCloseTo(after, 10);
+        expect(await reserve.totalAfcReserve()).toBe(1000);
     });
 
     // internalPrice = base * reserveIndex.

@@ -156,20 +156,25 @@ export class OrchestratorService {
             };
         }
 
-        // Step 6 — emission: only now, behind the PoT gate, the process part is minted then
-        // burned within the same confirmed process so its net contribution returns to 0 (I5).
-        const emitResult = await this.emission.emit(processId, amount);
-        events.push('emission.minted', 'emission.burned');
-        await this.recording.capture(processId, 'emission', { minted: emitResult.minted });
+        // Step 6 — emission: mint the process part behind the PoT gate. Burn follows
+        // commission accrual to match the reference orchestrator's canonical order:
+        // mint → commission.accrue → burn (I5/I-EM-3).
+        const minted = await this.emission.mint(processId, amount);
+        events.push('emission.minted');
+        await this.recording.capture(processId, 'emission', { minted });
         events.push('emission');
-        await this.eye.log('mint', 'token_management', `minted ${emitResult.minted} for ${processId}`);
-        await this.eye.log('burn', 'token_management', `burned ${emitResult.burned} for ${processId}`);
+        await this.eye.log('mint', 'token_management', `minted ${minted} for ${processId}`);
 
         // Step 7 — fee accrual: the operation fee is consolidated into the open epoch pool,
         // tagged with each assigned node's participation so payment is post-factum by weight.
         const fee = this.commission.computeFee(amount);
         const participants: Participation[] = assignedNodes.map((nodeId) => ({ processId, nodeId }));
         await this.commission.accrue(epoch, fee, participants);
+
+        // Burn the process part after commission accrual (canonical reference order, I5/I-EM-3).
+        const burned = await this.emission.burn(processId, minted);
+        events.push('emission.burned');
+        await this.eye.log('burn', 'token_management', `burned ${burned} for ${processId}`);
 
         // Step 8 — reserve update: the reserve index is derived from confirmed-work volume
         // (emission.minted events) and AFC commission accruals (reserve.afc.accrual events
@@ -186,7 +191,7 @@ export class OrchestratorService {
         return {
             processId,
             verified: 1,
-            minted: emitResult.minted,
+            minted,
             fee,
             supplyAfter,
             reserveIndex,

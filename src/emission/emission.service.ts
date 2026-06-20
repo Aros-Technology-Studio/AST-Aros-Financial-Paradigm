@@ -92,4 +92,30 @@ export class EmissionService {
     async totalSupply(): Promise<number> {
         return this.coin.totalSupply();
     }
+
+    /**
+     * Pure canonical formula for a transaction emission cycle. No side effects; does not
+     * touch the ledger, PoT, or NodeChain. Returns the exact values the canonical model
+     * specifies for a given transaction amount:
+     *
+     *   emission     = txAmount          (1:1 — no multiplier)
+     *   commission   = txAmount × rate   (default 0.5%)
+     *   nodeShare    = commission × 0.75 (75% → processing nodes by PoT weight)
+     *   afcShare     = commission × 0.25 (25% → AFC reserve, growing reserveIndex)
+     *   net          = 0                 (emission minted then burned; cycle is symmetric)
+     */
+    calculate(
+        txAmount: number,
+        commissionRate = 0.005,
+    ): { emission: number; commission: number; nodeShare: number; afcShare: number; net: number } {
+        const emission = txAmount;
+        const commission = txAmount * commissionRate;
+        return {
+            emission,
+            commission,
+            nodeShare: commission * 0.75,
+            afcShare: commission * 0.25,
+            net: 0,
+        };
+    }
 }

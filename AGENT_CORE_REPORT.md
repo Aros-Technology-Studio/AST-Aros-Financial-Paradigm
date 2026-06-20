@@ -436,3 +436,43 @@ totalSupply (after earn) = 0 + 37.50 = 37.50 ARO (earned retained by nodes)
 
 **CONFIRMED CANONICAL. No deviations found. No code changes required.**
 All canonical model elements verified against production source code. Audit trail current.
+
+---
+
+## 15. 2026-06-20 Audit — Tests for calculate() (branch: agent/core-emission, session 7)
+
+### Finding
+
+`EmissionService.calculate()` exists (added §9.3) with the canonical signature:
+```ts
+calculate(txAmount: number, commissionRate = 0.005):
+  { emission: number; commission: number; nodeShare: number; afcShare: number; net: number }
+```
+No unit tests covered this method — the four existing tests in `emission.service.spec.ts`
+cover `emit()`, `mint()`, `burn()`, and NodeChain recording, but not `calculate()`.
+
+### Changes Made
+
+**`src/emission/emission.service.spec.ts`** — added `describe('calculate() — pure canonical formula')`:
+
+| Test | Assertion |
+|------|-----------|
+| `$10,000 reference example` | `emission=10000`, `commission=50`, `nodeShare=37.5`, `afcShare=12.5`, `net=0`; parts sum to commission |
+| `custom commission rate` | `calculate(1000, 0.01)` → `commission=10`, `nodeShare=7.5`, `afcShare=2.5` |
+| `no side effects on ledger` | `totalSupply==0` and `processNet==0` after calling `calculate(999999)` |
+
+### Verification of Canonical Alignment
+
+```
+coin_emission_model.md canonical example:
+  TX Amount  = 10,000
+  Emission   = 10,000 ARO  (1:1)           → result.emission = 10,000  ✓
+  Commission = 10,000 × 0.005 = 50 ARO    → result.commission = 50     ✓
+  Node pool  = 50 × 0.75 = 37.50 ARO      → result.nodeShare = 37.5    ✓
+  AFC share  = 50 × 0.25 = 12.50 ARO      → result.afcShare = 12.5     ✓
+  Net        = 0 (mint then burn)          → result.net = 0             ✓
+```
+
+### Result
+
+**CANONICAL. Three tests added.** No production code changed.

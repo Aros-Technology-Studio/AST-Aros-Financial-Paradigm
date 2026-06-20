@@ -1,9 +1,9 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-4m9xnj`
-**Date:** 2026-06-18
-**Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
+**Branch:** `claude/inspiring-cannon-509jt4`
+**Date:** 2026-06-20
+**Task:** Audit ArosCoin emission logic against the canonical model; correct deviations; add explicit `calculate()` function.
 
 ---
 
@@ -155,10 +155,28 @@ internalPrice = base × 4.0000    → rises with each additional confirmed proce
 
 ## 7. Files Changed
 
+### Previous session (`claude/inspiring-cannon-4m9xnj`, 2026-06-18)
 ```
 src/reserve/reserve.service.ts    reserveIndex() formula corrected:
                                   log10(1 + totalProcessVolume + totalAfcReserve)
                                   → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
+```
+
+### This session (`claude/inspiring-cannon-509jt4`, 2026-06-20)
+```
+src/emission/emission.service.ts  Added EmissionCalculation interface, constants, and
+                                  calculate(txAmount, rate?) — pure 1:1 formula function.
+                                  emit() now calls calculate() to derive emission amount.
+
+src/emission/emission.service.spec.ts
+                                  Added 8 new tests covering calculate() formula:
+                                  1:1 ratio, commission, 75/25 split, custom rate, zero,
+                                  determinism, and emit→calculate integration.
+
+10_proof_of_transaction_engine/pot_tx_incentive_distribution.md
+                                  Fixed stale paths:
+                                  src/token/emission.service.ts → src/emission/emission.service.ts
+                                  src/fee_distribution/fee_distribution.service.ts → src/commission/commission.service.ts
 
 AGENT_CORE_REPORT.md              This report (updated)
 ```
@@ -173,4 +191,5 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| PR #??? | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| **This run** | `claude/inspiring-cannon-509jt4` | Added `calculate()` pure 1:1 formula to EmissionService; 8 new tests; fixed stale doc paths |

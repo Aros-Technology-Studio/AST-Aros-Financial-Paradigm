@@ -43,7 +43,7 @@ PoT weight is normalized so that `Σ node_weight = 1.0` across all active nodes.
 
 ## 5. TypeScript Reference
 
-The canonical implementation lives in `src/token/emission.service.ts`:
+The canonical implementation lives in `src/emission/emission.service.ts`:
 
 ```typescript
 // Per-TX split
@@ -64,8 +64,8 @@ afcReserve  = 50 × 0.25      = 12.50 ARO  (locked in AFC reserve)
 ## 7. Dependencies
 
 - `01_coin_engine/payment_distribution.md` — canonical 75/25 split specification.
-- `src/token/emission.service.ts` — per-TX implementation (`EmissionService`).
-- `src/fee_distribution/fee_distribution.service.ts` — epoch-level implementation.
+- `src/emission/emission.service.ts` — per-TX implementation (`EmissionService`).
+- `src/commission/commission.service.ts` — epoch-level implementation.
 
 ## 8. Notes
 

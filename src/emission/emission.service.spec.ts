@@ -146,4 +146,45 @@ describe('EmissionService', () => {
         expect(supplyAfterA).toBe(0);
         expect(supplyAfterB).toBe(0);
     });
+
+    // Canonical 1:1 formula: calculate() returns the correct breakdown (coin_emission_model.md).
+    describe('calculate() — pure canonical formula (no side effects)', () => {
+        // $10,000 reference example from coin_emission_model.md
+        it('returns canonical breakdown for the $10,000 reference example', () => {
+            const result = emission.calculate(10_000);
+
+            // emission = txAmount (1:1)
+            expect(result.emission).toBe(10_000);
+
+            // commission = txAmount × 0.5%
+            expect(result.commission).toBeCloseTo(50, 9);
+
+            // nodeShare = commission × 75%
+            expect(result.nodeShare).toBeCloseTo(37.5, 9);
+
+            // afcShare = commission × 25%
+            expect(result.afcShare).toBeCloseTo(12.5, 9);
+
+            // nodeShare + afcShare == commission (no remainder)
+            expect(result.nodeShare + result.afcShare).toBeCloseTo(result.commission, 9);
+
+            // net circulating change is always 0 (mint then burn)
+            expect(result.net).toBe(0);
+        });
+
+        it('accepts a custom commission rate', () => {
+            const result = emission.calculate(1_000, 0.01); // 1% rate
+            expect(result.emission).toBe(1_000);
+            expect(result.commission).toBeCloseTo(10, 9);
+            expect(result.nodeShare).toBeCloseTo(7.5, 9);
+            expect(result.afcShare).toBeCloseTo(2.5, 9);
+            expect(result.net).toBe(0);
+        });
+
+        it('has no side effects on the coin ledger', async () => {
+            emission.calculate(999_999);
+            expect(await coin.totalSupply()).toBe(0);
+            expect(await coin.processNet()).toBe(0);
+        });
+    });
 });

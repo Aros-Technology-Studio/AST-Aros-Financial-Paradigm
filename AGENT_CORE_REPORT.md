@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-19 (updated — see §9 for latest session additions)
+**Date:** 2026-06-20 (updated — see §13 for latest session; §9–§12 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -335,3 +335,41 @@ The stale class-level JSDoc in `ReserveService` (described in §9.2) is confirme
 on this branch. `reserveIndex()` body and all JSDoc are consistent with spec.
 
 **Result: CONFIRMED CANONICAL. No code changes required this session.**
+
+---
+
+## 13. 2026-06-20 Full Re-Audit (branch: agent/core-emission, session 5)
+
+Independent re-audit of canonical 1:1 emission model. Full scope:
+`01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `src/invariants/`, `reference/ast-core/src/`,
+`docs/specs/AST_*_AGENT_EN.md`.
+
+### Canonical Model — Complete Verification
+
+| Requirement | File:Line | Value | Status |
+|-------------|-----------|-------|--------|
+| Emission = TX × 1 (1:1) | `orchestrator.service.ts:161` `emission.service.ts:111` | `emission = txAmount` | CONFIRMED |
+| Commission = TX × 0.5% | `commission.service.ts:69,95` | `feeRate = 0.005` | CONFIRMED |
+| 75% to nodes post-factum | `commission.service.ts:137` | `distributable = total * 0.75` | CONFIRMED |
+| 25% to AFC Reserve | `commission.service.ts:158-159` | `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| Burn on cycle completion | `orchestrator.service.ts:171-174` | `emission.burn()` after commission accrual | CONFIRMED |
+| processNet → 0 | `invariants.spec.ts:187-188` | `processMinted === processBurned` | CONFIRMED |
+| PoT gate (no mint without verified=1) | `emission.service.ts:57-63,76-79` | throws / returns unauthorized | CONFIRMED |
+| Reserve grows → price rises | `reserve.service.ts:110-113` `aroscoin.service.ts:104` | `log10(1+vol)`, `base×index` | CONFIRMED |
+
+### Key Structural Findings
+
+1. **`src/token/` does not exist** — historical Model-A reference; active code is `src/emission/`.
+2. **`01_coin_engine/`** — documentation only, no runnable code. Corrections applied in §9.4.
+3. **`10_proof_of_transaction_engine/`** — PoT documentation only, consistent with Model-1.
+4. **Orchestrator burn order** (§4.1, fixed in previous session): canonical order confirmed —
+   `mint → commission.accrue → emission.burn` matches reference orchestrator exactly.
+5. **`EmissionService.calculate()`** (added §9.3): pure side-effect-free canonical formula
+   helper; confirms 1:1 rule programmatically.
+
+### Result
+
+**CONFIRMED CANONICAL. All 9 emission requirements, I1–I10 invariants, P1–P8 prohibitions in place.**
+No new deviations found. Audit trail updated.

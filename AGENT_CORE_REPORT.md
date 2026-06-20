@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-20 (updated — see §16 for latest session; §9–§15 for prior sessions)
+**Date:** 2026-06-20 (updated — see §17 for latest session; §9–§16 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -540,3 +540,42 @@ Full independent survey of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
 ### Result
 
 **CONFIRMED CANONICAL. No new deviations found. No code changes required.**
+
+---
+
+## 17. 2026-06-20 Full Re-Audit (branch: agent/core-emission, session 9)
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/`.
+
+### Canonical Model Verified
+
+```
+Emission     = Transaction Amount (1:1)
+Commission   = Transaction Amount × 0.005 (0.5%)
+  Node pool  = Commission × 0.75   (75% → nodes post-factum, PoT-confirmed weight)
+  AFC share  = Commission × 0.25   (25% → Reserve via reserve.afc.accrual event)
+Burn         = Emission amount     (processNet → 0)
+reserveIndex = log10(1 + totalProcessVolume)
+internalPrice = base × reserveIndex  (rises with each confirmed process)
+```
+
+### Findings
+
+All canonical requirements confirmed in production code. All prior fixes (§4, §9, §15, §16)
+verified in place:
+
+| Check | File | Status |
+|-------|------|--------|
+| 1:1 emission, PoT gate | `emission.service.ts` | CONFIRMED |
+| feeRate = 0.005 | `commission.service.ts` | CONFIRMED |
+| marginRate = 0.25 (75/25 split) | `commission.service.ts` | CONFIRMED |
+| reserveIndex comment = log10(1 + volume) | `reserve.service.ts` | CONFIRMED |
+| reference commission rates 0.005/0.25 | `reference/ast-core/src/commission.ts` | CONFIRMED |
+| calculate() with canonical formula | `emission.service.ts` | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` (grep) | CONFIRMED |
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required. All previous fixes in place.**

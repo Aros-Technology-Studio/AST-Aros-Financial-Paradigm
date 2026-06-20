@@ -32,15 +32,19 @@ Burn           = 10,000 ARO  (destroyed after TX completes)
 Net circulating change = 0
 ```
 
-## AFC Reserve Price Index
-
-As the AFC reserve accumulates, the effective price of the next emission rises:
+## Capitalization Index and Internal Price
 
 ```
-reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000
+reserveIndex = log10(1 + totalProcessVolume)
 ```
 
-Sub-linear growth: stable at low volume, meaningful at scale.
+Logarithmic growth: meaningful at scale while staying bounded. Derived entirely from confirmed-work history in NodeChain; never set as a free authority (I-RS-2). Monotonically non-decreasing in volume (I-RS-4).
+
+`internalPrice = base × reserveIndex` — internal valuation follows confirmed work, not a market quote.
+
+AFC reserve accruals (the 25% commission share routed per epoch) are recorded in NodeChain as
+`reserve.afc.accrual` events for audit; they do not enter the `reserveIndex` formula directly
+(spec I-RS-1). Both confirmed-work volume and AFC accruals grow with transaction activity.
 
 ## Anti-Inflationary Measures
 
@@ -74,12 +78,16 @@ The emission logic includes:
 
 ## Reference Implementation
 
-Canonical code: `src/token/emission.service.ts` — `EmissionService`
+Canonical code: `src/emission/emission.service.ts` — `EmissionService`
 
 Key methods:
-- `calculate(txAmount, rate?)` — pure calculation, no side effects
-- `processTransactionEmission(txAmount, recipient, refId, rate?)` — full lifecycle
-- `getAfcReserveState()` — current reserve snapshot
-- `getCurrentEmissionPrice()` — current `reserveIndex`
+- `calculate(txAmount, commissionRate?)` — pure canonical formula, no side effects
+- `emit(processId, amount)` — full PoT-gated lifecycle; returns `EmitResult`
+- `mint(processId, amount)` — mint the process part; throws if PoT verdict is not `verified === 1`
+- `burn(processId, amount)` — burn the process part on cycle completion; records burn in NodeChain
+- `totalSupply()` — derived total supply via the ArosCoin ledger
+
+Reserve index: `src/reserve/reserve.service.ts` — `ReserveService.reserveIndex()`
+Commission split: `src/commission/commission.service.ts` — `CommissionService.finalizeEpoch()`
 
 ⸻

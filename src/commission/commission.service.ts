@@ -153,8 +153,11 @@ export class CommissionService {
         }
 
         // The 25% AFC share (plus any distributable not absorbed by nodes when weight == 0)
-        // routes to the Reserve, growing the capitalization index and raising the next
-        // emission price. The pool always reconciles to zero remainder (I7).
+        // is routed to the Reserve and recorded as a `reserve.afc.accrual` event in NodeChain.
+        // This provides the audit trail that links commission settlements to reserve growth.
+        // The reserveIndex formula (log10(1 + totalProcessVolume)) derives from confirmed
+        // process volume; AFC accrual events feed that record independently (spec I-RS-1).
+        // The pool always reconciles to zero remainder (I7).
         const allocatedMargin = total - paid;
         await this.reserve.addAfcAccrual(allocatedMargin);
         distributionLog.push({

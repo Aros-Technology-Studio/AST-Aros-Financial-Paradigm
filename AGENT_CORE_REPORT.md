@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-4m9xnj`
-**Date:** 2026-06-18
+**Branch:** `agent/core-emission`
+**Date:** 2026-06-20
 **Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
 
 ---
@@ -115,6 +115,24 @@ accruals are commission derivatives, not direct confirmed process volume.
 (correct per I3 — every significant event recorded). `totalAfcReserve()` still reads that
 history for querying. The event routing from Commission is correct and untouched.
 
+### 4.2 Reference Commission — fee rate and margin rate (this run)
+
+**File:** `reference/ast-core/src/commission.ts`
+
+The reference `Commission` class used values inconsistent with the canonical model:
+
+| Rate | Before | Canonical | After |
+|------|--------|-----------|-------|
+| `feeRate` | 0.01 (1%) | 0.005 (0.5%) | **0.005** |
+| `marginRate` | 0.2 (20% AFC, 80% nodes) | 0.25 (25% AFC, 75% nodes) | **0.25** |
+
+The production `CommissionService` (`src/commission/commission.service.ts`) already used the
+correct canonical values (0.005 / 0.25). The reference was updated to match, so both the
+reference and production code now agree on the canonical 0.5% fee, 75/25 split.
+
+The `invariants.test.ts` in the reference uses `reconciled` as a ratio identity — valid for
+any consistent `(feeRate, marginRate)` pair — so no invariant tests required change.
+
 ---
 
 ## 5. Invariant Impact After Change
@@ -156,11 +174,14 @@ internalPrice = base × 4.0000    → rises with each additional confirmed proce
 ## 7. Files Changed
 
 ```
-src/reserve/reserve.service.ts    reserveIndex() formula corrected:
-                                  log10(1 + totalProcessVolume + totalAfcReserve)
-                                  → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
+src/reserve/reserve.service.ts          reserveIndex() formula corrected:
+                                        log10(1 + totalProcessVolume + totalAfcReserve)
+                                        → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
 
-AGENT_CORE_REPORT.md              This report (updated)
+reference/ast-core/src/commission.ts   feeRate 0.01 → 0.005; marginRate 0.2 → 0.25
+                                        (aligns reference with canonical 0.5% / 75-25 model)
+
+AGENT_CORE_REPORT.md                    This report (updated)
 ```
 
 ---
@@ -173,4 +194,5 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| PR #306 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| **This run** | `agent/core-emission` | Reference `commission.ts` aligned to canonical 0.5% / 75-25 model |

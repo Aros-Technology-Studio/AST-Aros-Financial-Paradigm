@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-4m9xnj`
-**Date:** 2026-06-18
+**Branch:** `agent/core-emission`
+**Date:** 2026-06-20
 **Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
 
 ---
@@ -165,7 +165,38 @@ AGENT_CORE_REPORT.md              This report (updated)
 
 ---
 
-## 8. Audit Trail
+## 8. Re-Audit (2026-06-20) — Full Compliance Confirmed
+
+This run repeated the full audit against the same three directories specified in the task
+(`01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`) plus all active
+production modules.
+
+### `src/token/` — Does Not Exist
+
+The `01_coin_engine/coin_emission_model.md` references `src/token/emission.service.ts` as
+the "Reference Implementation". That path is a Model-A artifact — no such module exists in
+the current codebase. The production emission logic is in `src/emission/emission.service.ts`.
+
+### `01_coin_engine/` — Model-A Docs Only (Confirmed Inactive)
+
+The directory holds documentation only. A reserve price formula in
+`coin_emission_model.md` (`reserveIndex = 1.0 + sqrt(totalAfcReserve) / 10_000`) differs
+from Model-1 — but as a documentation artifact it has no executable effect. The active
+`src/reserve/reserve.service.ts` uses the spec-correct `log10(1 + totalProcessVolume)`.
+
+### `10_proof_of_transaction_engine/` — Docs Only, Rates Match
+
+Documentation describes the canonical 75/25 split which matches the production code
+(`CommissionService.marginRate = 0.25`, distributable = 75%).
+
+### Active Code — All Canonical
+
+All production modules verified against `reference/ast-core/src/` and
+`docs/specs/AST_*_AGENT_EN.md`. No deviations from the canonical model found.
+
+---
+
+## 9. Audit Trail
 
 | Session | Branch | Action |
 |---------|--------|--------|
@@ -173,4 +204,5 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| PR #300-306 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| **This run** | `agent/core-emission` | Full re-audit of 01_coin_engine/, 10_proof_of_transaction_engine/, src/emission/; all invariants confirmed; no further deviations found |

@@ -5,8 +5,8 @@ import { NodeEntity } from './types.js';
 export class Commission {
   private pool = 0;
   private contributions: { processId: string; fee: number }[] = [];
-  readonly feeRate = 0.01;
-  readonly marginRate = 0.2; // operational layer funding (7.4)
+  readonly feeRate = 0.005;   // canonical 0.5% (coin_emission_model.md)
+  readonly marginRate = 0.25; // canonical 25% AFC Reserve share; 75% to nodes (coin_emission_model.md)
 
   computeFee(amount: number, overloadRate = 0): number {
     const fee = amount * this.feeRate;

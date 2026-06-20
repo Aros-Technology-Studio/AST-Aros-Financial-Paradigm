@@ -797,3 +797,28 @@ Burn         = Emission amount on cycle completion; processNet → 0
 **Test Results:** 104/104 PASS (13 suites; 3 tests added in prior session for `calculate()`).
 
 **No code changes made this run. Canonical model fully implemented and verified.**
+
+---
+
+## 22. 2026-06-20 Full Re-Audit (branch: agent/core-emission, session 16)
+
+**Scope:** Complete independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01WuuYyHjuL1FNCbW4Jga9Ay` (claude-sonnet-4-6)
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Open Item Resolved:** PR #80 tracked "Persist AfcReserveState to DB — currently in-memory".
+Confirmed this does NOT apply to the NestJS implementation. `ReserveService` derives all figures
+from NodeChain events on every call (`totalProcessVolume()`, `totalAfcReserve()`). NodeChain
+events are stored in PostgreSQL (TypeORM `ExecutionSnapshot`). No in-memory state exists.
+The open item is closed.
+
+**No code changes made. All canonical model invariants confirmed.**

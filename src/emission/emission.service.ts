@@ -3,6 +3,30 @@ import { ArosCoinService } from '../aroscoin/aroscoin.service';
 import { NodeChainService } from '../nodechain/nodechain.service';
 import { PotService } from '../pot/pot.service';
 
+/** Default commission rate applied when the caller supplies no override. */
+const DEFAULT_FEE_RATE = 0.005;
+
+/** Node pool share of the commission per canonical 75/25 split. */
+const NODE_POOL_SHARE = 0.75;
+
+/** AFC reserve share of the commission per canonical 75/25 split. */
+const AFC_RESERVE_SHARE = 0.25;
+
+/**
+ * Pure, side-effect-free breakdown of the canonical 1:1 emission cycle for a given
+ * transaction amount. All figures are derived deterministically from `txAmount` and `rate`.
+ */
+export interface EmissionCalculation {
+    /** Process part minted 1:1 with the transaction amount (canonical formula). */
+    emission: number;
+    /** Operation fee charged on the transaction: `txAmount × rate`. */
+    commission: number;
+    /** Node pool allocation: `commission × 0.75` (75% to participating nodes by PoT weight). */
+    nodeShare: number;
+    /** AFC reserve allocation: `commission × 0.25` (25% grows the capitalization index). */
+    afcShare: number;
+}
+
 /** Outcome of an emission attempt, as returned to callers. */
 export interface EmitResult {
     /** Whether the PoT gate authorized emission for this process. */
@@ -20,6 +44,12 @@ export interface EmitResult {
  * Emission is the sole minter of ArosCoin. It brings the process part into existence as a
  * consequence of confirmed work and removes it when the cycle completes, keeping supply
  * causally tied to executed, verified work. It mirrors `reference/ast-core/src/emission.ts`.
+ *
+ * Canonical 1:1 emission formula (see `calculate()`):
+ *   emission   = txAmount          (1:1, no multiplier)
+ *   commission = txAmount × rate   (default 0.5%)
+ *   nodeShare  = commission × 0.75 (75% → node pool by PoT weight)
+ *   afcShare   = commission × 0.25 (25% → AFC reserve, grows capitalization index)
  *
  * The PoT gate is mandatory: `emit` first reads the recorded verdict for the process and
  * proceeds only when `verified === 1`. For any process that is not verified, Emission mints
@@ -44,21 +74,43 @@ export class EmissionService {
     ) { }
 
     /**
-     * Run the process-part emission cycle for a confirmed process: mint the process part,
-     * record it, then burn it on completion and record that. Gated on PoT: emission proceeds
-     * only when the process verdict is `verified === 1`. The process part is bound to
-     * `processId` and `amount` is proportional to the process value (`emissionVolume`).
+     * Pure, deterministic breakdown of the canonical 1:1 emission cycle. No side effects.
+     * The emission equals the transaction amount exactly (1:1 canonical formula). Commission
+     * and its 75/25 split are derived from `txAmount` and `rate`; they are accrued by
+     * Commission separately and are not minted here.
+     *
+     * Example — $10,000 transaction at default rate:
+     *   emission   = 10,000 ARO
+     *   commission = 50 ARO  (10,000 × 0.005)
+     *   nodeShare  = 37.50 ARO  (50 × 0.75)
+     *   afcShare   = 12.50 ARO  (50 × 0.25)
+     */
+    calculate(txAmount: number, rate = DEFAULT_FEE_RATE): EmissionCalculation {
+        const emission = txAmount;                      // 1:1 canonical formula
+        const commission = txAmount * rate;
+        const nodeShare = commission * NODE_POOL_SHARE;
+        const afcShare = commission * AFC_RESERVE_SHARE;
+        return { emission, commission, nodeShare, afcShare };
+    }
+
+    /**
+     * Run the process-part emission cycle for a confirmed process: derive the emission amount
+     * via `calculate()` (canonical 1:1 formula), mint the process part, record it, then burn
+     * it on completion and record that. Gated on PoT: emission proceeds only when the process
+     * verdict is `verified === 1`. The process part is bound to `processId` and the emission
+     * equals the transaction amount 1:1 (`emissionVolume = txAmount`, spec I-EM-1).
      *
      * When the process is not verified (no verdict, or verdict 0), nothing is minted or
      * burned and the ledger is untouched (I1/I2/P7).
      */
-    async emit(processId: string, amount: number): Promise<EmitResult> {
+    async emit(processId: string, txAmount: number): Promise<EmitResult> {
         const verdict = await this.pot.getVerdict(processId);
         if (!verdict || verdict.verified !== 1) {
             return { authorized: false, minted: 0, burned: 0, processId };
         }
 
-        const minted = await this.mint(processId, amount);
+        const { emission } = this.calculate(txAmount);  // 1:1: emission === txAmount
+        const minted = await this.mint(processId, emission);
         const burned = await this.burn(processId, minted);
         return { authorized: true, minted, burned, processId };
     }

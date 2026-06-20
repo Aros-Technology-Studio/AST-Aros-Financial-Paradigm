@@ -20,6 +20,8 @@ import { EmissionService } from './emission.service';
  * They assert that emission mints only on a verified process and nets the process part to
  * zero (I1/I5/I6), that an unverified process mints nothing (I1/I2/P7), that mint and burn
  * events are recorded in NodeChain, and that emission is deterministic (I4).
+ *
+ * Additional unit tests cover `calculate()`, the pure 1:1 formula function.
  */
 describe('EmissionService', () => {
     let moduleRef: TestingModule;
@@ -129,6 +131,58 @@ describe('EmissionService', () => {
         expect(burned?.payload).toMatchObject({ processId: 'p-2', burned: 100 });
     });
 
+    // --- calculate() unit tests: pure 1:1 canonical formula (no DB required) ---
+
+    // Canonical formula: emission = txAmount (1:1); commission = txAmount × rate.
+    it('calculate: emission equals txAmount exactly (1:1 canonical formula)', () => {
+        const result = emission.calculate(10_000);
+        expect(result.emission).toBe(10_000);
+    });
+
+    // Commission = txAmount × default rate (0.5%).
+    it('calculate: commission is txAmount × 0.5% at default rate', () => {
+        const result = emission.calculate(10_000);
+        expect(result.commission).toBeCloseTo(50, 9);
+    });
+
+    // 75/25 split: nodeShare = commission × 0.75, afcShare = commission × 0.25.
+    it('calculate: nodeShare is 75% of commission, afcShare is 25%', () => {
+        const result = emission.calculate(10_000);
+        expect(result.nodeShare).toBeCloseTo(37.5, 9);
+        expect(result.afcShare).toBeCloseTo(12.5, 9);
+    });
+
+    // nodeShare + afcShare must equal commission (no remainder in 75/25 split).
+    it('calculate: nodeShare + afcShare equals commission exactly', () => {
+        const result = emission.calculate(10_000);
+        expect(result.nodeShare + result.afcShare).toBeCloseTo(result.commission, 9);
+    });
+
+    // Custom rate override: caller can supply a rate different from the default.
+    it('calculate: custom rate overrides the default', () => {
+        const result = emission.calculate(10_000, 0.01);
+        expect(result.commission).toBeCloseTo(100, 9);
+        expect(result.emission).toBe(10_000);  // emission stays 1:1
+    });
+
+    // Zero amount: all figures are zero; no division or NaN.
+    it('calculate: zero txAmount yields all-zero result', () => {
+        const result = emission.calculate(0);
+        expect(result.emission).toBe(0);
+        expect(result.commission).toBe(0);
+        expect(result.nodeShare).toBe(0);
+        expect(result.afcShare).toBe(0);
+    });
+
+    // Determinism: identical inputs yield identical outputs (I4).
+    it('calculate: deterministic — same inputs produce same output', () => {
+        const a = emission.calculate(5_000);
+        const b = emission.calculate(5_000);
+        expect(a).toEqual(b);
+    });
+
+    // --- emit() uses calculate() internally: emit amount equals txAmount (1:1) ---
+
     // I4: the same verified process and amount yield the same supply outcome.
     it('I4: identical verified emissions yield identical supply outcomes', async () => {
         await verifyProcess('det-a');
@@ -145,5 +199,16 @@ describe('EmissionService', () => {
         // both cycles net to zero, so total supply is unchanged across both
         expect(supplyAfterA).toBe(0);
         expect(supplyAfterB).toBe(0);
+    });
+
+    // emit() derives its emission via calculate(): minted must equal txAmount (1:1).
+    it('emit: minted equals txAmount exactly (1:1 via calculate)', async () => {
+        await verifyProcess('one-to-one');
+        const txAmount = 7_500;
+        const result = await emission.emit('one-to-one', txAmount);
+        expect(result.minted).toBe(txAmount);
+        expect(result.burned).toBe(txAmount);
+        const { emission: expectedEmission } = emission.calculate(txAmount);
+        expect(result.minted).toBe(expectedEmission);
     });
 });

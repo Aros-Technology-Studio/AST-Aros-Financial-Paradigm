@@ -623,3 +623,79 @@ All canonical requirements confirmed. All prior fixes verified in place.
 ### Result
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
+
+---
+
+## 19. 2026-06-20 Full Re-Audit (branch: agent/core-emission, session 12)
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/`.
+
+### Canonical Model Verified
+
+```
+Emission     = Transaction Amount (1:1, no multiplier)
+Commission   = Transaction Amount × 0.005 (0.5%)
+  Node pool  = Commission × 0.75   (75% → nodes post-factum, PoT-confirmed weight)
+  AFC share  = Commission × 0.25   (25% → Reserve.addAfcAccrual → NodeChain audit event)
+Burn         = Emission amount     (processNet → 0 per cycle)
+reserveIndex = log10(1 + totalProcessVolume)  [spec I-RS-1/I-RS-2; AFC accruals are audit-only]
+internalPrice = base × reserveIndex
+```
+
+### Deviation Found and Corrected
+
+**`src/commission/commission.service.ts:124` — JSDoc comment (misleading)**
+
+The `finalizeEpoch()` docstring stated the 25% AFC share was routed "so the capitalization
+index grows." This implied AFC accruals drive `reserveIndex`, which is incorrect: the index
+is driven by `totalProcessVolume` (from `emission.minted` events only; spec I-RS-1). AFC
+`reserve.afc.accrual` events are audit records, not index inputs.
+
+| | Before | After |
+|--|--------|-------|
+| Comment | "route the canonical 25% AFC share to the Reserve so the capitalization index grows" | "route the canonical 25% AFC share to the Reserve as an audit-trail accrual (reserveIndex is driven by confirmed process volume, not by AFC accruals; I-RS-1)" |
+
+### All Other Components Confirmed
+
+| Check | File | Status |
+|-------|------|--------|
+| 1:1 emission, PoT gate | `src/emission/emission.service.ts:55–63` | CONFIRMED |
+| mint() throws on unverified | `src/emission/emission.service.ts:71–74` | CONFIRMED |
+| burn() mirrors mint | `src/emission/emission.service.ts:85–88` | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts:107–120` | CONFIRMED |
+| feeRate = 0.005 | `src/commission/commission.service.ts:69` | CONFIRMED |
+| marginRate = 0.25 (75/25 split) | `src/commission/commission.service.ts:72` | CONFIRMED |
+| Pool reconciles (I7) | `src/commission/commission.service.ts:172` | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `src/reserve/reserve.service.ts:92–94` | CONFIRMED |
+| AFC accrual recorded, not in formula | `src/reserve/reserve.service.ts:64–84` | CONFIRMED |
+| Supply identity (I6) | `src/aroscoin/aroscoin.service.ts:88` | CONFIRMED |
+| 01_coin_engine/ docs corrected | `coin_emission_model.md`, `burn_and_mint_rules.md` | CONFIRMED (§9.4/§9.5) |
+| src/token/ does not exist | — | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | CONFIRMED |
+| Invariants I1–I10 | `src/invariants/invariants.spec.ts` | CONFIRMED |
+
+### Transaction Example ($10,000) — Traced Through Code
+
+```
+amount = 10_000
+→ emission.emit(processId, 10_000): mint 10_000 ARO; burn 10_000 ARO  (net = 0)
+→ commission.computeFee(10_000) = 50 ARO
+    epoch pool += 50
+    On finalize: distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned)
+                 margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [audit only]
+→ reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
+→ internalPrice = 1 × 4.0000 = 4.0000 ARO/unit
+```
+
+### Files Changed
+
+```
+src/commission/commission.service.ts   finalizeEpoch() JSDoc: AFC routing note corrected (I-RS-1)
+AGENT_CORE_REPORT.md                   §19 added (this run)
+```
+
+### Result
+
+**CANONICAL. One comment corrected; no production logic changed. All prior fixes confirmed.**

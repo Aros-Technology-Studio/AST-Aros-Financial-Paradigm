@@ -7,15 +7,16 @@ import { NodeChainService } from '../nodechain/nodechain.service';
  *
  * The Reserve expresses how much confirmed value the economy has processed, condensed into a
  * single `reserveIndex`. That index is AST's own capitalization measure: it grows with the
- * aggregate volume of PoT-verified processes AND with the AFC share of every epoch's commission
- * pool, and underpins internal valuation and Release readiness. It mirrors
- * `reference/ast-core/src/reserve.ts` and the canonical formula
- * `reserveIndex = log10(1 + totalProcessVolume + totalAfcReserve)`.
+ * aggregate volume of PoT-verified processes and underpins internal valuation and Release
+ * readiness. It mirrors `reference/ast-core/src/reserve.ts` and the canonical formula
+ * `reserveIndex = log10(1 + totalProcessVolume)`.
  *
- * Two event types feed the reserve from NodeChain:
- *   - `emission.minted`: one snapshot per confirmed process; grows with confirmed work (I-RS-1).
+ * Two event types are recorded in NodeChain:
+ *   - `emission.minted`: one snapshot per confirmed process; this is the sole input to the
+ *     reserveIndex formula — confirmed work drives capitalization (I-RS-1).
  *   - `reserve.afc.accrual`: one snapshot per finalized epoch's 25% AFC commission share;
- *     grows the reserve as epochs are settled (spec: `margin_from: Commission`).
+ *     recorded for audit and AFC balance tracking (spec: `margin_from: Commission`),
+ *     but does not enter the reserveIndex formula (spec I-RS-1, I-RS-2).
  *
  * Because both figures are recomputed from history on every read, the index is derivable and
  * never set as a free authority (spec I-RS-2). As recorded volume can only accumulate on an

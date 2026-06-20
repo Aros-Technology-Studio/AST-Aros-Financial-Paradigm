@@ -1,8 +1,8 @@
 # AGENT_CORE_REPORT — Canonical 1:1 Emission Model Audit
 
 **Agent:** AGENT-CORE
-**Branch:** `claude/inspiring-cannon-4m9xnj`
-**Date:** 2026-06-18
+**Branch:** `agent/core-emission`
+**Date:** 2026-06-20
 **Task:** Audit ArosCoin emission logic against the canonical model; correct deviations.
 
 ---
@@ -155,13 +155,14 @@ internalPrice = base × 4.0000    → rises with each additional confirmed proce
 
 ## 7. Files Changed
 
-```
-src/reserve/reserve.service.ts    reserveIndex() formula corrected:
-                                  log10(1 + totalProcessVolume + totalAfcReserve)
-                                  → log10(1 + totalProcessVolume)   [spec I-RS-1/I-RS-2]
+This run fixed three items (previous runs already fixed the core `reserveIndex` formula):
 
-AGENT_CORE_REPORT.md              This report (updated)
-```
+| File | Change |
+|------|--------|
+| `src/reserve/reserve.service.ts` | Class docstring: removed `+totalAfcReserve` from formula description; clarified `reserve.afc.accrual` events are audit-only and do not enter the index formula |
+| `src/commission/commission.service.ts` | Inline comment on AFC routing step: removed claim that AFC routing "grows the capitalization index"; reserveIndex is driven by confirmed process volume, not AFC accruals |
+| `reference/ast-core/src/commission.ts` | Aligned to canonical rates: `feeRate` 0.01→0.005 (0.5%); `marginRate` 0.2→0.25 (75/25 split) |
+| `AGENT_CORE_REPORT.md` | This report (updated) |
 
 ---
 
@@ -173,4 +174,5 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| PR previous | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` implementation aligned with spec: removed `totalAfcReserve` from formula |
+| **This run** | `agent/core-emission` | Class docstring fixed (was still claiming `+totalAfcReserve`); commission comment fixed; reference `commission.ts` rates aligned to canonical 0.5%/75-25 |

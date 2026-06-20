@@ -153,8 +153,9 @@ export class CommissionService {
         }
 
         // The 25% AFC share (plus any distributable not absorbed by nodes when weight == 0)
-        // routes to the Reserve, growing the capitalization index and raising the next
-        // emission price. The pool always reconciles to zero remainder (I7).
+        // routes to the Reserve as an audit-trail accrual. The pool always reconciles to
+        // zero remainder (I7). The reserveIndex formula uses confirmed process volume, not
+        // AFC accruals; the reserve index rises as more PoT-verified processes run.
         const allocatedMargin = total - paid;
         await this.reserve.addAfcAccrual(allocatedMargin);
         distributionLog.push({

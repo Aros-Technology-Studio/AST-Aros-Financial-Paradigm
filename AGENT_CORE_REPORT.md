@@ -173,4 +173,22 @@ AGENT_CORE_REPORT.md              This report (updated)
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| PR (prev) | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec: removed `totalAfcReserve` from formula |
+| **This run** | `claude/inspiring-cannon-u2vc9y` | Reference core `commission.ts` rates corrected: 1%→0.5% fee, 80/20→75/25 split |
+
+---
+
+## 9. Reference Core Commission — Additional Fix (2026-06-20)
+
+**File:** `reference/ast-core/src/commission.ts`
+
+The reference core had non-canonical commission parameters:
+
+| Parameter | Before | After | Canonical source |
+|-----------|--------|-------|-----------------|
+| `feeRate` | `0.01` (1%) | `0.005` (0.5%) | `coin_emission_model.md` |
+| `marginRate` | `0.2` (20% margin → 80% to nodes) | `0.25` (25% AFC → 75% to nodes) | `coin_emission_model.md` |
+
+The NestJS `CommissionService` at `src/commission/commission.service.ts` was already correct (written against the canonical spec). The reference core now matches.
+
+No reference invariant tests check absolute fee amounts — they verify reconciliation (`epoch.reconciled`) and supply identity (`totalSupply == earnedRetained`), both of which hold at any consistent rate pair. No other files required changes.

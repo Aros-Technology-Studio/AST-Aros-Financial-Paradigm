@@ -938,3 +938,84 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-21 Full Re-Audit (branch: agent/core-emission, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01D13RBg9UkKikoampnNqNnv` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; `coin_emission_model.md` and `burn_and_mint_rules.md`
+  both corrected in prior sessions. `README.md` contains historical Model-A language (emission
+  decay curve, slashing references, All-Seeing Eye compliance factor modifying emission — P2/P6);
+  noted for future doc-cleanup pass; no impact on production code.
+- `10_proof_of_transaction_engine/` — PoT documentation; `pot_engine_overview.md` references
+  Model-A "11_validator_staking_payments/" and "Deposit Forfeiture Conditions" (P2 in docs);
+  runtime in `src/pot/pot.service.ts` is fully canonical.
+- `src/token/` — does not exist. Token logic correctly lives in `src/aroscoin/`.
+- `src/emission/emission.service.ts` — audited
+- `src/aroscoin/aroscoin.service.ts` — audited
+- `src/commission/commission.service.ts` — audited
+- `src/reserve/reserve.service.ts` — audited
+- `src/orchestrator/orchestrator.service.ts` — audited (9-step lifecycle confirmed)
+- `src/pot/pot.service.ts` — audited (binary verdict gate confirmed)
+- `src/invariants/invariants.spec.ts` — audited (I1–I10 full coverage confirmed)
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts`, `commission.ts`, `reserve.ts`,
+  `orchestrator.ts` — read and cross-referenced
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+totalSupply  = (processMinted − processBurned) + earnedRetained
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Orchestrator lifecycle order — traced this run:**
+```
+Step 1  initiation        → recording.capture + eye.log
+Step 2  admissibility     → reject inadmissible before any work (I1)
+Step 3  node assignment   → recording.capture task_assignment
+Step 4  execution         → stage_transition + execution_complete + nodes.recordExecution
+Step 5  PoT verify        → pot.verify; recording.capture pot_verdict
+Step 6  emission mint     → emission.mint(processId, amount)  [only if verified === 1]
+Step 7  fee accrual       → commission.computeFee + accrue(epoch, fee, participants)
+        burn              → emission.burn(processId, minted)  [canonical order: after accrue]
+Step 8  reserve           → reserve.reserveIndex() [derived, not mutated]
+Step 9  final record      → recording.capture final_status + eye.compareSupply
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**No code changes made. Canonical model fully implemented and verified.**

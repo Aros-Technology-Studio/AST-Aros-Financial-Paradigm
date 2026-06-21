@@ -938,3 +938,66 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-21 Full Re-Audit (branch: claude/inspiring-cannon-jjs6tv, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01Ls5bMZsubSVJ4LRHZAmkBB` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only (11 Markdown/JSON files); no deprecated executable code
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `03_token_management_layer/` — documentation only; no runnable code
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts` — reference read
+- `src/emission/emission.service.ts` — audited in full
+- `src/aroscoin/aroscoin.service.ts` — audited in full
+- `src/commission/commission.service.ts` — audited in full
+- `src/reserve/reserve.service.ts` — audited in full
+- `src/orchestrator/orchestrator.service.ts` — full lifecycle traced
+- `src/invariants/invariants.spec.ts` — I1–I10 coverage confirmed
+- `AST_RULES.yaml` — invariants and prohibitions list read
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000; internalPrice rises monotonically
+```
+
+**Canonical Compliance Table:**
+
+| Component | Canonical Requirement | Line(s) | Status |
+|-----------|-----------------------|---------|--------|
+| `EmissionService.emit()` | Mint = amount (1:1), PoT-gated | `emission.service.ts:55–63` | CONFIRMED |
+| `EmissionService.mint()` | Throws if `verified !== 1` | `emission.service.ts:71–79` | CONFIRMED |
+| `EmissionService.burn()` | Burns exactly minted; processNet → 0 | `emission.service.ts:85–89` | CONFIRMED |
+| `EmissionService.calculate()` | Pure formula: emission=amount, commission=amount×0.005, 75/25, net=0 | `emission.service.ts:107–120` | CONFIRMED |
+| `OrchestratorService` lifecycle order | init→admissible→assign→exec→PoT→mint→accrue→burn→reserve→final | `orchestrator.service.ts:99–200` | CONFIRMED |
+| `CommissionService.feeRate` | 0.005 (0.5%) | `commission.service.ts:69` | CONFIRMED |
+| `CommissionService.marginRate` | 0.25 (25% AFC) | `commission.service.ts:72` | CONFIRMED |
+| Commission 75/25 distribution | `distributable = total * 0.75`; `margin = total - paid` | `commission.service.ts:137,159` | CONFIRMED |
+| I7 pool reconciliation | `|paid + margin - total| < 1e-9` | `commission.service.ts:172` | CONFIRMED |
+| `ArosCoinService` supply identity | `totalSupply = (processMinted - processBurned) + earnedRetained` | `aroscoin.service.ts:86–89` | CONFIRMED |
+| `ReserveService.reserveIndex()` | `log10(1 + totalProcessVolume)` (AFC accruals audit-only) | `reserve.service.ts:92–94` | CONFIRMED |
+| Prohibitions P1–P8 | No staking, slashing, farming, mint-on-deposit, eye mutations | `src/` tree | CONFIRMED |
+| Invariants I1–I10 | Automated tests over full NestJS stack | `src/invariants/invariants.spec.ts` | CONFIRMED |
+
+**All prior fixes (§4, §9, §15, §19, §20) confirmed in place. No new deviations found.**
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified.**

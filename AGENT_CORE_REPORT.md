@@ -938,3 +938,75 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-21 Full Re-Audit (branch: claude/inspiring-cannon-21kde6, session 19)
+
+**Scope:** Full audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`,
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, `src/orchestrator/`,
+`reference/ast-core/src/`, `docs/specs/`. Branch-aware comparison against `main`.
+
+**New finding — `src/token/` on main branch (Model-A remnant, excluded from this branch):**
+
+`main` contains `src/token/emission.service.ts` with three canonical deviations:
+
+| Deviation | main code | Canonical requirement |
+|-----------|-----------|----------------------|
+| `reserveIndex` formula | `1.0 + sqrt(totalAfcReserve) / 10_000` (in-memory, Model-A) | `log10(1 + totalProcessVolume)` derived from NodeChain (spec I-RS-1/I-RS-2) |
+| PoT gate | Absent — `processTransactionEmission()` mints without `verified === 1` | Mandatory; `mint()` must throw if verdict ≠ 1 (I-EM-2) |
+| State persistence | In-memory `afcReserveState` (not persisted; resets on restart) | All significant events recorded in NodeChain; derived on every read (I3, I-RS-2) |
+
+`main` also carries `src/token/token.module.ts` wiring these Model-A services, imported
+into `src/app.module.ts` on `main`. All three deviations violate I-RS-1, I-EM-2, and I3.
+
+**This branch (`claude/inspiring-cannon-21kde6`):** `src/token/` does not exist.
+`src/app.module.ts` imports only canonical modules. No `TokenModule`.
+
+**Canonical Model Verified (current branch):**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**$10,000 transaction example:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; processNet = 0; totalSupply after earn = 37.50 ARO (I6)
+reserveIndex = log10(1 + 10,000) ≈ 4.0000
+```
+
+**All Components Confirmed (current branch):**
+
+| Component | File | Status |
+|-----------|------|--------|
+| `EmissionService.emit()` — 1:1 mint, PoT-gated | `src/emission/emission.service.ts:55` | CONFIRMED |
+| `EmissionService.calculate()` — pure formula | `src/emission/emission.service.ts:107` | CONFIRMED |
+| `EmissionService.mint()` — throws without verified === 1 | `src/emission/emission.service.ts:71` | CONFIRMED |
+| `EmissionService.burn()` — symmetric; processNet → 0 | `src/emission/emission.service.ts:85` | CONFIRMED |
+| `OrchestratorService` — mint → commission.accrue → burn | `src/orchestrator/orchestrator.service.ts:162–175` | CONFIRMED |
+| `CommissionService.feeRate` = 0.005 (0.5%) | `src/commission/commission.service.ts:69` | CONFIRMED |
+| `CommissionService.marginRate` = 0.25 (25% AFC) | `src/commission/commission.service.ts:72` | CONFIRMED |
+| Pool reconciles: Σpayments + margin = fees (I7) | `src/commission/commission.service.ts:172` | CONFIRMED |
+| `ReserveService.reserveIndex()` = log10(1 + vol) | `src/reserve/reserve.service.ts:92` | CONFIRMED |
+| AFC accruals → NodeChain only; not in formula (I-RS-1) | `src/reserve/reserve.service.ts:81` | CONFIRMED |
+| `ArosCoinService` three-tally ledger (I6) | `src/aroscoin/aroscoin.service.ts:86` | CONFIRMED |
+| `AppModule` — no `TokenModule` import | `src/app.module.ts` | CONFIRMED |
+| No Model-A prohibitions (P1–P9) | `src/` tree | CONFIRMED |
+| Invariants I1–I10 | `src/invariants/invariants.spec.ts` | CONFIRMED |
+
+**Files changed this session:**
+```
+AGENT_CORE_REPORT.md   §25 added: branch-aware analysis; src/token/ Model-A deviations on main documented
+```
+
+**Result:** CONFIRMED CANONICAL on `claude/inspiring-cannon-21kde6`.
+The `src/token/` Model-A module (three spec violations: wrong formula, no PoT gate, in-memory state)
+on `main` has been properly excluded from this branch. All canonical model invariants verified.

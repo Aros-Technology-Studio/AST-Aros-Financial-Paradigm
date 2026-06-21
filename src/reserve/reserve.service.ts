@@ -11,9 +11,9 @@ import { NodeChainService } from '../nodechain/nodechain.service';
  * readiness. It mirrors `reference/ast-core/src/reserve.ts` and the canonical formula
  * `reserveIndex = log10(1 + totalProcessVolume)` (spec I-RS-1/I-RS-2).
  *
- * The capitalization index derives from confirmed process volume only:
- *   `reserveIndex = log10(1 + totalProcessVolume)`
- * where `totalProcessVolume` is the sum of `minted` amounts from `emission.minted` snapshots.
+ * The capitalization index derives from confirmed process volume only, following the
+ * canonical formula above, where `totalProcessVolume` is the sum of `minted` amounts
+ * from `emission.minted` snapshots.
  * AFC commission accruals (`reserve.afc.accrual` snapshots) are recorded for audit purposes
  * but do not enter the index formula (spec I-RS-1, reference/ast-core/src/reserve.ts).
  *
@@ -33,7 +33,7 @@ export class ReserveService {
     private static readonly CONFIRMED_VOLUME_EVENT = 'emission.minted';
 
     /** Event type Commission appends when routing the 25% AFC share on epoch finalization. */
-    static readonly AFC_ACCRUAL_EVENT = 'reserve.afc.accrual';
+    private static readonly AFC_ACCRUAL_EVENT = 'reserve.afc.accrual';
 
     constructor(private readonly chain: NodeChainService) { }
 

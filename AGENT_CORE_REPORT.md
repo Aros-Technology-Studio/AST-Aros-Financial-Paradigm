@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-21 (updated — see §23 for latest session; §9–§22 for prior sessions)
+**Date:** 2026-06-21 (updated — see §28 for latest session; §9–§27 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -1128,3 +1128,61 @@ totalSupply = (10,000 - 10,000) + 37.50 = 37.50 ARO (= earnedRetained, I6) ✓
 All prior fixes (§4, §9, §15, §19, §20, §25, §26) verified in place.
 
 **No code changes made. Canonical 1:1 emission model fully implemented and verified.**
+
+---
+
+## 28. 2026-06-21 Full Re-Audit (branch: agent/core-emission, session 28)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01TgbkwaoKaaPSYdWVWL9Uyr` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; not deprecated; no executable code
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`
+- `src/token/` — does not exist; production emission logic in `src/emission/`, `src/aroscoin/`
+- `src/emission/emission.service.ts` — full read and line-by-line verification
+- `src/aroscoin/aroscoin.service.ts` — full read and verification
+- `src/commission/commission.service.ts` — full read and verification
+- `src/reserve/reserve.service.ts` — full read and verification
+- `reference/ast-core/src/emission.ts`, `commission.ts`, `orchestrator.ts` — full read
+
+**Canonical Model — All Requirements Verified:**
+
+| Requirement | File:Line | Evidence | Status |
+|-------------|-----------|----------|--------|
+| Emission = TX Amount (1:1) | `emission.service.ts:61` | `minted = await this.mint(processId, amount)` | CONFIRMED |
+| PoT gate: verified === 1 required | `emission.service.ts:57-59, 73-74` | returns `{authorized:false}` or throws on unverified | CONFIRMED |
+| `calculate()` pure canonical formula | `emission.service.ts:111-122` | `emission=txAmount; commission=txAmount*rate; nodeShare=commission*0.75; afcShare=commission*0.25; net=0` | CONFIRMED |
+| Burn mirrors mint (processNet → 0) | `emission.service.ts:85-89` | `coin.recordBurn(amount)` + NodeChain event | CONFIRMED |
+| Commission = Amount × 0.5% | `commission.service.ts:69` | `feeRate = 0.005` | CONFIRMED |
+| 75% distributable to nodes | `commission.service.ts:137` | `distributable = total * (1 - this.marginRate)` | CONFIRMED |
+| 25% AFC share to Reserve | `commission.service.ts:161` | `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| Pool reconciles I7 | `commission.service.ts:174` | `Math.abs(paid + allocatedMargin - total) < 1e-9` | CONFIRMED |
+| AFC accruals are audit-only | `reserve.service.ts:81-83` | `AFC_ACCRUAL_EVENT` read for audit; not summed in index | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `reserve.service.ts:92-94` | `return log10(1 + volume)` | CONFIRMED |
+| Supply identity (I6) | `aroscoin.service.ts:86-88` | `(processMinted - processBurned) + earnedRetained` | CONFIRMED |
+| No staking / slashing / governance | grep across `src/` | P1–P4 prohibitions absent | CONFIRMED |
+| No mint-on-deposit / bridge custody | grep across `src/` | P5 prohibition absent | CONFIRMED |
+
+**$10,000 Transaction Example — Code Trace:**
+```
+pot.verify(processId) → verified = 1
+emission.mint(processId, 10_000) → coin.recordMint(10_000)
+commission.computeFee(10_000) = 50 ARO → commission.accrue(epoch, 50, participants)
+emission.burn(processId, 10_000) → coin.recordBurn(10_000)   [processNet = 0]
+--- epoch finalization ---
+distributable = 50 × 0.75 = 37.50 ARO → coin.recordEarned per node (post-factum by weight)
+allocatedMargin = 50 - 37.50 = 12.50 ARO → reserve.addAfcAccrual(12.50) [NodeChain only]
+reserveIndex = log10(1 + 10,000) ≈ 4.0000 → internalPrice rises for next emission cycle
+totalSupply = (10,000 - 10,000) + 37.50 = 37.50 ARO = earnedRetained (I6 ✓)
+reconciled: |37.50 + 12.50 - 50| < 1e-9 ✓ (I7)
+```
+
+**Reference vs NestJS — Parity Check:**
+- `reference/ast-core/src/emission.ts` mint/burn → mirrors `EmissionService.mint/burn` ✓
+- `reference/ast-core/src/commission.ts` `feeRate=0.005`, `marginRate=0.25` → matches `CommissionService` ✓
+- `reference/ast-core/src/orchestrator.ts` mint→commission.accrue→burn order → matches `OrchestratorService` ✓
+
+**All Invariants:** I1–I10, I-EM-1–3, I-RS-1/2/4, P1–P8 — all CONFIRMED.
+
+**No code changes required. Canonical 1:1 emission model is fully implemented and verified.**

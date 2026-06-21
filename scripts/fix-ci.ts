@@ -172,8 +172,7 @@ const KNOWN_FIXES: FailurePattern[] = [
     fix: (log): FixResult => {
       log('Detected: Cannot find module — scanning for broken imports...');
 
-      const moduleMatches = log.match(/Cannot find module '([^']+)'/g) ?? [];
-      const missingModules = moduleMatches.map(m => m.replace("Cannot find module '", '').replace("'", ''));
+      const missingModules = [...log.matchAll(/Cannot find module '([^']+)'/g)].map((m) => m[1]);
       const uniqueModules = [...new Set(missingModules)];
 
       log(`Missing modules: ${uniqueModules.join(', ')}`);

@@ -938,3 +938,77 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-21 Full Re-Audit (branch: claude/inspiring-cannon-zih06i, session 19)
+
+**Scope:** Independent re-audit of canonical 1:1 emission model. Examined all three task-specified
+directories, the full Model-A vs. Model-1 diff, reference implementation, and spec authority files.
+
+### Directories Examined
+
+| Directory | Status | Finding |
+|-----------|--------|---------|
+| `01_coin_engine/` | Docs only — no executable code | `coin_emission_model.md` corrected in §9.4; `burn_and_mint_rules.md` rewritten in §9.5. No further action. |
+| `10_proof_of_transaction_engine/` | Docs only — no executable code | PoT runtime lives in `src/pot/pot.service.ts`. Consistent with Model-1. |
+| `src/token/` | **Removed in current branch** | Exists in `main` (Model-A) as `git diff --name-status HEAD main` confirms (`A src/token/...`). Correctly absent on HEAD. |
+
+### Model-A `src/token/emission.service.ts` — Deviations from Canonical Model
+
+Inspected via `git show main:src/token/emission.service.ts`. Key deviations found in Model-A code:
+
+| Deviation | `main` (Model-A) | Current branch (Model-1) |
+|-----------|-----------------|--------------------------|
+| PoT gate | Absent — emits on any call | `verified === 1` required; `unauthorized` returned otherwise |
+| `reserveIndex` formula | `1.0 + sqrt(totalReserve) / 10_000` | `log10(1 + totalProcessVolume)` (spec I-RS-1/I-RS-2) |
+| AFC state persistence | In-memory field `afcReserveState` (lost on restart) | Derived from NodeChain events; persisted via TypeORM |
+| Supply accounting | `LedgerService.recordTransaction` MINT/BURN types | Three-tally ArosCoin ledger (`processMinted`, `processBurned`, `earnedRetained`) |
+| NodeChain recording | Absent | `emission.minted` and `emission.burned` events appended (I3) |
+
+All deviations were eliminated when `src/token/` was removed and replaced with the Model-1 modules
+in prior sessions. No re-introduction of any deviation detected.
+
+### Canonical Model — All Requirements Confirmed
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain audit event
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000; internalPrice rises monotonically (I-RS-4)
+```
+
+**Production code verified:**
+
+| Check | File | Line(s) | Status |
+|-------|------|---------|--------|
+| 1:1 emission, PoT gate | `src/emission/emission.service.ts` | 55–63 | CONFIRMED |
+| mint() throws on unverified | `src/emission/emission.service.ts` | 71–74 | CONFIRMED |
+| burn() mirrors mint; processNet → 0 | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| feeRate = 0.005 | `src/commission/commission.service.ts` | 69 | CONFIRMED |
+| marginRate = 0.25 (75/25 split) | `src/commission/commission.service.ts` | 72 | CONFIRMED |
+| Pool reconciles I7 | `src/commission/commission.service.ts` | 172 | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `src/reserve/reserve.service.ts` | 92–94 | CONFIRMED |
+| AFC accrual → NodeChain; not in formula (I-RS-1) | `src/reserve/reserve.service.ts` | 64–84 | CONFIRMED |
+| totalSupply = earnedRetained (I6) | `src/aroscoin/aroscoin.service.ts` | 86–89 | CONFIRMED |
+| Orchestrator order: mint → accrue → burn | `src/orchestrator/orchestrator.service.ts` | 104–195 | CONFIRMED |
+| No Model-A prohibitions P1–P8 | `src/` tree | — | CONFIRMED |
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
+`src/token/` (Model-A) correctly absent. `src/emission/` (Model-1) fully aligned with
+`docs/specs/AST_Emission_AGENT_EN.md` and `reference/ast-core/src/emission.ts`.

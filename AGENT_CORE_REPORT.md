@@ -938,3 +938,55 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## § Latest Session — Branch `claude/inspiring-cannon-3lm8xi` (2026-06-21)
+
+**Trigger:** AGENT-CORE task — audit 01_coin_engine, 10_proof_of_transaction_engine, src/token/;
+verify canonical 1:1 emission model; rewrite if non-conformant.
+
+### Findings
+
+| Item | Finding |
+|------|---------|
+| `01_coin_engine/` | Documentation only. No executable emission code. |
+| `10_proof_of_transaction_engine/` | Documentation only. PoT runtime is `src/pot/`. |
+| `src/token/` | Does not exist. Emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`. |
+| `agent/core-emission` branch | Previously created and merged via PR #80 (commit `8e39309`). |
+
+### Canonical Model — Verified Against Live Code
+
+```
+Emission     = Transaction Amount           (1:1, PoT gate: verified === 1 required)
+Commission C = Transaction Amount × 0.005   (0.5%)
+  Node Share = C × 0.75                    (75% → nodes, post-factum at epoch finalization by PoT weight)
+  AFC Share  = C × 0.25                    (25% → reserve.addAfcAccrual → NodeChain audit record)
+
+ARO lifecycle:
+  MINT(amount)  — on PoT confirmation
+  ...process executes...
+  BURN(amount)  — on cycle completion; processNet → 0
+
+reserveIndex = log10(1 + totalProcessVolume)   (confirmed volume only; AFC accruals excluded)
+internalPrice = base × reserveIndex             (rises with accumulated confirmed work)
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission =     50 ARO (0.5%)
+  Nodes    =  37.50 ARO (75%), coin.recordEarned post-factum
+  AFC      =  12.50 ARO (25%), reserve.addAfcAccrual → NodeChain only
+Burn       = 10,000 ARO on completion; totalSupply after = 37.50 (= earnedRetained, I6)
+reserveIndex after = log10(10,001) ≈ 4.0000
+```
+
+### Test Run — `node_modules/.bin/jest --testPathPatterns=invariants`
+
+```
+Tests:       104 passed, 104 total
+Test Suites: 13 passed, 13 total
+```
+
+All invariants I1–I10 and I-RS-1/I-RS-2/I-RS-4 pass. **No code changes required.**

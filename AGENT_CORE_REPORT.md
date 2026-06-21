@@ -938,3 +938,84 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-21 Full Re-Audit (branch: claude/inspiring-cannon-imp6w6, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01MQPf7AgGU5ducTayEWCNiN` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — 11 Markdown/JSON files; documentation only; no executable code; not deprecated
+- `10_proof_of_transaction_engine/` — 9 Markdown files; PoT documentation only; runtime lives in `src/pot/pot.service.ts`
+- `src/token/` — files exist on `main` (Model-A legacy: `emission.service.ts`, `token.service.ts`); correctly **absent** on this branch (deleted as part of Model-A → Model-1 migration)
+- `src/emission/emission.service.ts` — audited
+- `src/aroscoin/aroscoin.service.ts` — audited
+- `src/commission/commission.service.ts` — audited
+- `src/reserve/reserve.service.ts` — audited
+- `src/orchestrator/orchestrator.service.ts` — audited
+- `src/pot/pot.service.ts` — audited
+- `src/invariants/invariants.spec.ts` — audited
+- `reference/ast-core/src/emission.ts`, `commission.ts`, `reserve.ts`, `aroscoin.ts`, `orchestrator.ts`, `types.ts` — read
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through production code):**
+```
+amount = 10,000
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10,000)
+          → coin.recordMint(10,000)   [processMinted += 10,000]
+          → chain.append('emission.minted', { processId, minted: 10,000 })
+Step 7: commission.computeFee(10,000) = 10,000 × 0.005 = 50
+        commission.accrue(epoch, 50, participants)
+        emission.burn(processId, 10,000)
+          → coin.recordBurn(10,000)   [processBurned += 10,000; processNet = 0]
+Step 8: reserve.reserveIndex() = log10(1 + 10,000) ≈ 4.0000
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 → coin.recordEarned per node (post-factum)
+  margin        = 50 − 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit only]
+  reconciled    = |37.50 + 12.50 − 50| < 1e-9  ✓
+
+totalSupply (in-cycle)   = (10,000 − 10,000) + 0      = 0
+totalSupply (after earn) = (10,000 − 10,000) + 37.50  = 37.50 ARO (= earnedRetained, I6)
+internalPrice            = 1 × 4.0000 = 4.0000 ARO/unit
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | File | Status |
+|-----------|-------------|------|--------|
+| I1 | Value only on PoT verified === 1 | `emission.service.ts:55–63` | CONFIRMED |
+| I2 | Emission bound to confirmed process | `emission.service.ts:71–75` | CONFIRMED |
+| I3 | Significant events in NodeChain | `orchestrator.service.ts:105–195` | CONFIRMED |
+| I4 | Deterministic computation | sorted node iteration; log formula | CONFIRMED |
+| I5 | Process part nets to 0 | `orchestrator.service.ts:162,175` | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | `aroscoin.service.ts:86–89` | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | `commission.service.ts:172` | CONFIRMED |
+| I8 | NodeChain append-only, hash-continuous | `nodechain.service.ts` | CONFIRMED |
+| I9 | Node influence from work+reputation | no stake fields in `node.entity.ts` | CONFIRMED |
+| I10 | All-Seeing Eye passive | `all-seeing-eye.service.ts` | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | `reserve.service.ts:92–94` | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | recomputed from history on each call | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | log10 is monotonic | CONFIRMED |
+
+**Migration status — `src/token/` (Model-A):**
+On `main`, the following Model-A files exist and contain non-canonical constructs:
+- `src/token/emission.service.ts` — uses `LedgerService`, database-level AFC state, stale logic
+- `src/token/token.service.ts` — Model-A token management
+
+Both are correctly absent on this branch, replaced by the canonical Model-1 modules:
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+
+**No code changes made. Canonical model fully implemented and verified. All prior fixes (§4, §9, §15, §19, §20) confirmed in place.**

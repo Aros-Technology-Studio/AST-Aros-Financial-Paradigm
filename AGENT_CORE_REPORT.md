@@ -938,3 +938,75 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-21 Full Re-Audit (branch: claude/inspiring-cannon-sp1izc, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Directories: `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, `src/orchestrator/`,
+`reference/ast-core/src/emission.ts`, `docs/specs/AST_*_AGENT_EN.md`.
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; processNet = 0; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Deviation Found and Corrected:**
+
+**`10_proof_of_transaction_engine/pot_slashing_conditions.md` — Model-A prohibited constructs**
+
+The file contained a stake-based slashing model: percentages of a node's `stake` balance
+were burned (`burnStake`) on attestation failures. This violates P1 (no staking/stakedBalance)
+and P2 (no slashing against balance or stake). A Solidity `slash(address, severity)` function
+referenced `getStake()` and emitted `Slashed()` — both are prohibited constructs.
+Prior session §9.5 applied the same corrective treatment to `01_coin_engine/burn_and_mint_rules.md`.
+
+| Prohibited construct | Rule | Replacement |
+|---------------------|------|-------------|
+| `stake * severity_factor` burn formula | P1, P2 | Reputation weight decrement via `recordExecution(nodeId, false)` |
+| `burnStake(node, slashAmt)` Solidity example | P1, P2 | Admission exclusion when `currentWeight` falls below threshold |
+| `getStake(node)` balance lookup | P1 | `NodesService.currentWeight(nodeId)` — work+reputation, not balance |
+| Slash percentage against stake (25%/50%/100%) | P2 | Zero commission payment for that process (presence earns nothing) |
+| Token-weighted governance appeal path | P3 | Node admission managed by PoT verdict history |
+
+**All Other Components Confirmed:**
+
+| Check | File | Status |
+|-------|------|--------|
+| 1:1 emission, PoT gate | `src/emission/emission.service.ts:55–63` | CONFIRMED |
+| mint() throws on unverified | `src/emission/emission.service.ts:71–74` | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `src/emission/emission.service.ts:85–88` | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts:107–120` | CONFIRMED |
+| Orchestrator: mint → commission.accrue → burn | `src/orchestrator/orchestrator.service.ts:162–175` | CONFIRMED |
+| feeRate = 0.005, marginRate = 0.25 | `src/commission/commission.service.ts:69,72` | CONFIRMED |
+| Pool reconciles: paid + margin = fees (I7) | `src/commission/commission.service.ts:174` | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `src/reserve/reserve.service.ts:92–94` | CONFIRMED |
+| AFC accrual NodeChain-only; not in formula | `src/reserve/reserve.service.ts:81–83` | CONFIRMED |
+| totalSupply = (minted − burned) + earned (I6) | `src/aroscoin/aroscoin.service.ts:86–89` | CONFIRMED |
+| No P1–P8 violations in src/ | grep scan | CONFIRMED |
+| Invariants I1–I10 | `src/invariants/invariants.spec.ts` | CONFIRMED |
+
+**Files Changed:**
+```
+10_proof_of_transaction_engine/pot_slashing_conditions.md   Rewritten: Model-A stake/slash constructs removed; Model-1 reputation accountability documented
+AGENT_CORE_REPORT.md                                        §25 added (this run)
+```
+
+**Result: CANONICAL. One documentation file corrected; no production logic changed. All prior fixes confirmed.**

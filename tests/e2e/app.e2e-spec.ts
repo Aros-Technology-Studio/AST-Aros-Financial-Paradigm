@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as request from 'supertest';
+import { getMetadataArgsStorage } from 'typeorm';
 import { AppController } from '../../src/app.controller';
 import { CommonModule } from '../../src/common/common.module';
 import { OversightLogEntry } from '../../src/all-seeing-eye/entities/oversight-log-entry.entity';
@@ -19,15 +20,9 @@ import { ReleasePhase } from '../../src/release/entities/release-phase.entity';
  * (AppController for health, OrchestratorModule for the lifecycle and metrics) and the global
  * ValidationPipe, but swaps the datasource the production AppModule would use.
  */
-const ENTITIES = [
-    ExecutionSnapshot,
-    PotVerdict,
-    ArosCoinLedger,
-    Epoch,
-    NodeEntity,
-    ReleasePhase,
-    OversightLogEntry,
-];
+const ENTITIES = getMetadataArgsStorage()
+    .tables.map((table) => table.target)
+    .filter((target): target is Function => typeof target === 'function');
 
 describe('App HTTP surface (e2e)', () => {
     let app: INestApplication;
@@ -75,7 +70,7 @@ describe('App HTTP surface (e2e)', () => {
     it('POST /processes rejects a malformed body via ValidationPipe', async () => {
         await request(app.getHttpServer())
             .post('/processes')
-            .send({ processId: 'E-bad', amount: -1, type: 'transfer', admissible: true })
+            .send({ processId: 'E-bad', amount: -1, type: 'transfer', admissible: true, epoch: 1 })
             .expect(400);
     });
 

@@ -938,3 +938,76 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-21 Full Re-Audit (branch: claude/inspiring-cannon-8xvvx2, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; no executable code; no deprecated logic to relocate
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime in `src/pot/`
+- `src/token/` — does not exist; emission logic resides in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (full read)
+- `src/aroscoin/aroscoin.service.ts` — audited (full read)
+- `src/commission/commission.service.ts` — audited (feeRate/marginRate lines)
+- `src/reserve/reserve.service.ts` — audited (full read)
+- `src/orchestrator/orchestrator.service.ts` — audited (steps 6–8; mint→accrue→burn order)
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts` — read and compared
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Deviation Found and Corrected:**
+
+**`src/nodes/nodes.service.ts:20-22` — negative-language comment (CLAUDE.md violation)**
+
+The class JSDoc described the service by negation ("holds no stake or stakedBalance column",
+"never mutates a token balance") — violating the hard rule: positive definitions only.
+Rewritten as a positive statement of what the service IS and does.
+
+| | Before | After |
+|--|--------|-------|
+| Style | "the entity holds no stake or stakedBalance column and the service never mutates a token balance to reward or punish a node. That keeps invariant I9 and prohibitions P1/P2 intact." | "Node influence derives entirely from the `weight` field, which reflects confirmed work (successes/total) scaled by uptime — the reputation formula. The service records work completions, recomputes reputation from history, and logs payment receipts in NodeChain. All influence is earned through confirmed execution (I9)." |
+
+**All Other Components Confirmed:**
+
+| Check | File | Status |
+|-------|------|--------|
+| 1:1 emission, PoT gate | `src/emission/emission.service.ts:55–63` | CONFIRMED |
+| mint() throws on unverified | `src/emission/emission.service.ts:71–74` | CONFIRMED |
+| burn() mirrors mint | `src/emission/emission.service.ts:85–88` | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts:107–120` | CONFIRMED |
+| Orchestrator order: mint → commission.accrue → burn | `src/orchestrator/orchestrator.service.ts:162–175` | CONFIRMED |
+| feeRate = 0.005 | `src/commission/commission.service.ts:69` | CONFIRMED |
+| marginRate = 0.25 (75/25 split) | `src/commission/commission.service.ts:72` | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `src/reserve/reserve.service.ts:92–94` | CONFIRMED |
+| AFC accrual recorded, not in formula | `src/reserve/reserve.service.ts:81–83` | CONFIRMED |
+| Supply identity (I6) | `src/aroscoin/aroscoin.service.ts:86–89` | CONFIRMED |
+| No Model-A prohibited constructs (P1–P8) | `src/` tree | CONFIRMED |
+
+**Files Changed:**
+```
+src/nodes/nodes.service.ts     Class JSDoc rewritten: negative-language → positive (CLAUDE.md)
+AGENT_CORE_REPORT.md           §25 added (this run)
+```
+
+**Result: CANONICAL. One comment corrected (style); no production logic changed. All prior fixes confirmed.**

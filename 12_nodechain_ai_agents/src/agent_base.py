@@ -1,7 +1,6 @@
 import abc
 import time
 import hashlib
-from .schemas import AnalysisRequest, AnalysisResult
 
 class BaseAgent(abc.ABC):
     def __init__(self, agent_id: str):

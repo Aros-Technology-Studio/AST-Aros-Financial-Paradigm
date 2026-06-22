@@ -1296,3 +1296,100 @@ README rewritten to reflect Model-1: 1:1 emission, 75/25 commission split, PoT-g
 **All Invariants Confirmed:** I1-I10, I-EM-1-3, I-RS-1/2/4, P1-P8.
 
 **Production code: no changes required. Documentation fix applied to `01_coin_engine/README.md`.**
+
+---
+
+## 31. 2026-06-22 Full Re-Audit (branch: agent/core-emission, session 31)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01Y445gBZmjHpNy5SzzF6Vnq` (claude-sonnet-4-6)
+
+**Directories examined this run:**
+
+| Path | Content | Verdict |
+|------|---------|---------|
+| `01_coin_engine/` | Documentation only (no executable code); README corrected in §30 | No action needed |
+| `10_proof_of_transaction_engine/` | PoT documentation only; runtime in `src/pot/pot.service.ts` | No action needed |
+| `src/token/` | Does not exist | Confirmed absent |
+| `src/emission/emission.service.ts` | NestJS EmissionService — production code | Audited ✓ |
+| `src/aroscoin/aroscoin.service.ts` | NestJS ArosCoinService — unit ledger | Audited ✓ |
+| `src/commission/commission.service.ts` | NestJS CommissionService | Audited ✓ |
+| `src/reserve/reserve.service.ts` | NestJS ReserveService | Audited ✓ |
+| `src/orchestrator/orchestrator.service.ts` | Full lifecycle — 9-step pipeline | Audited ✓ |
+| `src/invariants/invariants.spec.ts` | I1–I10 automated test suite | Audited ✓ |
+| `reference/ast-core/src/emission.ts` | Reference — confirms 1:1 mint/burn | Read ✓ |
+| `reference/ast-core/src/aroscoin.ts` | Reference — confirms three-tally ledger | Read ✓ |
+| `reference/ast-core/src/commission.ts` | Reference — confirms feeRate=0.005, marginRate=0.25 | Read ✓ |
+| `reference/ast-core/src/orchestrator.ts` | Reference — confirms mint→accrue→burn order | Read ✓ |
+
+**Canonical Model Verified:**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+totalSupply  = (processMinted − processBurned) + earnedRetained  (spec I-AC-5)
+```
+
+**$10,000 transaction — full code trace:**
+
+```
+pot.verify(processId)                         → verified = 1
+emission.mint(processId, 10_000)              → coin.recordMint(10_000)   [processMinted += 10_000]
+commission.computeFee(10_000) = 50 ARO        → commission.accrue(epoch, 50, participants)
+emission.burn(processId, 10_000)              → coin.recordBurn(10_000)   [processBurned += 10_000; processNet = 0]
+--- epoch finalization ---
+distributable = 50 × 0.75 = 37.50 ARO        → coin.recordEarned per node (post-factum by PoT weight)
+allocatedMargin = 50 − 37.50 = 12.50 ARO     → reserve.addAfcAccrual(12.50) [NodeChain audit event only]
+reconciled: |37.50 + 12.50 − 50| < 1e-9      ✓ (I7)
+reserveIndex = log10(1 + 10,000) ≈ 4.0000    → internalPrice rises for next emission cycle
+totalSupply  = (10,000 − 10,000) + 37.50 = 37.50 ARO  = earnedRetained ✓ (I6)
+```
+
+**Line-by-line verification:**
+
+| Canonical Requirement | File:Line | Evidence | Status |
+|-----------------------|-----------|----------|--------|
+| Emission = TX Amount (1:1) | `emission.service.ts:61` | `minted = await this.mint(processId, amount)` | CONFIRMED |
+| PoT gate: returns unauthorized | `emission.service.ts:57-59` | `if (!verdict \|\| verdict.verified !== 1) return {authorized:false}` | CONFIRMED |
+| mint() throws without verified===1 | `emission.service.ts:73-75` | `throw new Error('emission refused ...')` | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `emission.service.ts:85-88` | `coin.recordBurn(amount); chain.append(...)` | CONFIRMED |
+| calculate() pure 1:1 formula | `emission.service.ts:107-120` | `emission=txAmount; net=0` | CONFIRMED |
+| Commission = Amount × 0.5% | `commission.service.ts:69,95` | `feeRate = 0.005` | CONFIRMED |
+| marginRate = 0.25 (25% AFC) | `commission.service.ts:72` | `readonly marginRate = 0.25` | CONFIRMED |
+| 75% distributable to nodes | `commission.service.ts:139` | `distributable = total * (1 - this.marginRate)` | CONFIRMED |
+| 25% to AFC Reserve (audit only) | `commission.service.ts:161` | `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| Pool reconciles (I7) | `commission.service.ts:174` | `Math.abs(paid + allocatedMargin - total) < 1e-9` | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `reserve.service.ts:92-94` | `return log10(1 + volume)` | CONFIRMED |
+| AFC accrual audit-only, not in formula | `reserve.service.ts:81-83` | `AFC_ACCRUAL_EVENT` → NodeChain; not summed in index | CONFIRMED |
+| Supply identity (I6) | `aroscoin.service.ts:86-89` | `(processMinted - processBurned) + earnedRetained` | CONFIRMED |
+| Orchestrator: mint → accrue → burn | `orchestrator.service.ts:162,170,175` | canonical reference order | CONFIRMED |
+| No staking / slashing / farming (P1-P4) | `src/` tree | prohibitions absent | CONFIRMED |
+| No mint-on-deposit / bridge (P5) | `src/` tree | prohibition absent | CONFIRMED |
+| Eye passive — no state mutations (P6/I10) | `all-seeing-eye/all-seeing-eye.service.ts` | observe/log/compare only | CONFIRMED |
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only, hash-continuous | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-EM-1 | Causality: mint bound to verified process | CONFIRMED |
+| I-EM-2 | PoT gate: no mint without verified === 1 | CONFIRMED |
+| I-EM-3 | Cycle symmetry: process part burned on completion | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Result: CONFIRMED CANONICAL. All prior fixes (§4–§30) verified in place. No code changes required.**

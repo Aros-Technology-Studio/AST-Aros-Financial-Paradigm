@@ -55,8 +55,14 @@ Commission   = Transaction Amount × rate    (default 0.5%)
 Node Share   = Commission × 0.75
 AFC Reserve  = Commission × 0.25
 
-AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
+reserveIndex = log10(1 + totalProcessVolume)
+internalPrice = base × reserveIndex
 ```
+
+`totalProcessVolume` is the sum of `minted` amounts from `emission.minted` NodeChain events
+(confirmed PoT-verified processes only). AFC accruals are recorded separately in NodeChain
+as `reserve.afc.accrual` events for audit; they do not enter the `reserveIndex` formula
+(spec I-RS-1/I-RS-2).
 
 ---
 
@@ -74,14 +80,17 @@ AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
 
 ## VI. Allocation Flow
 
-After emission, tokens flow as follows:
+Per confirmed process (PoT `verified === 1`):
 
-1. `SYSTEM_EMISSION_AUTHORITY` mints `emissionAmount` → `recipient`
-2. `recipient` pays `nodeShare` (75%) → `SYSTEM_NODE_POOL`
-3. `recipient` pays `afcShare` (25%) → `SYSTEM_AFC_RESERVE`
-4. `recipient` burns `emissionAmount` → `SYSTEM_BURN_VAULT`
+1. `EmissionService.mint(processId, amount)` — process part minted (1:1); recorded in NodeChain as `emission.minted`.
+2. `CommissionService.accrue(epoch, fee, participants)` — operation fee consolidated into the open epoch pool; node participation recorded.
+3. `EmissionService.burn(processId, amount)` — process part burned; recorded as `emission.burned`; `processNet → 0`.
 
-All four steps execute atomically within a single database transaction.
+At epoch finalization (`CommissionService.finalizeEpoch(epochNumber)`):
+
+4. 75% of the pool distributed to nodes proportionally by PoT-confirmed participation weight; each payment recorded via `coin.recordEarned`.
+5. 25% (remainder) routed to Reserve via `reserve.addAfcAccrual(amount)` — appended to NodeChain as `reserve.afc.accrual` (audit trail only; does not enter `reserveIndex`).
+6. Pool reconciles: `Σ(payments) + afcMargin == Σ(fees)` within floating-point epsilon (invariant I7).
 
 ---
 

@@ -938,3 +938,75 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-22 Full Re-Audit (branch: claude/inspiring-cannon-j5hnga, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01U9etRSRDP4HWuL51E4kMDt` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+
+| Directory | Status |
+|-----------|--------|
+| `01_coin_engine/` | Documentation only (Markdown); no executable code |
+| `10_proof_of_transaction_engine/` | PoT documentation only; runtime in `src/pot/` |
+| `src/token/` | Does NOT exist; emission lives in `src/emission/` + `src/aroscoin/` |
+| `src/emission/emission.service.ts` | Audited |
+| `src/aroscoin/aroscoin.service.ts` | Audited |
+| `src/commission/commission.service.ts` | Audited |
+| `src/reserve/reserve.service.ts` | Audited |
+| `src/orchestrator/orchestrator.service.ts` | Audited |
+| `reference/ast-core/src/emission.ts` | Read |
+| `docs/specs/AST_Emission_AGENT_EN.md` | Verified |
+
+**Discrepancy Found (documentation only):**
+
+`01_coin_engine/aro_emission_protocol.md` Section IV retained a Model-A formula:
+
+```
+# Before (Model-A artifact):
+AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
+
+# Correct (Model-1 spec I-RS-1/I-RS-2):
+reserveIndex = log10(1 + totalProcessVolume)
+```
+
+Section VI also showed a per-transaction fee distribution flow (Model-A), instead of the
+canonical epoch-based post-factum settlement. Both corrected in this run.
+
+**Canonical Model Verified (all production code):**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 10,000 × 0.005 = 50 ARO
+  Nodes    = 50 × 0.75 = 37.50 ARO → coin.recordEarned (post-factum, epoch finalization)
+  AFC      = 50 × 0.25 = 12.50 ARO → reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO (processNet = 0)
+totalSupply after cycles = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**All Invariants Confirmed:** I1–I10, I-RS-1, I-RS-2, I-RS-4 — all CONFIRMED.
+No Model-A prohibitions (P1–P8) found in `src/`.
+
+**Files changed this run:**
+
+```
+01_coin_engine/aro_emission_protocol.md   Section IV formula corrected (log10, not sqrt/AFC);
+                                           Section VI flow corrected (epoch-based post-factum)
+AGENT_CORE_REPORT.md                      §25 added (this run)
+```
+
+**Result: CANONICAL. Documentation corrected; all production code confirmed canonical.**

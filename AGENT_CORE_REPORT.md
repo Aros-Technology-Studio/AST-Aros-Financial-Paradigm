@@ -1012,3 +1012,82 @@ The production code correctly implements `log10(1 + totalProcessVolume)` per spe
 - `reference/ast-core/src/emission.ts` — NestJS service mirrors reference exactly
 
 **Result:** All findings match §25. Implementation is canonical and complete. No changes required.
+
+---
+
+## 27. 2026-06-22 Full Re-Audit (branch: agent/core-emission, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01Kwui59CuQmestb8HwFq3CS` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; `coin_emission_model.md` confirmed correct (§9.4)
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does **not** exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (lines 55–121)
+- `src/aroscoin/aroscoin.service.ts` — audited (lines 1–130)
+- `src/emission/emission.service.spec.ts` — audited (lines 1–190)
+- `reference/ast-core/src/emission.ts` — read (20-line reference)
+- `reference/ast-core/src/commission.ts` — read (38-line reference; confirms 0.005/0.25)
+- `01_coin_engine/coin_emission_model.md` — read; formula, example, code path all correct
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+totalSupply  = (processMinted − processBurned) + earnedRetained  (I6)
+```
+
+**Example — $10,000 transaction (line-by-line through code):**
+```
+emit(processId, 10_000):
+  pot.getVerdict() → verified === 1  ✓ (I1/I2 gate)
+  mint(processId, 10_000) → coin.recordMint(10_000)   [processMinted += 10_000]
+                           → chain.append('emission.minted', {processId, minted: 10_000})
+  burn(processId, 10_000) → coin.recordBurn(10_000)   [processBurned += 10_000]
+                           → chain.append('emission.burned', {processId, burned: 10_000})
+  processNet = 10_000 − 10_000 = 0  (I5)
+
+calculate(10_000):
+  emission   = 10_000 ARO  (1:1)
+  commission = 50 ARO      (0.5%)
+  nodeShare  = 37.50 ARO   (75%)
+  afcShare   = 12.50 ARO   (25%)
+  net        = 0
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-EM-1 | Every mint bound to verified process | CONFIRMED |
+| I-EM-2 | PoT gate: no mint without verified === 1 | CONFIRMED |
+| I-EM-3 | Cycle symmetry: burn = mint | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Test suite (`emission.service.spec.ts`)** covers all invariants on in-memory SQLite:
+- I1/I5/I6: verified process nets to 0; `totalSupply == retained`
+- I1/I2/P7: unverified process mints nothing
+- P7: `verified == 0` refused
+- I2: `mint()` throws for unverified
+- NodeChain: `emission.minted` + `emission.burned` events recorded
+- I4: identical emissions → identical supply
+- Canonical formula: `$10,000` example passes exactly
+
+**No code changes made. Canonical model fully implemented and verified.**

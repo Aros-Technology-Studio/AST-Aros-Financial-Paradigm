@@ -938,3 +938,101 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-22 Full Re-Audit (branch: claude/inspiring-cannon-v5mzor, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_019LaBiJowzKpejykC9QCfAn` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; no executable code; no deprecated source
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited in full
+- `src/emission/emission.service.spec.ts` — audited; covers `calculate()` + I1/I2/I4/I5/P7
+- `src/aroscoin/aroscoin.service.ts` — audited
+- `src/commission/commission.service.ts` — audited (75/25 split, PoT-confirmed weights, reconciliation)
+- `src/reserve/reserve.service.ts` — audited (log10 formula, AFC audit-only)
+- `src/pot/pot.service.ts` — audited (no staking/slashing in code)
+- `src/orchestrator/orchestrator.service.ts` — audited (9-step lifecycle, mint→accrue→burn order)
+- `src/invariants/invariants.spec.ts` — all 10 invariants present
+- `reference/ast-core/src/emission.ts`, `commission.ts`, `reserve.ts`, `orchestrator.ts` — read
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**All Component Checks:**
+
+| Component | File | Status |
+|-----------|------|--------|
+| `EmissionService.emit()` — 1:1 mint, PoT-gated | `src/emission/emission.service.ts:55–64` | CONFIRMED |
+| `EmissionService.mint()` — throws without verified === 1 | `src/emission/emission.service.ts:71–79` | CONFIRMED |
+| `EmissionService.burn()` — symmetric; processNet → 0 | `src/emission/emission.service.ts:85–89` | CONFIRMED |
+| `EmissionService.calculate()` — pure canonical formula, no side effects | `src/emission/emission.service.ts:107–120` | CONFIRMED |
+| `ArosCoinService` three-tally ledger; `totalSupply` derivable (I6) | `src/aroscoin/aroscoin.service.ts:86–89` | CONFIRMED |
+| `CommissionService.feeRate` = 0.005 (0.5%) | `src/commission/commission.service.ts:69` | CONFIRMED |
+| `CommissionService.marginRate` = 0.25 (25% AFC) | `src/commission/commission.service.ts:72` | CONFIRMED |
+| 75% to nodes post-factum by PoT-confirmed weight | `src/commission/commission.service.ts:137–153` | CONFIRMED |
+| 25% to AFC via `reserve.addAfcAccrual()` | `src/commission/commission.service.ts:159–161` | CONFIRMED |
+| Pool reconciles Σ(payments) + margin = fees (I7) | `src/commission/commission.service.ts:172` | CONFIRMED |
+| `ReserveService.reserveIndex()` = log10(1 + volume) | `src/reserve/reserve.service.ts:92–94` | CONFIRMED |
+| AFC accruals NodeChain-only; not in reserveIndex formula (I-RS-1) | `src/reserve/reserve.service.ts:64–83` | CONFIRMED |
+| Orchestrator 9-step lifecycle: mint → commission.accrue → burn order | `src/orchestrator/orchestrator.service.ts:162–175` | CONFIRMED |
+| No stake/slashing fields in PotService | `src/pot/pot.service.ts` | CONFIRMED |
+| No Model-A prohibitions P1–P8 in `src/` | — | CONFIRMED |
+
+**Example — $10,000 transaction (traced through code):**
+```
+amount = 10_000
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10_000) → coin.recordMint(10_000) [processMinted += 10_000]
+Step 7: commission.computeFee(10_000) = 50 ARO; commission.accrue(epoch, 50, participants)
+        emission.burn(processId, 10_000) → coin.recordBurn(10_000) [processBurned += 10_000]
+        processNet = 0; net circulating change = 0
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 ARO → nodes (coin.recordEarned per node, by PoT weight)
+  margin        = 50 - 37.50 = 12.50 ARO → reserve.addAfcAccrual(12.50) [NodeChain audit]
+  reconciled    = |37.50 + 12.50 - 50| < 1e-9  ✓
+
+Step 8: reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
+        internalPrice = 1 × 4.0000 = 4.0000 (rises with each confirmed process)
+
+totalSupply (after burn) = 0; totalSupply (after epoch finalize) = 37.50 ARO (= earnedRetained)
+```
+
+**Model-A Remnant Noted (documentation only, no code impact):**
+`10_proof_of_transaction_engine/pot_slashing_conditions.md` describes stake-based slashing
+(`stake * severity_factor`, `burnStake`). This is a Model-A artifact; no corresponding code
+exists in `src/`. `PotService` has zero staking/slashing logic. Invariant I9 test confirms
+no `stake`/`stakedBalance` fields on `NodeEntity`. This file should be archived in a future
+cleanup pass — it poses no risk to the running system.
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only, hash-continuous | CONFIRMED |
+| I9 | Node influence from work+reputation (no stake) | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**No code changes required. Canonical 1:1 emission model fully implemented, tested, and verified.**

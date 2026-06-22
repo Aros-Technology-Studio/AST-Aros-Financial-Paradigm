@@ -879,7 +879,7 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-2 | Derivable from NodeChain | CONFIRMED |
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
-**No code changes made. Canonical model fully implemented and verified.****
+**No code changes made. Canonical model fully implemented and verified.**
 
 ---
 
@@ -938,3 +938,71 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-22 Full Re-Audit (branch: claude/inspiring-cannon-m4osag, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01SsSvcys7ewxmmgoyHFDs2q` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; no executable code; corrections from §9.4 confirmed in place
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`
+- `src/token/` — does not exist; was a Model-A module removed in the full rewrite (PR #289);
+  all emission logic resides in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited line-by-line
+- `src/aroscoin/aroscoin.service.ts` — audited
+- `src/commission/commission.service.ts` — audited
+- `src/reserve/reserve.service.ts` — audited
+- `src/orchestrator/orchestrator.service.ts` — full lifecycle traced
+- `reference/ast-core/src/` — emission.ts, commission.ts, reserve.ts, orchestrator.ts read
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through production code):**
+```
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10_000) → coin.recordMint(10_000)
+        emission.burn(processId, 10_000) → coin.recordBurn(10_000)
+        minted = 10_000, burned = 10_000, processNet = 0
+Step 7: commission.computeFee(10_000) = 10_000 × 0.005 = 50 ARO
+        On finalizeEpoch:
+          distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned per node)
+          margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [audit only]
+          reconciled    = |37.50 + 12.50 - 50| < 1e-9  ✓
+Step 8: reserveIndex = log10(1 + 10_000) ≈ 4.0000
+        internalPrice = 1 × 4.0000 = 4.0000 ARO/unit
+totalSupply after epoch: 37.50 ARO (earnedRetained = nodes' post-factum pay; I6)
+```
+
+**All Components Confirmed:**
+
+| Component | File:Lines | Status |
+|-----------|-----------|--------|
+| `emit()` — 1:1 mint, PoT gate | `emission.service.ts:55–63` | CONFIRMED |
+| `mint()` — throws without verified === 1 | `emission.service.ts:71–74` | CONFIRMED |
+| `burn()` — mirrors mint; processNet → 0 | `emission.service.ts:85–88` | CONFIRMED |
+| `calculate()` — pure canonical formula | `emission.service.ts:107–120` | CONFIRMED |
+| Orchestrator order: mint → accrue → burn | `orchestrator.service.ts:162–176` | CONFIRMED |
+| `feeRate` = 0.005 (0.5%) | `commission.service.ts:69` | CONFIRMED |
+| `marginRate` = 0.25 (25% AFC) | `commission.service.ts:72` | CONFIRMED |
+| 75% distributable: `total * (1 - marginRate)` | `commission.service.ts:138` | CONFIRMED |
+| Pool reconciles Σpayments + margin = fees (I7) | `commission.service.ts:174` | CONFIRMED |
+| `totalSupply` = (minted−burned) + earned (I6) | `aroscoin.service.ts:88` | CONFIRMED |
+| `reserveIndex` = log10(1 + totalProcessVolume) | `reserve.service.ts:92–94` | CONFIRMED |
+| AFC accrual recorded, not in formula (I-RS-1) | `reserve.service.ts:81–83` | CONFIRMED |
+| No Model-A prohibitions P1–P8 | `src/` tree | CONFIRMED |
+| `src/token/` removed (Model-A remnant) | — | CONFIRMED ABSENT |
+
+**All Invariants Confirmed (I1–I10, I-RS-1/2/4).**
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified.**

@@ -995,3 +995,20 @@ The production code correctly implements `log10(1 + totalProcessVolume)` per spe
 **All Prohibitions Confirmed Clean:** P1–P8 (grepped `src/`).
 
 **No code changes made. Canonical 1:1 emission model fully implemented and verified.**
+
+---
+
+## 26. 2026-06-22 Re-Audit (branch: agent/core-emission, session 2026-06-22-B)
+
+**Scope:** Re-audit confirming canonical 1:1 emission model; cross-check against task requirements.
+
+**Directories audited:**
+- `01_coin_engine/` — Model-A Markdown docs only; no TypeScript code; not authoritative
+- `10_proof_of_transaction_engine/` — Model-A PoT design docs only; no code
+- `src/token/` — does not exist
+- `src/emission/emission.service.ts` — confirmed canonical formula (lines 107–120)
+- `src/aroscoin/aroscoin.service.ts` — confirmed three-tally ledger + supply identity
+- `src/commission/commission.service.ts` — confirmed 75/25 split, feeRate=0.005
+- `reference/ast-core/src/emission.ts` — NestJS service mirrors reference exactly
+
+**Result:** All findings match §25. Implementation is canonical and complete. No changes required.

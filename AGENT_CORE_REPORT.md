@@ -938,3 +938,83 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-22 Full Re-Audit (branch: claude/inspiring-cannon-55j1wq, session 19)
+
+**Scope:** Independent re-audit of canonical 1:1 emission model per AGENT-CORE task spec.
+Session: `session_0116ihrFaCvwonWtP1q4mzPX` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only (11 files, all Markdown/JSON); no deprecated code; no executable logic
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic resides in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (emit, mint, burn, calculate, totalSupply)
+- `src/emission/emission.service.spec.ts` — audited; all calculate() + lifecycle tests confirmed
+- `src/aroscoin/aroscoin.service.ts` — audited (three-tally ledger, totalSupply, processNet, retained)
+- `src/commission/commission.service.ts` — audited (feeRate, marginRate, finalizeEpoch, reconciliation)
+- `src/reserve/reserve.service.ts` — audited (reserveIndex, totalProcessVolume, addAfcAccrual)
+- `src/orchestrator/orchestrator.service.ts` — audited (full 9-step lifecycle)
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts`, `commission.ts` — read; production code matches
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through production code):**
+```
+amount = 10_000
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10_000) → coin.recordMint(10_000)
+                                           chain.append('emission.minted', { minted: 10_000 })
+Step 7: commission.computeFee(10_000) = 50 ARO → accrue(epoch, 50, participants)
+        emission.burn(processId, 10_000) → coin.recordBurn(10_000)
+                                           chain.append('emission.burned', { burned: 10_000 })
+        processNet = 10_000 - 10_000 = 0
+Step 8: reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
+Epoch finalize:
+  distributable = 50 × 0.75 = 37.50 ARO → nodes (coin.recordEarned)
+  margin        = 50 - 37.50 = 12.50 ARO → reserve.addAfcAccrual(12.50) [NodeChain, audit only]
+  reconciled    = |37.50 + 12.50 - 50| < 1e-9 ✓
+totalSupply (after burns) = 0 + 37.50 = 37.50 ARO (= earnedRetained, I6)
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain, not set manually | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Model-A Prohibition Scan (production `src/` tree):**
+
+| ID | Prohibited Pattern | Result |
+|----|--------------------|--------|
+| P1 | staking / stakedBalance / stake_freeze | Clean |
+| P2 | slashing against balance | Clean |
+| P3 | token-weighted governance | Clean |
+| P4 | farming / passive yield | Clean |
+| P5 | mint-on-deposit / crypto_to_aroscoin | Clean |
+| P6 | Eye halting / reverting / voting | Clean |
+| P7 | Emission outside confirmed-process logic | Clean |
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified.**
+All prior corrections (§4, §9, §15, §19, §20, §21, §22) confirmed in place.

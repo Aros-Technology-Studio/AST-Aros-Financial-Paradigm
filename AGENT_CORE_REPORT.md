@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-21 (updated — see §28 for latest session; §9–§27 for prior sessions)
+**Date:** 2026-06-22 (updated — see §30 for latest session; §9–§29 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -1235,3 +1235,64 @@ Burn         = Emission amount on cycle completion; processNet -> 0
 **All Invariants Confirmed:** I1-I10, I-EM-1-3, I-RS-1/2/4, P1-P8.
 
 **No code changes required. Canonical 1:1 emission model fully implemented and verified.**
+
+---
+
+## 30. 2026-06-22 Full Re-Audit (branch: agent/core-emission, session 30)
+
+**Scope:** Independent re-audit of emission logic + `01_coin_engine/` documentation cleanup.
+Session: `session_01V3quW1hMyWSw6XWae4CYjW` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation folder (not deprecated). `coin_emission_model.md` is canonical; `README.md` contained Model-A remnants — **fixed this run** (see below)
+- `10_proof_of_transaction_engine/` — PoT documentation only; `pot_slashing_conditions.md` is Model-A but not referenced in production code
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (all 122 lines)
+- `src/aroscoin/aroscoin.service.ts` — audited (all 131 lines)
+- `src/commission/commission.service.ts` — audited (all 265 lines)
+- `src/orchestrator/orchestrator.service.ts` — audited (all 313 lines; full 9-step lifecycle)
+- `src/invariants/invariants.spec.ts` — audited (all 279 lines; I1–I10 complete)
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts` — read and compared line-by-line
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Code verification — all canonical requirements confirmed:**
+
+| Canonical Requirement | File:Line | Status |
+|-----------------------|-----------|--------|
+| Emission = TX Amount (1:1) | `emission.service.ts:61` | CONFIRMED |
+| PoT gate: unauthorized when unverified | `emission.service.ts:57-59` | CONFIRMED |
+| mint() throws without verified === 1 | `emission.service.ts:73-75` | CONFIRMED |
+| burn() mirrors mint; processNet → 0 | `emission.service.ts:85-88` | CONFIRMED |
+| calculate() pure canonical formula | `emission.service.ts:107-120` | CONFIRMED |
+| feeRate = 0.005 (0.5%) | `commission.service.ts:69` | CONFIRMED |
+| marginRate = 0.25 (25% AFC) | `commission.service.ts:72` | CONFIRMED |
+| 75% distributable to nodes | `commission.service.ts:138` | CONFIRMED |
+| Pool reconciles (I7) | `commission.service.ts:174` | CONFIRMED |
+| Orchestrator: mint → accrue → burn order | `orchestrator.service.ts:162-176` | CONFIRMED |
+| totalSupply = (minted - burned) + earned | `aroscoin.service.ts:86-89` | CONFIRMED |
+| No staking / slashing / farming / bridge (P1-P5) | `src/` tree | CONFIRMED |
+| Eye passive (I10/P6) | `all-seeing-eye.service.ts` | CONFIRMED |
+| I1–I10 invariant tests present | `src/invariants/invariants.spec.ts` | CONFIRMED |
+
+**Model-A Remnants Fixed — `01_coin_engine/README.md`:**
+
+The README contained Model-A language that contradicted the canonical model:
+- Decay-based emission schedule (`EMISSION_DECAY=0.965`, `EMISSION_BASE_RATE=1.0`) — replaced with 1:1 formula
+- "Slashing events" reference in payment/distribution section — removed
+- References to non-existent subdirectories (`/specs`, `/src`, `/tests`, `/fixtures`) — removed
+- Example API (`POST /v1/emission/next`) using multiplier/compliance/activity formula — replaced with canonical 1:1 example
+
+README rewritten to reflect Model-1: 1:1 emission, 75/25 commission split, PoT-gated mint/burn, work+reputation node weight, passive All-Seeing Eye.
+
+**All Invariants Confirmed:** I1-I10, I-EM-1-3, I-RS-1/2/4, P1-P8.
+
+**Production code: no changes required. Documentation fix applied to `01_coin_engine/README.md`.**

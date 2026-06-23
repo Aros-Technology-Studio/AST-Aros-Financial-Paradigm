@@ -938,3 +938,120 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-23 Full Re-Audit (branch: claude/inspiring-cannon-vynd8a, session 19)
+
+**Scope:** Independent re-audit requested as AGENT-CORE. Directories surveyed: `01_coin_engine/`,
+`10_proof_of_transaction_engine/`, `src/token/` (absent), `src/emission/`, `src/aroscoin/`,
+`src/commission/`, `src/reserve/`, `src/orchestrator/`, `src/pot/`, `reference/ast-core/src/`.
+
+**Branch note:** The task requested branch `agent/core-emission`. That branch was already merged
+into `main` via PR #80. All its work is present in `main` and in the current working branch
+`claude/inspiring-cannon-vynd8a`. Development continues on the designated session branch.
+
+### Directories Examined
+
+| Path | Type | Note |
+|------|------|------|
+| `01_coin_engine/` | Documentation only | No TypeScript; prior corrections (§9.4) confirmed in place |
+| `10_proof_of_transaction_engine/` | Documentation only | `pot_slashing_conditions.md` contains stale Model-A stake-slashing prose — doc artifact only; no executable effect |
+| `src/token/` | Does not exist | Emission logic lives in `src/emission/` and `src/aroscoin/` |
+| `src/emission/emission.service.ts` | Production — audited | Canonical |
+| `src/aroscoin/aroscoin.service.ts` | Production — audited | Canonical |
+| `src/commission/commission.service.ts` | Production — audited | Canonical |
+| `src/reserve/reserve.service.ts` | Production — audited | Canonical |
+| `src/orchestrator/orchestrator.service.ts` | Production — audited | Canonical |
+| `src/pot/pot.service.ts` | Production — audited | Canonical; no stake or slashing |
+| `reference/ast-core/src/` | Reference — read | Confirms all formulas |
+
+### Canonical Model — All Requirements Confirmed
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+  Node pool  = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+  AFC share  = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+Burn         = Emission amount on cycle completion; processNet → 0
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+internalPrice = base × reserveIndex
+```
+
+### Transaction Example ($10,000) — Code Trace
+
+```
+amount = 10,000
+  pot.verify(processId) → verified = 1
+  emission.mint(processId, 10_000) → coin.recordMint(10_000); chain: emission.minted
+  commission.computeFee(10_000) = 50 ARO → epoch pool += 50
+  emission.burn(processId, 10_000) → coin.recordBurn(10_000); chain: emission.burned
+  processNet = 10_000 − 10_000 = 0
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 ARO → nodes (coin.recordEarned per node)
+  margin        = 50 − 37.50 = 12.50 ARO → reserve.addAfcAccrual(12.50) → NodeChain
+  |37.50 + 12.50 − 50| < 1e-9  ✓ (I7 reconciled)
+
+  reserve.reserveIndex() = log10(1 + 10,000) ≈ 4.0000
+  internalPrice = 1 × 4.0000 = 4.0000 ARO/unit (rises with each confirmed process)
+  totalSupply (after earn) = 0 + 37.50 = 37.50 ARO (= earnedRetained; I6)
+```
+
+### Production Code Verification Table
+
+| Check | File | Line(s) | Status |
+|-------|------|---------|--------|
+| 1:1 emission, PoT gate | `src/emission/emission.service.ts` | 55–63 | CONFIRMED |
+| mint() throws on unverified | `src/emission/emission.service.ts` | 71–74 | CONFIRMED |
+| burn() mirrors mint; net → 0 | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| feeRate = 0.005 | `src/commission/commission.service.ts` | 69 | CONFIRMED |
+| marginRate = 0.25 (75/25 split) | `src/commission/commission.service.ts` | 72 | CONFIRMED |
+| distributable = total × (1 − 0.25) | `src/commission/commission.service.ts` | 137 | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `src/commission/commission.service.ts` | 172 | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `src/reserve/reserve.service.ts` | 92–94 | CONFIRMED |
+| AFC accrual recorded, not in formula | `src/reserve/reserve.service.ts` | 64–84 | CONFIRMED |
+| Supply identity: (minted−burned)+earned | `src/aroscoin/aroscoin.service.ts` | 86–89 | CONFIRMED |
+| PoT verdict: binary, idempotent per process | `src/pot/pot.service.ts` | 62–103 | CONFIRMED |
+| No stake, no slashing fields in src/ | `src/` tree | — | CONFIRMED |
+| No Model-A prohibitions P1–P8 in src/ | `src/` tree | — | CONFIRMED |
+| Invariants I1–I10 covered by tests | `src/invariants/invariants.spec.ts` | all | CONFIRMED |
+
+### Notable Documentation Observation
+
+`10_proof_of_transaction_engine/pot_slashing_conditions.md` contains Model-A language:
+stake × severity slashing, `burnStake()` Solidity example, reference to
+`11_validator_staking_payments/`. This is a documentation artifact with no executable
+equivalent. The production `src/pot/pot.service.ts` implements the canonical deterministic
+verdict (four criteria, binary output) with no stake, no slashing, no balance modification.
+No code action required; the doc is noted for future cleanup.
+
+### All Invariants Confirmed
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+### Files Changed
+
+```
+AGENT_CORE_REPORT.md   §25 added (this run); no production code changes
+```
+
+### Result
+
+**CONFIRMED CANONICAL. No production logic deviations found. No code changes required.**
+All prior fixes (§4–§24) verified in place. Canonical 1:1 emission model fully implemented.

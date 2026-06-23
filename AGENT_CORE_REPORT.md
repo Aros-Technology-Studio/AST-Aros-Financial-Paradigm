@@ -938,3 +938,83 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-23 Full Re-Audit (branch: claude/inspiring-cannon-9ehkct, session 19)
+
+**Scope:** Independent re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `src/nodes/`, `src/invariants/`, `reference/ast-core/src/`.
+Session: claude-sonnet-4-6.
+
+**Directories Audited:**
+- `01_coin_engine/` — documentation only (11 markdown/JSON files). Not deprecated. Corrected formulas and code paths are in place from §9.4 / §4.2.
+- `10_proof_of_transaction_engine/` — PoT documentation only. `pot_slashing_conditions.md` is a historical Model-A doc describing stake-based slashing; it is not executed.
+- `src/token/` — does not exist. Emission logic lives entirely in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Canonical Model — All Requirements Confirmed:**
+
+| Requirement | File:Line | Status |
+|-------------|-----------|--------|
+| Emission = TX Amount (1:1) | `emission.service.ts:55–63` | CONFIRMED |
+| PoT gate (verified === 1) | `emission.service.ts:57–59,73–75` | CONFIRMED |
+| calculate() pure canonical formula | `emission.service.ts:107–120` | CONFIRMED |
+| Burn mirrors mint; processNet → 0 | `emission.service.ts:85–88` | CONFIRMED |
+| Orchestrator canonical order: mint → accrue → burn | `orchestrator.service.ts:162–175` | CONFIRMED |
+| feeRate = 0.005 (0.5%) | `commission.service.ts:69` | CONFIRMED |
+| marginRate = 0.25 (25% AFC) | `commission.service.ts:72` | CONFIRMED |
+| 75% distributable → nodes | `commission.service.ts:137` | CONFIRMED |
+| 25% → reserve.addAfcAccrual | `commission.service.ts:159` | CONFIRMED |
+| Pool reconciles (I7) | `commission.service.ts:172` | CONFIRMED |
+| totalSupply = (minted − burned) + earned | `aroscoin.service.ts:86–89` | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `reserve.service.ts:92–94` | CONFIRMED |
+| AFC accrual audit-only; not in formula | `reserve.service.ts:64–84` | CONFIRMED |
+| Node weight from reputation × uptime | `nodes.service.ts:119–121` | CONFIRMED |
+| Invariants I1–I10 in automated tests | `invariants.spec.ts` | CONFIRMED |
+| No Model-A prohibitions P1–P8 | `src/` tree grep | CONFIRMED |
+
+**Deviation Found and Corrected:**
+
+**P8 (negative-language comment) in `src/nodes/nodes.service.ts`**
+
+The class docstring contained two negative definitions (P8 violation):
+- "the entity holds **no** stake or stakedBalance column"
+- "the service **never** mutates a token balance to reward or punish a node"
+
+Per P8, comments must describe what an entity IS and does, not what it is not. The
+`receivePayment()` docstring also referenced invariant/prohibition codes rather than
+stating the positive behavior.
+
+| Location | Before | After |
+|----------|--------|-------|
+| Class docstring | "holds no stake...never mutates a token balance" | "Influence flows purely from confirmed work and reputation. Weight and reputation are the sole metrics governing a node's epoch share." |
+| `receivePayment()` docstring | "leaves...NodeEntity fields untouched — per P6/I9" | "NodeChain event is the authoritative record; node fields carry work-quality metrics only." |
+
+**Files Changed:**
+```
+src/nodes/nodes.service.ts   P8 fix: negative-language docstrings rewritten to positive form
+AGENT_CORE_REPORT.md         §25 added (this run)
+```
+
+**Result:** CANONICAL. One P8 comment violation corrected; no production logic changed.

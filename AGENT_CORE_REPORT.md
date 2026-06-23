@@ -938,3 +938,63 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-23 Full Re-Audit (branch: claude/inspiring-cannon-rmviep, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01CKGdvHRBYzNPcb6M947EhS` (claude-sonnet-4-6)
+
+**Directories surveyed:**
+- `01_coin_engine/` — documentation only; no executable code; corrections from §9.4 confirmed in place
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/pot.service.ts`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited
+- `src/aroscoin/aroscoin.service.ts` — audited
+- `src/commission/commission.service.ts` — audited
+- `src/reserve/reserve.service.ts` — audited
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts` — read
+- `01_coin_engine/coin_emission_model.md` — cross-checked; canonical formula confirmed
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 10,000 × 0.005 = 50 ARO
+  Nodes    = 50 × 0.75 = 37.50 ARO (75%), via coin.recordEarned post-factum at epoch close
+  AFC      = 50 × 0.25 = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain audit event
+Burn       = 10,000 ARO; processNet = 0; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+internalPrice      = 1 × 4.0000 = 4.0000 ARO/unit (rises with confirmed volume)
+```
+
+**Key code locations verified:**
+
+| Requirement | File | Line(s) | Status |
+|-------------|------|---------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| PoT gate (verified === 1) | `src/emission/emission.service.ts` | 57–59 | CONFIRMED |
+| mint() throws on unverified | `src/emission/emission.service.ts` | 71–74 | CONFIRMED |
+| burn() mirrors mint; processNet → 0 | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| feeRate = 0.005 (0.5%) | `src/commission/commission.service.ts` | 69 | CONFIRMED |
+| marginRate = 0.25 (75/25 split) | `src/commission/commission.service.ts` | 72 | CONFIRMED |
+| Pool reconciles: paid + margin = fees (I7) | `src/commission/commission.service.ts` | 172 | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `src/reserve/reserve.service.ts` | 92–94 | CONFIRMED |
+| AFC accrual recorded, not in formula (I-RS-1) | `src/reserve/reserve.service.ts` | 64–84 | CONFIRMED |
+| Supply identity (I6): totalSupply derivable | `src/aroscoin/aroscoin.service.ts` | 86–89 | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | CONFIRMED |
+
+**All Invariants Confirmed:** I1–I10, I-EM-1–I-EM-3, I-RS-1–I-RS-4.
+
+**No code changes made. Canonical model fully implemented and verified.**

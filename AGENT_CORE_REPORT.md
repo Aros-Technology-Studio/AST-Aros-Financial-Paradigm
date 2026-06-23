@@ -938,3 +938,102 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-23 Full Re-Audit (branch: claude/inspiring-cannon-t6tv2c, session 19)
+
+**Scope:** AGENT-CORE full audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/AST_*_AGENT_EN.md`.
+All source files read directly from production code.
+
+**Directories audited this run:**
+
+| Path | Content | Finding |
+|------|---------|---------|
+| `01_coin_engine/` | Markdown/JSON docs only | No executable code; `coin_emission_model.md` corrected in §9.4 |
+| `10_proof_of_transaction_engine/` | PoT documentation only | `pot_slashing_conditions.md` is a Model-A doc artifact (no runnable code); PoT runtime is `src/pot/pot.service.ts` |
+| `src/token/` | Does not exist | Emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/` |
+| `src/emission/emission.service.ts` | NestJS EmissionService | Audited ✓ |
+| `src/aroscoin/aroscoin.service.ts` | Unit ledger (three-tally) | Audited ✓ |
+| `src/commission/commission.service.ts` | 75/25 split, epoch pool | Audited ✓ |
+| `src/reserve/reserve.service.ts` | `log10(1+vol)` formula | Audited ✓ |
+| `src/orchestrator/orchestrator.service.ts` | Full lifecycle (9 steps) | Audited ✓ |
+| `reference/ast-core/src/emission.ts` | 19-line reference | Matches NestJS port |
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, no multiplier; PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (code-traced):**
+```
+TX Amount    = 10,000
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10_000) → coin.recordMint(10_000)   [processMinted += 10,000]
+Step 7: commission.computeFee(10_000) = 50 ARO; commission.accrue(epoch, 50, participants)
+        emission.burn(processId, 10_000) → coin.recordBurn(10_000)   [processBurned += 10,000]
+          processNet = 10,000 - 10,000 = 0
+Epoch finalize:
+  distributable = 50 × 0.75 = 37.50 → coin.recordEarned (per node by PoT weight)
+  margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit record]
+  reconciled    = |37.50 + 12.50 - 50| < 1e-9  ✓
+
+Step 8: reserveIndex = log10(1 + 10,000) ≈ 4.0000
+        internalPrice = 1 × 4.0000 = 4.0000 ARO/unit
+
+totalSupply (in-cycle) = (10,000 − 10,000) + 0 = 0
+totalSupply (after earn) = 0 + 37.50 = 37.50 ARO  (= earnedRetained, I6)
+```
+
+**Line-by-line verification — all canonical requirements:**
+
+| Requirement | File | Line(s) | Status |
+|-------------|------|---------|--------|
+| Emission = txAmount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| PoT gate: no mint without verified === 1 | `src/emission/emission.service.ts` | 57–59, 73–75 | CONFIRMED |
+| Burn = minted; processNet → 0 | `src/emission/emission.service.ts` | 62, 85–88 | CONFIRMED |
+| `calculate()` pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| feeRate = 0.005 (0.5%) | `src/commission/commission.service.ts` | 69 | CONFIRMED |
+| marginRate = 0.25 (25% AFC) | `src/commission/commission.service.ts` | 72 | CONFIRMED |
+| 75% nodes: `distributable = total * (1 - 0.25)` | `src/commission/commission.service.ts` | 138 | CONFIRMED |
+| 25% AFC: `reserve.addAfcAccrual(allocatedMargin)` | `src/commission/commission.service.ts` | 161 | CONFIRMED |
+| I7 reconciliation: `paid + margin = fees` ±1e-9 | `src/commission/commission.service.ts` | 174 | CONFIRMED |
+| totalSupply = (minted−burned) + earned (I6) | `src/aroscoin/aroscoin.service.ts` | 88 | CONFIRMED |
+| reserveIndex = log10(1 + totalProcessVolume) | `src/reserve/reserve.service.ts` | 92–94 | CONFIRMED |
+| AFC accrual → NodeChain only, not in formula | `src/reserve/reserve.service.ts` | 81–83 | CONFIRMED |
+| Orchestrator: mint → commission.accrue → burn | `src/orchestrator/orchestrator.service.ts` | 162–176 | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | CONFIRMED |
+
+**All Invariants Confirmed:**
+
+| ID | Rule | Status |
+|----|------|--------|
+| I1 | Value only when PoT verified === 1 | CONFIRMED |
+| I2 | Every emission bound to confirmed process | CONFIRMED |
+| I3 | All significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic: same input → same result | CONFIRMED |
+| I5 | process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: Σpayments + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only, hash-continuous | CONFIRMED |
+| I9 | Node influence from work+reputation (no stake) | CONFIRMED |
+| I10 | All-Seeing Eye passive — zero state-change authority | CONFIRMED |
+| I-RS-1 | reserveIndex driven by confirmed volume only | CONFIRMED |
+| I-RS-2 | reserveIndex derivable from NodeChain, not set manually | CONFIRMED |
+| I-RS-4 | reserveIndex monotonic non-decreasing | CONFIRMED |
+
+**Note on `10_proof_of_transaction_engine/pot_slashing_conditions.md`:** This file describes a
+Model-A slashing/staking mechanism (Solidity `burnStake` example). It is documentation only
+and has no corresponding runnable code in `src/`. The production PoT service (`src/pot/pot.service.ts`)
+implements the canonical binary verdict gate with no slashing or stake constructs. The file
+is a historical artifact; no action is required as it contains no executable code (P1/P2 apply
+to production code only).
+
+**No code changes made. Canonical model fully implemented and verified.**

@@ -17,9 +17,9 @@ import { NodeEntity } from './entities/node.entity';
  * Reputation formula (per spec): `reputation = successes/total * uptime`
  * (returns 1 when `total === 0`, matching the reference's "fresh node" semantics).
  *
- * Influence here flows purely from confirmed work and reputation: the entity holds no
- * stake or stakedBalance column and the service never mutates a token balance to
- * reward or punish a node. That keeps invariant I9 and prohibitions P1/P2 intact.
+ * Influence flows purely from confirmed work and reputation. Weight and reputation
+ * are the sole metrics governing a node's epoch share, and both derive from execution
+ * history and uptime (see `computeReputation`, `computeWeight`).
  *
  * Spec: docs/specs/AST_Nodes_AGENT_EN.md
  * Reference: reference/ast-core/src/nodes.ts
@@ -95,9 +95,8 @@ export class NodesService {
     }
 
     /**
-     * Record a post-factum payment receipt on NodeChain. The node retains earned
-     * value off-balance per P6/I9, so this method intentionally leaves the persisted
-     * NodeEntity fields untouched — only an append-only NodeChain event is written.
+     * Record a post-factum payment receipt on NodeChain. The NodeChain event is the
+     * authoritative record of the payment; node fields carry work-quality metrics only.
      */
     async receivePayment(id: string, amount: number): Promise<void> {
         const node = await this.requireNode(id);

@@ -938,3 +938,69 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-23 Full Re-Audit (branch: agent/core-emission, session 19)
+
+**Scope:** Independent re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`,
+`src/reserve/`, `src/orchestrator/`.
+Session: `session_01HjR4nnWFFkskZixSRYantU` (claude-sonnet-4-6)
+
+### Directories Audited
+
+| Path | Finding |
+|------|---------|
+| `01_coin_engine/` | Model-A legacy docs (11 files). Contains prohibited constructs: slashing events (P2), governance kill-switches (P3), complex decay emission (contradicts 1:1 canonical). Not previously marked deprecated — deprecation header added this run. |
+| `10_proof_of_transaction_engine/` | Model-A legacy docs. Contains `pot_slashing_conditions.md` (P1/P2 violation: deposit forfeiture). Not previously marked deprecated — deprecation header added this run. |
+| `src/token/` | Does not exist. Token logic lives in `src/aroscoin/` (supply ledger) and `src/emission/` (mint/burn). |
+
+### Canonical Model Verified
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+### All Components Confirmed
+
+| Component | File | Status |
+|-----------|------|--------|
+| `EmissionService.emit()` — 1:1 mint, PoT-gated | `src/emission/emission.service.ts:55–63` | CONFIRMED |
+| `EmissionService.calculate()` — pure canonical formula | `src/emission/emission.service.ts:107–120` | CONFIRMED |
+| `EmissionService.mint()` — throws without verified === 1 | `src/emission/emission.service.ts:71–74` | CONFIRMED |
+| `EmissionService.burn()` — symmetric; processNet → 0 | `src/emission/emission.service.ts:85–88` | CONFIRMED |
+| Orchestrator — mint → commission.accrue → burn order | `src/orchestrator/orchestrator.service.ts:162–175` | CONFIRMED |
+| `feeRate = 0.005` (0.5%) | `src/commission/commission.service.ts:69` | CONFIRMED |
+| `marginRate = 0.25` (75/25 split) | `src/commission/commission.service.ts:72` | CONFIRMED |
+| Pool reconciles: Σpayments + margin == fees (I7) | `src/commission/commission.service.ts:172` | CONFIRMED |
+| `reserveIndex = log10(1 + totalProcessVolume)` | `src/reserve/reserve.service.ts` | CONFIRMED |
+| AFC accruals recorded to NodeChain only; not in formula | `src/reserve/reserve.service.ts` | CONFIRMED |
+| `totalSupply = earnedRetained` after full cycles (I6) | `src/aroscoin/aroscoin.service.ts:86–89` | CONFIRMED |
+| No Model-A prohibitions P1–P8 in `src/` | — | CONFIRMED |
+
+### Actions Taken This Run
+
+1. Added `DEPRECATED (Model-A)` notice to `01_coin_engine/README.md` to make its
+   historical-only status explicit and point to the production modules.
+2. Added `DEPRECATED (Model-A)` notice to `10_proof_of_transaction_engine/README.md`
+   with pointer to `src/pot/` (production PoT runtime).
+3. Added §25 to this report.
+
+### Files Changed
+
+```
+01_coin_engine/README.md                  DEPRECATED (Model-A) header added
+10_proof_of_transaction_engine/README.md  DEPRECATED (Model-A) header added
+AGENT_CORE_REPORT.md                      §25 added (this run)
+```
+
+### Result
+
+**CANONICAL. No production logic changes. Deprecation notices added to legacy docs.**
+All prior fixes (§4, §9, §15, §16, §19, §20, §21) confirmed in place.

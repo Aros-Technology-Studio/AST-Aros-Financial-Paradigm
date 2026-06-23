@@ -1,3 +1,9 @@
+> **DEPRECATED — Model-A Historical Documentation**
+> This directory contains pre-Model-1 reference material. It is not authoritative and is not executed.
+> Prohibited constructs described here (slashing, governance kill-switches, decay emission curves) are removed in Model 1.
+> Production emission logic lives in: `src/emission/emission.service.ts`, `src/aroscoin/aroscoin.service.ts`, `src/commission/commission.service.ts`, `src/reserve/reserve.service.ts`.
+> Authoritative specs: `docs/specs/AST_Emission_AGENT_EN.md`, `docs/specs/AST_ArosCoin_AGENT_EN.md`.
+
 **AROS Tokenomics — Coin Engine**
 
 **Path: AROS-PARADIGM-AST/01_coin_engine/README.md**

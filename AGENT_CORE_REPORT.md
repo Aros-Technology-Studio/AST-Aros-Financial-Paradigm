@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-21 (updated — see §23 for latest session; §9–§22 for prior sessions)
+**Date:** 2026-06-23 (updated — see §25 for latest session; §9–§24 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -936,5 +936,81 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
 | I-RS-2 | Derivable from NodeChain | CONFIRMED |
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-23 Full Re-Audit (branch: claude/inspiring-cannon-p38dt6, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: claude-sonnet-4-6
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; `coin_emission_model.md` already updated in §4
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited
+- `src/aroscoin/aroscoin.service.ts` — audited
+- `src/commission/commission.service.ts` — audited
+- `src/reserve/reserve.service.ts` — audited
+- `src/orchestrator/orchestrator.service.ts` — audited
+- `src/invariants/invariants.spec.ts` — audited (I1–I10 test suite)
+- `reference/ast-core/src/emission.ts` — read; NestJS implementation matches
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum at epoch finalization
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain (audit only)
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Key code locations confirming canonical implementation:**
+| Formula | Location | Value |
+|---------|----------|-------|
+| `emission = txAmount` | `emission.service.ts:111` | 1:1 confirmed |
+| `feeRate = 0.005` | `commission.service.ts:69` | 0.5% confirmed |
+| `marginRate = 0.25` | `commission.service.ts:72` | 25% AFC confirmed |
+| `distributable = total * 0.75` | `commission.service.ts:138` | 75% nodes confirmed |
+| `log10(1 + volume)` | `reserve.service.ts:92` | Index formula confirmed |
+| PoT gate `verified === 1` | `emission.service.ts:57, 73` | Gate confirmed |
+| mint → burn within process | `orchestrator.service.ts:162–175` | Net-zero confirmed |
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation, no stake | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Index derivable from NodeChain history | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+| I-EM-1 | Causality: mint bound to confirmed process | CONFIRMED |
+| I-EM-2 | PoT gate: no mint without verified === 1 | CONFIRMED |
+| I-EM-3 | Cycle symmetry: process part minted = burned | CONFIRMED |
+
+**Model-A prohibitions (none present):** No staking, slashing, token-weighted governance,
+mint-on-deposit, crypto→ArosCoin custodial conversion, or farming constructs found.
 
 **No code changes made. Canonical model fully implemented and verified.**

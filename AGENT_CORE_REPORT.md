@@ -938,3 +938,76 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-23 Full Re-Audit (branch: claude/inspiring-cannon-s2ymsb, session 19)
+
+**Scope:** AGENT-CORE full audit — canonical 1:1 emission model.
+Session: `session_017MquMpmWyJPy19LSFFRyxw` (claude-sonnet-4-6)
+
+**Directories audited:**
+- `01_coin_engine/` — 11 Markdown/JSON files; documentation only; no TypeScript; no executable emission logic
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/pot.service.ts`
+- `src/token/` — does NOT exist; production emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` + `emission.service.spec.ts` — audited
+- `src/aroscoin/aroscoin.service.ts` — audited
+- `src/commission/commission.service.ts` — audited
+- `src/reserve/reserve.service.ts` — audited
+- `src/orchestrator/orchestrator.service.ts` (lines 159–198) — burn order confirmed
+- `reference/ast-core/src/` — cross-referenced
+- `docs/specs/AST_*_AGENT_EN.md` — canonical authority
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through code):**
+```
+amount = 10_000
+→ pot.verify(processId) → verified = 1  [PoT gate]
+→ emission.mint(processId, 10_000)      [coin.recordMint; processMinted += 10_000]
+→ commission.accrue(epoch, 50, nodes)   [fee = 10_000 × 0.005 = 50 ARO]
+→ emission.burn(processId, 10_000)      [coin.recordBurn; processBurned += 10_000; net = 0]
+
+On epoch finalization:
+  distributable = 50 × 0.75 = 37.50 ARO → nodes (coin.recordEarned)
+  margin        = 50 − 37.50 = 12.50 ARO → reserve.addAfcAccrual(12.50) [NodeChain audit]
+  |37.50 + 12.50 − 50| < 1e-9  ✓ (I7 reconciled)
+
+reserveIndex = log10(1 + 10_000) ≈ 4.0000
+internalPrice = 1 × 4.0000 = 4.0000 (rises monotonically; I-RS-4)
+totalSupply after burns = 37.50 ARO (= earnedRetained; I6)
+```
+
+**Canonical Conformance — Line-by-Line:**
+
+| Requirement | File:Line | Value | Status |
+|-------------|-----------|-------|--------|
+| Emission = TX Amount (1:1) | `emission.service.ts:111` | `emission = txAmount` | CONFIRMED |
+| PoT gate (verified === 1 required) | `emission.service.ts:57–59` | returns `authorized: false` if not verified | CONFIRMED |
+| mint() throws without gate | `emission.service.ts:73–75` | throws `no PoT confirmation` | CONFIRMED |
+| Burn = Minted (net → 0) | `emission.service.ts:62` | `burned = await this.burn(processId, minted)` | CONFIRMED |
+| Commission rate = 0.5% | `commission.service.ts:69` | `readonly feeRate = 0.005` | CONFIRMED |
+| AFC margin rate = 25% | `commission.service.ts:72` | `readonly marginRate = 0.25` | CONFIRMED |
+| 75% to nodes | `commission.service.ts:137` | `distributable = total * (1 - this.marginRate)` | CONFIRMED |
+| 25% to AFC Reserve | `commission.service.ts:159` | `await this.reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| I7 reconciliation | `commission.service.ts:172` | `Math.abs(paid + allocatedMargin - total) < 1e-9` | CONFIRMED |
+| Supply identity (I6) | `aroscoin.service.ts:88` | `(processMinted - processBurned) + earnedRetained` | CONFIRMED |
+| Reserve formula (I-RS-1) | `reserve.service.ts:93` | `log10(1 + volume)` (confirmed-work volume only) | CONFIRMED |
+| AFC accrual audit-only | `reserve.service.ts:82` | `chain.append('reserve.afc.accrual', { amount })` | CONFIRMED |
+| Orchestrator burn order | `orchestrator.service.ts:162,175` | `mint → commission.accrue → burn` (canonical) | CONFIRMED |
+| calculate() pure formula | `emission.service.ts:107–120` | no side effects; exact canonical breakdown | CONFIRMED |
+| No Model-A prohibitions P1–P8 | `src/` tree | staking/slashing/farming/mint-on-deposit absent | CONFIRMED |
+| Invariants I1–I10 automated | `src/invariants/invariants.spec.ts` | all invariants covered | CONFIRMED |
+
+**All prior fixes confirmed in place:** §4 (orchestrator burn order), §9 (calculate(), doc corrections),
+§15 (calculate() tests), §19 (commission JSDoc), §20 (reserve JSDoc).
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified.**

@@ -938,3 +938,59 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-23 Full Re-Audit (branch: claude/inspiring-cannon-u56h23, session 25)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: claude-sonnet-4-6
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only (11 Markdown/JSON files); zero TypeScript; no production logic
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited line-by-line
+- `src/aroscoin/aroscoin.service.ts` — audited line-by-line
+- `src/commission/commission.service.ts` — audited line-by-line
+- `reference/ast-core/src/emission.ts` — read; NestJS service mirrors it exactly
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Line-by-line verification of key invariants:**
+
+| Requirement | File | Line(s) | Code | Status |
+|-------------|------|---------|------|--------|
+| Emission = txAmount (1:1) | `emission.service.ts` | 111 | `emission = txAmount` | ✅ |
+| PoT gate on emit() | `emission.service.ts` | 57–58 | `if (!verdict \|\| verdict.verified !== 1)` | ✅ |
+| PoT gate on mint() | `emission.service.ts` | 73–74 | throws if unverified | ✅ |
+| Burn = minted (net → 0) | `emission.service.ts` | 62 | `burn(processId, minted)` | ✅ |
+| feeRate = 0.005 | `commission.service.ts` | 69 | `readonly feeRate = 0.005` | ✅ |
+| marginRate = 0.25 (25% AFC) | `commission.service.ts` | 72 | `readonly marginRate = 0.25` | ✅ |
+| 75% distributable to nodes | `commission.service.ts` | 138 | `total * (1 - this.marginRate)` | ✅ |
+| 25% routed to Reserve | `commission.service.ts` | 160 | `reserve.addAfcAccrual(allocatedMargin)` | ✅ |
+| Pool reconciles (I7) | `commission.service.ts` | 174 | `Math.abs(paid + allocatedMargin - total) < 1e-9` | ✅ |
+| Three-tally ledger | `aroscoin.service.ts` | 63–80 | `processMinted`, `processBurned`, `earnedRetained` | ✅ |
+| totalSupply derivable (I6) | `aroscoin.service.ts` | 88 | `(processMinted - processBurned) + earnedRetained` | ✅ |
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; processNet = 0; totalSupply after = 37.50 ARO (earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**All prior fixes (§4, §9, §15, §19, §20) confirmed in place. No new deviations found.**
+
+**No code changes required. Canonical model fully implemented and verified.**

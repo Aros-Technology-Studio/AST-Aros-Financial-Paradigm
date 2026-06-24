@@ -938,3 +938,69 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-24 Full Re-Audit (branch: claude/inspiring-cannon-vxcm1x, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: claude-sonnet-4-6
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; no executable code; no deprecation markers
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (lines 55–120)
+- `src/aroscoin/aroscoin.service.ts` — audited (lines 62–130)
+- `src/commission/commission.service.ts` — audited (lines 67–265)
+- `src/reserve/reserve.service.ts` — audited
+- `src/orchestrator/orchestrator.service.ts` — audited (lines 99–201)
+- `reference/ast-core/src/emission.ts` — read; confirms PoT gate + mint/burn symmetry
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through code):**
+```
+Emission   = 10,000 ARO (MINT 1:1; emission.service.ts:61)
+Commission = 50 ARO  (commission.service.ts:95: amount × 0.005)
+  Nodes    = 37.50 ARO (75%); commission.service.ts:137: distributable = total × 0.75
+  AFC      = 12.50 ARO (25%); commission.service.ts:159: reserve.addAfcAccrual
+Burn       = 10,000 ARO (emission.service.ts:62); processNet → 0
+totalSupply after = 37.50 ARO (= earnedRetained; I6)
+reserveIndex      = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Orchestrator lifecycle order confirmed** (`orchestrator.service.ts:162–175`):
+```
+mint(amount) → commission.accrue(fee) → emission.burn(minted)
+```
+Matches reference canonical order (§4.1 fix, confirmed in place).
+
+**All Invariants Confirmed:**
+
+| Invariant | Status |
+|-----------|--------|
+| I1/I2 — PoT gate mandatory | CONFIRMED (`emission.service.ts:57-59`) |
+| I3 — NodeChain records all events | CONFIRMED |
+| I4 — Deterministic computation | CONFIRMED |
+| I5 — processNet → 0 | CONFIRMED |
+| I6 — totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 — Pool reconciles: paid + margin = fees (ε=1e-9) | CONFIRMED |
+| I8 — NodeChain append-only | CONFIRMED |
+| I9 — Node influence from work+reputation | CONFIRMED |
+| I10 — All-Seeing Eye passive | CONFIRMED |
+| I-RS-1 — reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 — Derivable from NodeChain | CONFIRMED |
+| I-RS-4 — Monotonic non-decreasing | CONFIRMED |
+
+**No Model-A prohibitions (P1–P8) found in `src/` tree.**
+
+**Result: CONFIRMED CANONICAL. No code changes required. All prior fixes confirmed in place.**

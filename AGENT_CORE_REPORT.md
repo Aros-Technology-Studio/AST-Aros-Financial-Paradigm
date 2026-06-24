@@ -938,3 +938,60 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-24 Full Re-Audit (branch: claude/inspiring-cannon-1xd29s, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01DnudZFocw8FJgyncBfLy42` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; no executable code; not deprecated
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/pot.service.ts`
+- `src/token/` — does NOT exist; all emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (lines 55–121)
+- `src/aroscoin/aroscoin.service.ts` — audited (lines 62–130)
+- `src/commission/commission.service.ts` — audited (lines 69–185)
+- `src/orchestrator/orchestrator.service.ts` — full lifecycle audited (lines 99–312)
+- `reference/ast-core/src/emission.ts` — confirms mint/burn pattern
+- `01_coin_engine/coin_emission_model.md` — canonical spec; confirms 1:1 formula
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through code):**
+```
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10_000) → coin.recordMint(10_000)       [processMinted += 10_000]
+Step 7: commission.computeFee(10_000) = 50; accrue(epoch, 50, participants)
+        emission.burn(processId, 10_000) → coin.recordBurn(10_000)        [processBurned += 10_000]
+Step 8: reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned per node)
+  margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [audit only]
+  reconciled    = |37.50 + 12.50 - 50| < 1e-9  ✓
+
+totalSupply (after earn) = 0 + 37.50 = 37.50 ARO  (earnedRetained; I6)
+internalPrice            = 1 × 4.0000 = 4.0000 ARO/unit
+```
+
+**All Invariants Confirmed:** I1–I10 + I-RS-1, I-RS-2, I-RS-4 — all CONFIRMED.
+**Prohibitions P1–P8 — all clean:** No staking, slashing, token-weighted governance, farming,
+mint-on-deposit, Eye state mutation, or unauthorized emission found in `src/`.
+
+**Key structural findings:**
+- `src/token/` does not exist — no Model-A token module present
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` are spec documentation, not deprecated executable code
+- All prior fixes (§4, §9, §15, §19, §20) confirmed in place
+- Orchestrator canonical order confirmed: `mint → commission.accrue → burn` matches reference
+
+**No code changes required. Canonical model fully implemented and verified.**

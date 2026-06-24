@@ -1544,3 +1544,64 @@ Burn         = Emission amount on cycle completion; processNet → 0
 **All Invariants Confirmed (I1–I10, I-RS-1/RS-2/RS-4).**
 
 **No code changes required. Canonical 1:1 emission model fully implemented and verified (session 27).**
+
+---
+
+## 34. 2026-06-24 Full Re-Audit (branch: agent/core-emission, session 28)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01QNUg3wDsNnTSWtCgcqfUCz` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+
+| Path | Status |
+|------|--------|
+| `01_coin_engine/` | Documentation only. No executable code. No deprecated module. Corrections from §9.4 confirmed present. |
+| `10_proof_of_transaction_engine/` | PoT documentation only. Runtime lives in `src/pot/pot.service.ts`. |
+| `src/token/` | Does not exist. All emission/token logic lives in `src/emission/` and `src/aroscoin/`. |
+| `src/emission/emission.service.ts` | Audited — 122 lines; all canonical. |
+| `src/aroscoin/aroscoin.service.ts` | Audited — 131 lines; three-tally ledger matches reference exactly. |
+| `src/commission/commission.service.ts` | Audited — feeRate=0.005, marginRate=0.25, reconciliation confirmed. |
+| `src/orchestrator/orchestrator.service.ts` | Audited — canonical 9-step lifecycle in reference order. |
+| `reference/ast-core/src/emission.ts` | Read — 19-line reference core; production service mirrors it. |
+| `reference/ast-core/src/aroscoin.ts` | Read — 27-line reference core; production service mirrors it. |
+
+**Canonical Model Verified:**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Line-level evidence for key invariants:**
+
+| Requirement | File:Line | Value |
+|-------------|-----------|-------|
+| Emission = txAmount (1:1) | `emission.service.ts:111` | `const emission = txAmount` |
+| PoT gate in emit() | `emission.service.ts:57–59` | returns `{authorized:false}` if `verified !== 1` |
+| PoT gate in mint() | `emission.service.ts:73–74` | throws if `verified !== 1` |
+| burn = minted (net → 0) | `emission.service.ts:62` | `burned = await this.burn(processId, minted)` |
+| feeRate | `commission.service.ts:69` | `readonly feeRate = 0.005` |
+| marginRate | `commission.service.ts:72` | `readonly marginRate = 0.25` |
+| totalSupply identity (I6) | `aroscoin.service.ts:88` | `(processMinted - processBurned) + earnedRetained` |
+| Orchestrator order | `orchestrator.service.ts:162–175` | `mint → commission.accrue → burn` |
+
+**Example — $10,000 transaction:**
+
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum on epoch finalization
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain audit event
+Burn       = 10,000 ARO (same cycle); processNet = 0
+totalSupply after epoch close = 37.50 ARO = earnedRetained (I6)
+reserveIndex = log10(1 + 10,000) ≈ 4.0000
+```
+
+**All Invariants Confirmed (I1–I10, I-RS-1/RS-2/RS-4).**
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified (session 28).**

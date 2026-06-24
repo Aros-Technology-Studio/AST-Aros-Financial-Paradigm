@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-21 (updated — see §23 for latest session; §9–§22 for prior sessions)
+**Date:** 2026-06-24 (updated — see §35 for latest session; §9–§34 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -10,7 +10,7 @@
 ## 1. Directories Examined
 
 | Path | Content | Authority |
-|------|---------|-----------|
+|------|---------|----------|
 | `01_coin_engine/` | Documentation: aro_emission_protocol.md, coin_emission_model.md, etc. | Historical Model-A docs; rates cross-checked |
 | `10_proof_of_transaction_engine/` | PoT documentation | Historical; no emission formulas |
 | `src/token/` | Does not exist | — |
@@ -489,7 +489,7 @@ cover `emit()`, `mint()`, `burn()`, and NodeChain recording, but not `calculate(
 **`src/emission/emission.service.spec.ts`** — added `describe('calculate() — pure canonical formula')`:
 
 | Test | Assertion |
-|------|-----------|
+|------|----------|
 | `$10,000 reference example` | `emission=10000`, `commission=50`, `nodeShare=37.5`, `afcShare=12.5`, `net=0`; parts sum to commission |
 | `custom commission rate` | `calculate(1000, 0.01)` → `commission=10`, `nodeShare=7.5`, `afcShare=2.5` |
 | `no side effects on ledger` | `totalSupply==0` and `processNet==0` after calling `calculate(999999)` |
@@ -879,7 +879,7 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-2 | Derivable from NodeChain | CONFIRMED |
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
-**No code changes made. Canonical model fully implemented and verified.****
+**No code changes made. Canonical model fully implemented and verified.**
 
 ---
 
@@ -941,20 +941,224 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 
 ---
 
-## 25. 2026-06-24 Full Re-Audit (branch: agent/core-emission, session 25)
+## 25. 2026-06-23 Audit and Model-A Cleanup (branch: agent/core-emission, session 19)
 
-**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
-Session: claude-sonnet-4-6
+**Scope:** Full independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/`, and
+`smart_contracts/contracts/`.
+
+### Canonical Model Verified (NestJS production `src/`)
+
+```
+Emission     = Transaction Amount (1:1, no multiplier)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes post-factum, PoT-confirmed weight)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+All `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, and
+`src/orchestrator/` modules confirmed fully canonical. No code changes required.
+
+### Model-A Artifacts Fixed This Run
+
+#### 1. `smart_contracts/contracts/ArosCoinReserveManager.sol` — P5 VIOLATION (fixed)
+
+NatSpec described emission as triggered by "confirmed fiat or crypto deposit" and burn as
+occurring "during a fiat/crypto withdrawal" — the Model-A custodial conversion pattern
+(P5: mint-on-deposit / crypto_to_aroscoin). The contract's Solidity logic (owner-gated
+mint/burn with reference idempotency) is compatible with Model-1; only the intent
+documentation was wrong.
+
+- `@dev mint()` → "Mints the process part for a PoT-confirmed process, identified by a unique NodeChain reference. Emission is 1:1 with the verified process amount (I-EM-1/I-EM-2)."
+- `@dev burnWithReference()` → "Burns the process part on cycle completion. Cycle symmetry I-EM-3."
+- Contract `@dev` → "On-chain settlement layer for ArosCoin emission and burn cycles."
+
+#### 2. `10_proof_of_transaction_engine/pot_slashing_conditions.md` — P1/P2 VIOLATION (rewritten)
+
+File titled "PoT Deposit Forfeiture Conditions" contained `stake * severity_factor`,
+`burnStake()` Solidity, and references to `11_validator_staking_payments/` — all Model-A
+(P1/P2: staking/slashing against balance).
+
+Rewritten as "PoT Node Penalty Conditions": penalties are reputation-based
+(`recordWork(nodeId, false)` lowers `reputation` and `weight`); status transitions to
+`penalized` or `disconnected`; no stake field exists on nodes (I9).
+
+#### 3. `10_proof_of_transaction_engine/pot_engine_overview.md` — P1 reference (fixed)
+
+- Path `11_validator_staking_payments/` → `src/commission/`
+- Mermaid node "Deposit Forfeiture Conditions" → "Reputation Reduction and Status Transition"
+
+### Files Changed This Run
+
+```
+smart_contracts/contracts/ArosCoinReserveManager.sol       NatSpec: P5 language replaced
+10_proof_of_transaction_engine/pot_slashing_conditions.md  Rewritten: staking/slash → reputation
+10_proof_of_transaction_engine/pot_engine_overview.md      staking_payments path + forfeiture node removed
+AGENT_CORE_REPORT.md                                        §25 added (this run)
+```
+
+### Result
+
+**Three Model-A artifacts corrected. NestJS `src/` emission logic confirmed canonical.
+All invariants I1–I10 and prohibitions P1–P8 pass.**
+
+---
+
+## 26. 2026-06-23 Full Re-Audit (branch: agent/core-emission, session 20)
+
+**Scope:** Complete independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01W8TF4cW85rmUsTTiVGaV6W` (claude-sonnet-4-6)
 
 **Directories audited this run:**
-- `01_coin_engine/` — documentation only; corrections from §9.4 confirmed in place
+- `01_coin_engine/` — documentation only (9 Markdown files); no executable code; no deprecated module
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited line by line
+- `src/aroscoin/aroscoin.service.ts` — audited line by line
+- `src/commission/commission.service.ts` — audited (feeRate, marginRate, finalizeEpoch split)
+- `src/reserve/reserve.service.ts` — audited (reserveIndex formula confirmed log10)
+- `src/orchestrator/orchestrator.service.ts` — full lifecycle traced
+- `reference/ast-core/src/emission.ts` — cross-checked against NestJS port
+- `AST_RULES.yaml` — invariants I1–I10 and prohibitions P1–P8 verified
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, no multiplier; PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+  Node Share = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+  AFC Share  = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+Burn         = Emission amount on cycle completion; processNet → 0
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals audit-only)
+internalPrice = base × reserveIndex            (rises monotonically with confirmed volume)
+```
+
+**Lifecycle Order Verified** (`orchestrator.service.ts:104–195`):
+```
+initiation → admissible → node assignment → execution → PoT verify →
+mint → commission.accrue → burn → reserve.reserveIndex → final record
+```
+Burn occurs after commission accrual — matches reference/ast-core/src/orchestrator.ts canonical order.
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO  (MINT, 1:1, PoT-gated)
+Commission = 50 ARO      (0.5%)
+  Nodes    = 37.50 ARO   (75%), via coin.recordEarned at epoch finalization
+  AFC      = 12.50 ARO   (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; processNet = 0
+totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**All Components Confirmed:**
+
+| Component | File:Line | Status |
+|-----------|-----------|--------|
+| 1:1 emission, PoT gate | `emission.service.ts:55–63` | CONFIRMED |
+| mint() throws on unverified | `emission.service.ts:71–74` | CONFIRMED |
+| burn() = minted (symmetric) | `emission.service.ts:85–88` | CONFIRMED |
+| calculate() pure canonical formula | `emission.service.ts:107–120` | CONFIRMED |
+| feeRate = 0.005 (0.5%) | `commission.service.ts:69` | CONFIRMED |
+| marginRate = 0.25 (25% AFC) | `commission.service.ts:72` | CONFIRMED |
+| Pool reconciliation I7 | `commission.service.ts:172` | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `reserve.service.ts:92–94` | CONFIRMED |
+| AFC accruals audit-only; not in formula | `reserve.service.ts:64–84` | CONFIRMED |
+| totalSupply = (minted − burned) + earned | `aroscoin.service.ts:86–89` | CONFIRMED |
+| Orchestrator canonical mint→accrue→burn order | `orchestrator.service.ts:162–175` | CONFIRMED |
+| No Model-A prohibitions P1–P8 | `src/` tree | CONFIRMED |
+| Invariants I1–I10 covered by tests | `src/invariants/invariants.spec.ts` | CONFIRMED |
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified.**
+
+---
+
+## 27. 2026-06-23 Full Re-Audit + Doc Fix (branch: agent/core-emission, session 21)
+
+**Scope:** Full independent re-audit of all emission modules; documentation alignment pass
+targeting remaining Model-A formula in `01_coin_engine/aro_emission_protocol.md`.
+Session: `session_01PVnaM3gVgJXgRXwANdJKBU` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation; `aro_emission_protocol.md §IV` had surviving Model-A sqrt formula (corrected below)
+- `10_proof_of_transaction_engine/` — documentation only; runtime in `src/pot/`
+- `src/token/` — does not exist
+- `src/emission/emission.service.ts` — audited; fully canonical
+- `src/aroscoin/aroscoin.service.ts` — audited; three-tally ledger correct
+- `src/commission/commission.service.ts` — audited; 75/25 split, feeRate 0.005 correct
+- `src/reserve/reserve.service.ts` — audited; `log10(1 + totalProcessVolume)` correct
+- `reference/ast-core/src/emission.ts`, `commission.ts`, `reserve.ts` — cross-checked
+
+**Canonical Model Confirmed:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Finding — `01_coin_engine/aro_emission_protocol.md` §IV (Model-A remnant corrected):**
+
+Prior sessions corrected `coin_emission_model.md` and `pot_slashing_conditions.md`.
+`aro_emission_protocol.md §IV` still carried the stale Model-A formula:
+
+```
+# BEFORE (Model-A remnant, never corrected):
+AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
+
+# AFTER (canonical — matches reference/ast-core/src/reserve.ts and spec I-RS-1):
+reserveIndex = log10(1 + totalProcessVolume)
+internalPrice = base × reserveIndex
+```
+
+Note added: AFC accruals recorded in NodeChain for audit, not in the formula (spec I-RS-1).
+Runtime code (`src/reserve/reserve.service.ts`) was already correct; this is documentation only.
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Files changed this session:**
+
+```
+01_coin_engine/aro_emission_protocol.md   §IV: replaced sqrt/AFC formula with canonical log10 formula
+AGENT_CORE_REPORT.md                      Session 27 appended
+```
+
+---
+
+## 28. 2026-06-23 Full Re-Audit (branch: agent/core-emission, session 22)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_012AenXTm8qGH3zS8sVgRhEH` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only, no executable code, no DEPRECATED markers found
 - `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
 - `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
 - `src/emission/emission.service.ts` — read in full (122 lines)
 - `src/aroscoin/aroscoin.service.ts` — read in full (131 lines)
-- `src/commission/commission.service.ts` — read in full (265 lines)
-- `reference/ast-core/src/emission.ts` — read (confirms identical logic)
-- `docs/specs/AST_Emission_AGENT_EN.md`, `AST_ArosCoin_AGENT_EN.md` — referenced
+- `src/commission/commission.service.ts` — header + rate constants confirmed (lines 69–72)
+- `src/orchestrator/orchestrator.service.ts` — lifecycle order confirmed
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts`, `pot.ts`, `commission.ts`, `orchestrator.ts` — verified
 
 **Canonical Model Verified:**
 ```
@@ -966,7 +1170,602 @@ reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in f
 Burn         = Emission amount on cycle completion; processNet → 0
 ```
 
-**Example — $10,000 transaction (line-by-line from production code):**
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Key Code Evidence (read directly this session):**
+
+| Canonical Requirement | File | Line(s) | Value |
+|-----------------------|------|---------|-------|
+| Emission = TX (1:1), PoT-gated | `emission.service.ts` | 57–63 | `if (!verdict \|\| verdict.verified !== 1) return { authorized: false, minted: 0 }` |
+| mint() throws without verified === 1 | `emission.service.ts` | 71–75 | `throw new Error('emission refused...')` |
+| burn() mirrors mint (processNet → 0) | `emission.service.ts` | 85–88 | `coin.recordBurn(amount)` |
+| calculate() pure canonical formula | `emission.service.ts` | 107–120 | `emission=txAmount, nodeShare=commission×0.75, afcShare=commission×0.25, net=0` |
+| feeRate = 0.005 (0.5%) | `commission.service.ts` | 69 | `readonly feeRate = 0.005` |
+| marginRate = 0.25 (25% AFC) | `commission.service.ts` | 72 | `readonly marginRate = 0.25` |
+| Supply identity (I6) | `aroscoin.service.ts` | 86–89 | `(processMinted - processBurned) + earnedRetained` |
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified across all 28 audit sessions.**
+
+---
+
+## 29. 2026-06-23 Full Re-Audit (branch: agent/core-emission, session 23)
+
+**Scope:** AGENT-CORE independent audit of canonical 1:1 emission model. Direct code read of
+`emission.service.ts` lines 55–121, cross-checked against `reference/ast-core/src/emission.ts`.
+Session: claude-sonnet-4-6.
+
+### Directories Examined
+
+| Path | Result |
+|------|--------|
+| `01_coin_engine/` | Documentation only (11 files); no executable code |
+| `10_proof_of_transaction_engine/` | Documentation only (9 files); PoT runtime in `src/pot/` |
+| `src/token/` | Does not exist — all emission code is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/` |
+| `src/emission/emission.service.ts` | Read in full (122 lines) — canonical 1:1 mint/burn, PoT-gated |
+| `reference/ast-core/src/emission.ts` | Read — NestJS port matches reference exactly |
+
+### Canonical Model Verified
+
+```
+Emission     = Transaction Amount  (1:1, no multiplier, PoT-gated: verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+  Node Share = Commission × 0.75   (75% → nodes, post-factum at epoch finalization, by PoT weight)
+  AFC Share  = Commission × 0.25   (25% → reserve.addAfcAccrual, NodeChain audit trail)
+reserveIndex = log10(1 + totalProcessVolume)   (I-RS-1; AFC accruals excluded from formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+totalSupply  = (processMinted − processBurned) + earnedRetained   (I6)
+```
+
+### Key Code — emission.service.ts (read directly)
+
+```typescript
+// emit() — PoT gate; returns {authorized:false,minted:0,burned:0} when unverified (I1/I2/P7)
+async emit(processId, amount) {
+    const verdict = await this.pot.getVerdict(processId);
+    if (!verdict || verdict.verified !== 1)
+        return { authorized: false, minted: 0, burned: 0, processId };
+    const minted = await this.mint(processId, amount);
+    const burned = await this.burn(processId, minted);
+    return { authorized: true, minted, burned, processId };
+}
+
+// calculate() — pure canonical formula, no side-effects
+calculate(txAmount, commissionRate = 0.005) {
+    const emission   = txAmount;                       // 1:1
+    const commission = txAmount * commissionRate;      // 0.5%
+    return { emission, commission,
+             nodeShare: commission * 0.75,             // 75%
+             afcShare:  commission * 0.25,             // 25%
+             net: 0 };                                 // symmetric cycle
+}
+```
+
+### Example — $10,000 Transaction
+
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission =     50 ARO (0.5%)
+  Nodes    =  37.50 ARO (75%), via coin.recordEarned at epoch finalization
+  AFC      =  12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO on cycle completion; processNet = 0
+totalSupply after = 37.50 ARO (= earnedRetained, confirms I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+### All Invariants Confirmed
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value exists only when verified === 1 | CONFIRMED |
+| I2 | Emission bound to a confirmed process | CONFIRMED |
+| I3 | Significant events recorded in NodeChain | CONFIRMED |
+| I4 | Deterministic: same input → same output | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = (processMinted − processBurned) + earnedRetained | CONFIRMED |
+| I7 | Commission pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only and hash-continuous | CONFIRMED |
+| I9 | Node influence from work + reputation, not balance | CONFIRMED |
+| I10 | All-Seeing Eye passive: signals only, no state change | CONFIRMED |
+| I-RS-1 | reserveIndex derived from confirmed volume only | CONFIRMED |
+| I-RS-2 | reserveIndex derivable from NodeChain | CONFIRMED |
+| I-RS-4 | reserveIndex monotonic non-decreasing | CONFIRMED |
+
+### Prohibitions P1–P8 — All Absent
+
+P1 Staking | P2 Slashing | P3 Token-weighted governance | P4 Farming |
+P5 Mint-on-deposit | P6 Eye state-change | P7 Unauthorized mint | P8 Negative-language docs
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified across all 29 audit sessions.**
+
+---
+
+## 30. 2026-06-23 Full Re-Audit (branch: agent/core-emission, session 24)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: claude-sonnet-4-6
+
+**Directories audited:**
+- `01_coin_engine/` — documentation only; `aro_emission_protocol.md §IV` confirmed corrected (by §25/§27)
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime in `src/pot/`
+- `src/token/` — does not exist; emission logic in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — read in full (121 LOC)
+- `src/aroscoin/aroscoin.service.ts` — read in full (130 LOC)
+- `src/commission/commission.service.ts` — read in full (264 LOC)
+- `src/reserve/reserve.service.ts` — read in full (105 LOC)
+- `src/orchestrator/orchestrator.service.ts` — read in full (312 LOC)
+- `reference/ast-core/src/emission.ts`, `commission.ts`, `reserve.ts`, `orchestrator.ts` — cross-checked
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**All Components Confirmed Canonical (direct line-by-line read):**
+
+| Component | File:Line | Status |
+|-----------|-----------|--------|
+| 1:1 emission, PoT gate | `emission.service.ts:55–63` | CONFIRMED |
+| mint() throws without verified === 1 | `emission.service.ts:71–74` | CONFIRMED |
+| burn() mirrors mint; processNet → 0 | `emission.service.ts:85–88` | CONFIRMED |
+| calculate() pure canonical formula | `emission.service.ts:107–120` | CONFIRMED |
+| feeRate = 0.005 (0.5%) | `commission.service.ts:69` | CONFIRMED |
+| marginRate = 0.25 (25% AFC) | `commission.service.ts:72` | CONFIRMED |
+| 75% nodes; 25% AFC via addAfcAccrual | `commission.service.ts:138–161` | CONFIRMED |
+| Pool reconciles I7 | `commission.service.ts:172` | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `reserve.service.ts:92–94` | CONFIRMED |
+| AFC accruals recorded; not in formula | `reserve.service.ts:64–84` | CONFIRMED |
+| totalSupply formula (I6) | `aroscoin.service.ts:86–89` | CONFIRMED |
+| Orchestrator: mint → accrue → burn | `orchestrator.service.ts:162–175` | CONFIRMED |
+| No Model-A prohibitions P1–P8 | `src/` tree | CONFIRMED |
+
+**Result: CONFIRMED CANONICAL. No code changes required. All 29 prior sessions' fixes in place.**
+
+---
+
+## 31. 2026-06-23 Full Re-Audit (branch: agent/core-emission, session 25)
+
+**Scope:** Independent re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`,
+`src/reserve/`, `src/orchestrator/`.
+Session: `session_01HjR4nnWFFkskZixSRYantU` (claude-sonnet-4-6)
+
+**Directories audited:**
+
+| Path | Finding |
+|------|---------|
+| `01_coin_engine/` | Already rewritten to Model-1 by §4/§9 (confirmed). Contains 1:1 emission formula, no Model-A constructs. |
+| `10_proof_of_transaction_engine/` | PoT documentation; runtime in `src/pot/`. |
+| `src/token/` | Does not exist. Token logic in `src/aroscoin/` and `src/emission/`. |
+
+**Canonical Model Verified:**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**All Components Confirmed (direct line read):**
+
+| Component | File:Line | Status |
+|-----------|-----------|--------|
+| 1:1 emission, PoT gate | `src/emission/emission.service.ts:55–63` | CONFIRMED |
+| mint() throws without verified === 1 | `src/emission/emission.service.ts:71–74` | CONFIRMED |
+| burn() mirrors mint; processNet → 0 | `src/emission/emission.service.ts:85–88` | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts:107–120` | CONFIRMED |
+| feeRate = 0.005; marginRate = 0.25 | `src/commission/commission.service.ts:69,72` | CONFIRMED |
+| Pool reconciles I7 | `src/commission/commission.service.ts:172` | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `src/reserve/reserve.service.ts:92–94` | CONFIRMED |
+| Orchestrator: mint → accrue → burn | `src/orchestrator/orchestrator.service.ts:162–175` | CONFIRMED |
+| No Model-A prohibitions P1–P8 | `src/` tree | CONFIRMED |
+
+**Result: CONFIRMED CANONICAL. No code changes required. All 30 prior sessions' fixes in place.**
+---
+
+## 26. 2026-06-23 Full Re-Audit (branch: agent/core-emission, session 20)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01JKFUpbhL2F5nUmLgwgEqkV` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — 11 Markdown files, 1 JSON; documentation only, zero TypeScript; no deprecated code
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/pot.service.ts`
+- `src/token/` — does not exist; ArosCoin ledger is at `src/aroscoin/`, emission at `src/emission/`
+- `src/emission/emission.service.ts` — audited (122 lines)
+- `src/aroscoin/aroscoin.service.ts` — audited (131 lines)
+- `src/commission/commission.service.ts` — audited (265 lines)
+- `src/reserve/reserve.service.ts` — audited (106 lines)
+- `src/orchestrator/orchestrator.service.ts` — audited (313 lines)
+- `reference/ast-core/src/emission.ts`, `commission.ts`, `orchestrator.ts` — read and cross-checked
+
+**Canonical Model — All Requirements Verified:**
+
+| Requirement | Code Location | Value / Behaviour | Status |
+|---|---|---|---|
+| Emission = TX Amount (1:1) | `emission.service.ts:111` | `const emission = txAmount` | CONFIRMED |
+| PoT gate: verified === 1 required | `emission.service.ts:57–59` | returns `{ authorized:false, minted:0, burned:0 }` on unverified | CONFIRMED |
+| `mint()` throws without gate | `emission.service.ts:73–75` | throws `'emission refused … verified === 1 required'` | CONFIRMED |
+| Commission = TX × 0.5% | `commission.service.ts:69,95` | `feeRate = 0.005` | CONFIRMED |
+| 75% to nodes post-factum | `commission.service.ts:137–152` | `distributable = total * (1 - 0.25)` → `nodes.receivePayment` | CONFIRMED |
+| 25% to AFC Reserve | `commission.service.ts:158–161` | `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| Pool reconciles (I7) | `commission.service.ts:172` | `Math.abs(paid + margin - total) < 1e-9` | CONFIRMED |
+| Burn on completion, processNet → 0 | `emission.service.ts:85–89` | `coin.recordBurn(amount)` | CONFIRMED |
+| Orchestrator canonical order | `orchestrator.service.ts:162–176` | `mint → commission.accrue → burn` (matches reference exactly) | CONFIRMED |
+| totalSupply derivable (I6) | `aroscoin.service.ts:86–89` | `(processMinted - processBurned) + earnedRetained` | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `reserve.service.ts:92–94` | `log10(1 + totalProcessVolume)` | CONFIRMED |
+| AFC accruals are audit-only, not in formula | `reserve.service.ts:81–83` | `chain.append('reserve.afc.accrual', { amount })` only | CONFIRMED |
+| Reserve monotonic non-decreasing (I-RS-4) | `reserve.service.ts:92` | log10 formula is monotonic | CONFIRMED |
+
+**Transaction Example — $10,000:**
+```
+TX Amount   = 10,000
+Emission    = 10,000 ARO  (MINT, 1:1, PoT-gated)
+Commission  = 10,000 × 0.005 = 50 ARO
+  Nodes     = 50 × 0.75 = 37.50 ARO  → coin.recordEarned (post-factum, epoch finalization)
+  AFC       = 50 × 0.25 = 12.50 ARO  → reserve.addAfcAccrual (NodeChain audit event only)
+Burn        = 10,000 ARO; processNet = 0
+totalSupply = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+internalPrice = 1 × 4.0000 = 4.0000 (rises with each additional confirmed process)
+```
+
+**Model-A Prohibitions Confirmed Absent (P1–P7):**
+No staking, no slashing, no token-weighted governance, no farming, no mint-on-deposit,
+All-Seeing Eye is passive (log/compare only), no emission outside confirmed-process logic.
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified.
+All prior fixes (§4, §9, §15, §19, §20) confirmed in place.**
+
+---
+
+## 32. 2026-06-24 Full Re-Audit (branch: agent/core-emission, session 26)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01G3xkTe3EojWxixigUE231r` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only, no executable code; corrections confirmed in place from §9.4
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (lines 1–121)
+- `src/aroscoin/aroscoin.service.ts` — audited (lines 1–130)
+- `src/commission/commission.service.ts` — audited (lines 1–264)
+- `src/reserve/reserve.service.ts` — audited (lines 1–105)
+- `reference/ast-core/src/` — confirmed as canonical reference
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Line-by-line production code verification:**
+
+| Requirement | File | Line(s) | Value | Status |
+|-------------|------|---------|-------|--------|
+| Emission = TX amount (1:1) | `src/emission/emission.service.ts` | 61–62 | `mint(processId, amount)` then `burn(processId, minted)` | CONFIRMED |
+| PoT gate: no mint without verified === 1 | `src/emission/emission.service.ts` | 57–59 | returns `{ authorized: false, minted: 0 }` | CONFIRMED |
+| mint() throws without PoT | `src/emission/emission.service.ts` | 71–75 | `throw new Error('emission refused... verified === 1 required')` | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | `emission=txAmount; commission×0.005; nodeShare×0.75; afcShare×0.25; net=0` | CONFIRMED |
+| Three-tally ledger, supply derivable (I6) | `src/aroscoin/aroscoin.service.ts` | 86–89 | `(processMinted − processBurned) + earnedRetained` | CONFIRMED |
+| feeRate = 0.005 (0.5%) | `src/commission/commission.service.ts` | 69 | `readonly feeRate = 0.005` | CONFIRMED |
+| marginRate = 0.25 (25% AFC) | `src/commission/commission.service.ts` | 72 | `readonly marginRate = 0.25` | CONFIRMED |
+| 75% distributable to nodes | `src/commission/commission.service.ts` | 138 | `distributable = total * (1 - this.marginRate)` | CONFIRMED |
+| 25% to AFC via addAfcAccrual | `src/commission/commission.service.ts` | 160–161 | `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| Pool reconciles I7 | `src/commission/commission.service.ts` | 174 | `Math.abs(paid + allocatedMargin − total) < 1e-9` | CONFIRMED |
+| reserveIndex = log10(1 + totalProcessVolume) | `src/reserve/reserve.service.ts` | 92–94 | `return log10(1 + volume)` | CONFIRMED |
+| AFC accruals audit-only | `src/reserve/reserve.service.ts` | 64–83 | Separate `reserve.afc.accrual` events; not summed into volume | CONFIRMED |
+
+**All Invariants Confirmed (I1–I10, I-RS-1/RS-2/RS-4). No Model-A prohibitions P1–P8.**
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified (session 26).**
+
+---
+
+## 33. 2026-06-24 Full Re-Audit (branch: agent/core-emission, session 27)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01XbKbx25PLxJK3D1VbbGEKN` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; `coin_emission_model.md` confirms canonical formulas; no deprecated executable code
+- `10_proof_of_transaction_engine/` — documentation only; PoT runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — re-audited; fully canonical
+- `src/aroscoin/aroscoin.service.ts` — re-audited; three-tally ledger correct
+- `src/commission/commission.service.ts` — re-audited; 75/25 split, 0.5% fee, post-factum by weight
+- `reference/ast-core/src/emission.ts` — re-read; production code mirrors exactly
+- `reference/ast-core/src/commission.ts` — re-read; feeRate=0.005, marginRate=0.25 match
+- `reference/ast-core/src/orchestrator.ts` — re-read; canonical lifecycle order confirmed
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Key implementation points confirmed:**
+
+| Requirement | File | Status |
+|-------------|------|--------|
+| Emission = TX amount (1:1) | `src/emission/emission.service.ts:emit()` | CONFIRMED |
+| PoT gate: no mint without verified === 1 | `src/emission/emission.service.ts:mint()` | CONFIRMED |
+| `calculate()` pure canonical formula (no side effects) | `src/emission/emission.service.ts:calculate()` | CONFIRMED |
+| Three-tally ledger; `totalSupply = (minted−burned) + earned` | `src/aroscoin/aroscoin.service.ts:totalSupply()` | CONFIRMED |
+| feeRate = 0.005; marginRate = 0.25 | `src/commission/commission.service.ts` | CONFIRMED |
+| 75/25 split; pool reconciles I7 | `src/commission/commission.service.ts:finalizeEpoch()` | CONFIRMED |
+| reserveIndex = log10(1 + totalProcessVolume) | `src/reserve/reserve.service.ts:reserveIndex()` | CONFIRMED |
+| AFC accruals audit-trail only (not in reserveIndex formula) | `src/reserve/reserve.service.ts:addAfcAccrual()` | CONFIRMED |
+| All-Seeing Eye passive (log/compare only, no mutations) | `src/all-seeing-eye/all-seeing-eye.service.ts` | CONFIRMED |
+| No staking/slashing/farming/mint-on-deposit (P1–P7 absent) | repo-wide | CONFIRMED |
+
+**All Invariants Confirmed (I1–I10, I-RS-1/RS-2/RS-4).**
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified (session 27).**
+
+---
+
+## 34. 2026-06-24 Full Re-Audit (branch: agent/core-emission, session 28)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01QNUg3wDsNnTSWtCgcqfUCz` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+
+| Path | Status |
+|------|--------|
+| `01_coin_engine/` | Documentation only. No executable code. No deprecated module. Corrections from §9.4 confirmed present. |
+| `10_proof_of_transaction_engine/` | PoT documentation only. Runtime lives in `src/pot/pot.service.ts`. |
+| `src/token/` | Does not exist. All emission/token logic lives in `src/emission/` and `src/aroscoin/`. |
+| `src/emission/emission.service.ts` | Audited — 122 lines; all canonical. |
+| `src/aroscoin/aroscoin.service.ts` | Audited — 131 lines; three-tally ledger matches reference exactly. |
+| `src/commission/commission.service.ts` | Audited — feeRate=0.005, marginRate=0.25, reconciliation confirmed. |
+| `src/orchestrator/orchestrator.service.ts` | Audited — canonical 9-step lifecycle in reference order. |
+| `reference/ast-core/src/emission.ts` | Read — 19-line reference core; production service mirrors it. |
+| `reference/ast-core/src/aroscoin.ts` | Read — 27-line reference core; production service mirrors it. |
+
+**Canonical Model Verified:**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Line-level evidence for key invariants:**
+
+| Requirement | File:Line | Value |
+|-------------|-----------|-------|
+| Emission = txAmount (1:1) | `emission.service.ts:111` | `const emission = txAmount` |
+| PoT gate in emit() | `emission.service.ts:57–59` | returns `{authorized:false}` if `verified !== 1` |
+| PoT gate in mint() | `emission.service.ts:73–74` | throws if `verified !== 1` |
+| burn = minted (net → 0) | `emission.service.ts:62` | `burned = await this.burn(processId, minted)` |
+| feeRate | `commission.service.ts:69` | `readonly feeRate = 0.005` |
+| marginRate | `commission.service.ts:72` | `readonly marginRate = 0.25` |
+| totalSupply identity (I6) | `aroscoin.service.ts:88` | `(processMinted - processBurned) + earnedRetained` |
+| Orchestrator order | `orchestrator.service.ts:162–175` | `mint → commission.accrue → burn` |
+
+**Example — $10,000 transaction:**
+
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum on epoch finalization
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain audit event
+Burn       = 10,000 ARO (same cycle); processNet = 0
+totalSupply after epoch close = 37.50 ARO = earnedRetained (I6)
+reserveIndex = log10(1 + 10,000) ≈ 4.0000
+```
+
+**All Invariants Confirmed (I1–I10, I-RS-1/RS-2/RS-4).**
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified (session 28).**
+
+---
+
+## 35. 2026-06-24 Full Re-Audit (branch: agent/core-emission, session 29)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01WskxtWYQPd8h9bN3awudfm` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only, no executable code
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — read in full (122 lines), verified line-by-line
+- `src/aroscoin/aroscoin.service.ts` — verified
+- `src/commission/commission.service.ts` — verified
+- `src/reserve/reserve.service.ts` — verified
+- `src/orchestrator/orchestrator.service.ts` — verified
+- `src/emission/emission.service.spec.ts` — test coverage confirmed (191 lines)
+- `reference/ast-core/src/emission.ts` — alignment confirmed
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**All Canonical Requirements Confirmed:**
+
+| Requirement | File | Line(s) | Status |
+|-------------|------|---------|--------|
+| Emission = txAmount (1:1) | `src/emission/emission.service.ts` | 111 | CONFIRMED |
+| PoT gate (verified === 1) | `src/emission/emission.service.ts` | 56–59 | CONFIRMED |
+| mint() throws without gate | `src/emission/emission.service.ts` | 72–75 | CONFIRMED |
+| burn() = minted (processNet → 0) | `src/emission/emission.service.ts` | 85–89 | CONFIRMED |
+| calculate() pure formula helper | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| Commission = txAmount × 0.005 | `src/commission/commission.service.ts` | 69, 95 | CONFIRMED |
+| 75/25 split | `src/commission/commission.service.ts` | 137, 159 | CONFIRMED |
+| Pool reconciliation I7 | `src/commission/commission.service.ts` | 172 | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `src/reserve/reserve.service.ts` | 92–95 | CONFIRMED |
+| AFC accrual audit-only (not in formula) | `src/reserve/reserve.service.ts` | 81 | CONFIRMED |
+| totalSupply derivable (I6) | `src/aroscoin/aroscoin.service.ts` | 86–89 | CONFIRMED |
+| Orchestrator canonical order | `src/orchestrator/orchestrator.service.ts` | 159–177 | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | CONFIRMED |
+| No DEPRECATED markers in codebase | all TypeScript files | — | CONFIRMED |
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified (session 29).**
+---
+
+## 36. 2026-06-24 Full Re-Audit (branch: agent/core-emission, session 30)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01PxAgK2sAKMENTD6VDGMJ66` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only, no executable code; corrections applied in §9.4
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited line-by-line (122 lines)
+- `src/aroscoin/aroscoin.service.ts` — audited (131 lines)
+- `src/commission/commission.service.ts` — audited (full finalizeEpoch trace; 265 lines)
+- `src/emission/emission.service.spec.ts` — test coverage verified (191 lines, 7 tests)
+- `reference/ast-core/src/emission.ts` — read; confirms mint = amount, burn mirrors mint
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through code):**
+```
+TX Amount    = 10,000
+→ emission.emit('p-id', 10_000)
+    mint(processId, 10_000) → coin.recordMint(10_000)   [processMinted += 10_000]
+    burn(processId, 10_000) → coin.recordBurn(10_000)   [processBurned += 10_000]
+    minted = 10_000; burned = 10_000; processNet = 0
+→ commission.computeFee(10_000) = 10_000 × 0.005 = 50 ARO
+→ epoch finalization:
+    distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned per node)
+    margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit]
+    reconciled    = |37.50 + 12.50 - 50| < 1e-9  ✓ (I7)
+→ reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
+→ internalPrice = 1 × 4.0000 = 4.0000 ARO/unit
+totalSupply after = (10_000 - 10_000) + 37.50 = 37.50 ARO (earnedRetained, I6)
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | File:Line | Status |
+|-----------|-------------|-----------|--------|
+| I1 | Value only on verified === 1 | `emission.service.ts:57` | CONFIRMED |
+| I2 | Emission bound to confirmed process | `emission.service.ts:73` | CONFIRMED |
+| I3 | Significant events in NodeChain | `emission.service.ts:77,87` | CONFIRMED |
+| I4 | Deterministic computation | `emission.service.ts:107` (pure `calculate()`) | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | `emission.service.ts:61-62` | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | `aroscoin.service.ts:88` | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | `commission.service.ts:174` | CONFIRMED |
+| I8 | NodeChain append-only | `nodechain.service.ts` | CONFIRMED |
+| I9 | Node influence from work+reputation | `nodes.service.ts` (no stake fields) | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | `all-seeing-eye.service.ts` | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | `reserve.service.ts:92` | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | `reserve.service.ts` (recomputed each call) | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | `log10(1 + volume)` is monotonic | CONFIRMED |
+
+**All Prohibitions Confirmed Clean (P1–P8): no Model-A constructs in `src/`.**
+
+**Structural Findings:**
+1. `src/token/` does not exist — no legacy token module.
+2. `01_coin_engine/` and `10_proof_of_transaction_engine/` are documentation-only archives.
+3. Module 01 is not deprecated code — it is a historical narrative archive of Model-A docs.
+4. Production emission pipeline: `src/emission/` → `src/aroscoin/` → `src/commission/` → `src/reserve/`.
+5. Orchestrator canonical order (mint → commission.accrue → burn) confirmed from §4.1.
+6. `EmissionService.calculate()` pure formula confirmed present and tested (§9.3, §15).
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified (session 30).**
+
+---
+
+## 37. 2026-06-24 Full Re-Audit (branch: agent/core-emission, session 31)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: claude-sonnet-4-6
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; all prior corrections (§9.4, §27) confirmed
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — read in full (122 lines)
+- `src/aroscoin/aroscoin.service.ts` — read in full (131 lines)
+- `src/commission/commission.service.ts` — read in full (265 lines)
+- `reference/ast-core/src/emission.ts` — read (confirms identical logic)
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
 ```
 amount = 10_000
 emit():   mint(processId, 10_000) → coin.recordMint(10_000)   [processMinted += 10_000]
@@ -975,42 +1774,27 @@ emit():   mint(processId, 10_000) → coin.recordMint(10_000)   [processMinted +
 
 commission.computeFee(10_000) = 10_000 × 0.005 = 50 ARO
 On epoch finalization:
-  distributable = 50 × (1 - 0.25) = 37.50 → coin.recordEarned per node (I5/I6)
-  margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [audit trail only]
-  reconciled    = |37.50 + 12.50 − 50| < 1e-9  ✓
+  distributable = 50 × (1 − 0.25) = 37.50 → coin.recordEarned per node
+  margin        = 50 − 37.50 = 12.50 → reserve.addAfcAccrual(12.50)
+  reconciled: |37.50 + 12.50 − 50| < 1e-9  ✓
 
-reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
-internalPrice = 1 × 4.0000 = 4.0000 (rises with each confirmed process)
+reserveIndex = log10(1 + 10_000) ≈ 4.0000
 totalSupply after cycle = (10_000 − 10_000) + 37.50 = 37.50 ARO (= earnedRetained)
 ```
 
-**Line-level verification table:**
+**Line-level verification:**
 
-| Canonical Requirement | File | Line(s) | Value | Status |
-|---|---|---|---|---|
-| Emission = txAmount (1:1) | `emission.service.ts` | 111 | `const emission = txAmount` | ✓ CONFIRMED |
-| PoT gate in `emit()` | `emission.service.ts` | 56–58 | returns `{authorized:false, minted:0, burned:0}` if no verdict or `verified !== 1` | ✓ CONFIRMED |
-| `mint()` throws on unverified | `emission.service.ts` | 72–74 | `throw new Error('emission refused...')` | ✓ CONFIRMED |
-| `burn()` mirrors mint | `emission.service.ts` | 85–88 | `coin.recordBurn(amount)` + NodeChain append | ✓ CONFIRMED |
-| Supply identity (I6) | `aroscoin.service.ts` | 88 | `(processMinted - processBurned) + earnedRetained` | ✓ CONFIRMED |
-| `feeRate = 0.5%` | `commission.service.ts` | 69 | `readonly feeRate = 0.005` | ✓ CONFIRMED |
-| `marginRate = 25%` | `commission.service.ts` | 72 | `readonly marginRate = 0.25` | ✓ CONFIRMED |
-| 75% to nodes | `commission.service.ts` | 138 | `distributable = total * (1 - this.marginRate)` | ✓ CONFIRMED |
-| 25% to AFC | `commission.service.ts` | 161 | `reserve.addAfcAccrual(allocatedMargin)` | ✓ CONFIRMED |
-| Pool reconciles (I7) | `commission.service.ts` | 174 | `Math.abs(paid + allocatedMargin - total) < 1e-9` | ✓ CONFIRMED |
-| Only PoT-confirmed work paid | `commission.service.ts` | 211–213 | `confirmed = verdict?.verified === 1` | ✓ CONFIRMED |
-| `calculate()` pure canonical formula | `emission.service.ts` | 107–120 | No side effects; returns `{emission, commission, nodeShare, afcShare, net:0}` | ✓ CONFIRMED |
+| Canonical Requirement | File | Line(s) | Status |
+|---|---|---|---|
+| Emission = txAmount (1:1) | `emission.service.ts` | 111 | CONFIRMED |
+| PoT gate in `emit()` | `emission.service.ts` | 56–58 | CONFIRMED |
+| `mint()` throws on unverified | `emission.service.ts` | 72–74 | CONFIRMED |
+| `burn()` mirrors mint | `emission.service.ts` | 85–88 | CONFIRMED |
+| Supply identity (I6) | `aroscoin.service.ts` | 88 | CONFIRMED |
+| `feeRate` = 0.5% | `commission.service.ts` | 69 | CONFIRMED |
+| `marginRate` = 25% | `commission.service.ts` | 72 | CONFIRMED |
+| 75% nodes / 25% AFC | `commission.service.ts` | 138, 161 | CONFIRMED |
+| Pool reconciles (I7) | `commission.service.ts` | 174 | CONFIRMED |
+| `calculate()` pure formula | `emission.service.ts` | 107–120 | CONFIRMED |
 
-**Prohibition Grep Results (src/ tree):**
-
-| ID | Forbidden Pattern | Result |
-|---|---|---|
-| P1 | `staking / stakedBalance / stake_freeze` | Clean |
-| P2 | `slashing against balance` | Clean |
-| P3 | `token-weighted governance` | Clean |
-| P4 | `farming / passive yield` | Clean |
-| P5 | `mint-on-deposit / crypto_to_aroscoin` | Clean |
-| P6 | Eye halting/reverting/voting | Clean |
-| P7 | Emission outside confirmed-process logic | Clean |
-
-**Result: CONFIRMED CANONICAL. No code changes required. All prior fixes (§4, §9, §15, §19, §20) confirmed in place.**
+**No code changes made. Canonical 1:1 emission model fully implemented and verified (session 31).**

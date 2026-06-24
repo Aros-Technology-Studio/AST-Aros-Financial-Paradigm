@@ -28,7 +28,7 @@ Nodes earn "weight" through consistent, honest participation in NodeChain, penal
 All PoT processes are replayable and logged immutably, compliant with GDPR.
 
 ### 4. Integration with AST
-Triggers emission (08_emission_layer/) and payments (11_validator_staking_payments/), escalating to AI agents for anomalies.
+Triggers emission (`src/emission/`) and post-factum node payments (`src/commission/`) on verified processes, escalating to AI agents for anomalies.
 
 ## 3. High-Level Flow
 ```mermaid
@@ -41,7 +41,7 @@ flowchart TD
     F --> G[Final Confirmation]
     G --> H[NodeChain Ledger Commit]
     subgraph "Penalties"
-    E --> I[Deposit Forfeiture Conditions]
+    E --> I[Reputation Reduction and Status Transition]
     end
 ```
 

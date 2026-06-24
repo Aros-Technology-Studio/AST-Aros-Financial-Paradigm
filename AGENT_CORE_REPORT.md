@@ -938,3 +938,89 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-24 Full Re-Audit (branch: claude/inspiring-cannon-1e7524, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; `coin_emission_model.md` confirms `src/emission/emission.service.ts` as canonical
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (full source read)
+- `src/aroscoin/aroscoin.service.ts` — audited (full source read)
+- `src/commission/commission.service.ts` — audited (full source read)
+- `src/reserve/reserve.service.ts` — audited (full source read)
+- `src/orchestrator/orchestrator.service.ts` — audited (full source read)
+- `src/emission/emission.service.spec.ts` — audited (full source read)
+- `reference/ast-core/src/emission.ts`, `commission.ts`, `reserve.ts`, `aroscoin.ts`, `orchestrator.ts` — read
+- `01_coin_engine/coin_emission_model.md` — read; confirms log10 formula
+- `01_coin_engine/aro_emission_protocol.md` — read; contains outdated AFC Reserve formula (noted below)
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**$10,000 reference example — traced through production code:**
+```
+amount = 10_000
+
+Step 5: pot.verify(processId) → verified = 1
+
+Step 6 (mint): emission.mint(processId, 10_000)
+  → coin.recordMint(10_000)    [processMinted += 10_000]
+  → chain.append('emission.minted', { processId, minted: 10_000 })
+
+Step 7 (commission): commission.computeFee(10_000) = 10_000 × 0.005 = 50
+  → commission.accrue(epoch, 50, participants)
+
+Step 6 (burn): emission.burn(processId, 10_000)
+  → coin.recordBurn(10_000)    [processBurned += 10_000]
+  → chain.append('emission.burned', { processId, burned: 10_000 })
+
+processNet = 10_000 - 10_000 = 0   ✓
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 → nodes via coin.recordEarned  [earnedRetained += 37.50]
+  margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) → NodeChain (audit only)
+  reconciled:   |37.50 + 12.50 - 50| < 1e-9  ✓
+
+Step 8: reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
+        internalPrice = 1 × 4.0000 = 4.0000 (rises with each confirmed process)
+
+totalSupply (after epoch): (10_000 - 10_000) + 37.50 = 37.50 = earnedRetained  ✓
+```
+
+**Documentation note — `aro_emission_protocol.md` Section IV:**
+
+This file contains a legacy AFC Reserve formula `AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000`
+that differs from the canonical `log10(1 + totalProcessVolume)`. This is a documentation artifact with
+no runtime effect; the production code and `coin_emission_model.md` are correct.
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**No code changes made. Canonical model fully implemented and verified.**

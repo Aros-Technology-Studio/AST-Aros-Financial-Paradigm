@@ -938,3 +938,78 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-24 Full Re-Audit (branch: claude/inspiring-cannon-whk4wd, session 19)
+
+**Scope:** Independent re-audit of all emission modules. Directories: `01_coin_engine/`,
+`10_proof_of_transaction_engine/`, `src/token/` (absent), `src/emission/`, `src/aroscoin/`,
+`src/commission/`, `src/reserve/`, `src/orchestrator/`, `src/invariants/`,
+`reference/ast-core/src/`, `docs/specs/`.
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**All Production Invariants Confirmed (I1–I10):**
+
+| Invariant | Status |
+|-----------|--------|
+| I1 — value only on verified === 1 | CONFIRMED |
+| I2 — emission bound to confirmed process | CONFIRMED |
+| I3 — significant events in NodeChain | CONFIRMED |
+| I4 — deterministic computation | CONFIRMED |
+| I5 — process part nets to 0 (processNet = 0) | CONFIRMED |
+| I6 — totalSupply = earnedRetained after burns | CONFIRMED |
+| I7 — pool reconciles: Σpayments + margin = fees | CONFIRMED |
+| I8 — NodeChain append-only, tamper-detectable | CONFIRMED |
+| I9 — node influence from work+reputation, no stake field | CONFIRMED |
+| I10 — All-Seeing Eye passive (no state mutations) | CONFIRMED |
+
+**Deviations Found and Corrected:**
+
+### `01_coin_engine/README.md` — Model-A artifacts removed
+
+The README described the token with Model-A era values and formulas inconsistent
+with the production implementation and the canonical spec.
+
+| Item | Before | After |
+|------|--------|-------|
+| Symbol | `AROS` | `ARO` (matches AROS_Coin_TokenSpec.json and canonical spec) |
+| Decimals | `6` | `8` (matches AROS_Coin_TokenSpec.json) |
+| Emission formula | `Base schedule × Network activity multiplier × Compliance factor` | `Emission = Transaction Amount (1:1)` |
+| All-Seeing Eye role | "Compliance factor (0.0–1.0)" modifying emission | Passive observation only (I10) |
+| Section 7 split | `R_validator, R_operator, R_ecosystem` with "governance-locked ratios" and "slashing events" | Canonical 75/25 (nodes/AFC Reserve); no slashing |
+| Env vars | `EMISSION_DECAY=0.965`, `COMPLIANCE_MAX_REDUCTION=0.25` | Removed; no such parameters in Model-1 |
+
+### `01_coin_engine/AROS_Coin_TokenSpec.json` — Distribution split corrected
+
+The `transactionFees.distribution` field described a 75/20/5 split
+(nodeOperators/AST treasury/Audit Pool), which does not match the canonical 75/25 model.
+
+| Item | Before | After |
+|------|--------|-------|
+| distribution | `{ nodeOperators: 0.75, "AST treasury": 0.20, "Audit Pool": 0.05 }` | `{ nodes: 0.75, afcReserve: 0.25 }` |
+| feeType.calculation | `"gasless_weighted + time_priority + load_balance"` | `defaultRate: 0.005` (canonical 0.5%) |
+
+**Structural Findings:**
+- `src/token/` — does not exist; production emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+- `01_coin_engine/` — documentation only, no executable code. `coin_emission_model.md` remains correct.
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/pot.service.ts`.
+- All prior fixes (§4, §9, §15, §19, §20, §22) confirmed in place.
+
+**Files Changed:**
+```
+01_coin_engine/README.md              Rewritten: Model-A artifacts removed; canonical Model-1 aligned
+01_coin_engine/AROS_Coin_TokenSpec.json  Distribution 75/20/5 → canonical 75/25
+AGENT_CORE_REPORT.md                  §25 added (this run)
+```
+
+**Result: TWO DOCUMENTATION DEVIATIONS CORRECTED. Production code confirmed canonical (no changes required).**

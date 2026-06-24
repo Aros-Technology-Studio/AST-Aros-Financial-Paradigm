@@ -9,16 +9,17 @@ Core documentation for the AROS Coin Engine (ACE), the tokenomics module inside 
 **1) What is the Coin Engine?**
 
 The Coin Engine (ACE) is the deterministic subsystem that defines:
-	•	Fee Distribution logic for AROS (base unit: arx),
+	•	1:1 emission logic for ARO tokens — one ARO per unit of verified transaction value,
 	•	Mint/Burn rules bound to Proof-of-Transaction (PoT),
-	•	Payment distribution for validators and network actors,
+	•	Commission distribution to nodes (75%) and the AFC Reserve (25%),
 	•	State transitions audited by NodeChain,
-	•	Architectural oversight via The All-Seeing Eye (meta-layer compliance control).
+	•	Architectural oversight via The All-Seeing Eye (passive observation, no enforcement).
 
 **Design principles:**
-	•	Determinism over discretion — every token movement must be reproducible from canonical inputs.
-	•	Separation of concerns — emission ≠ conversion ≠ settlement.
+	•	Determinism over discretion — every token movement is reproducible from canonical inputs.
+	•	Separation of concerns — emission ≠ commission ≠ settlement.
 	•	Legibility — each rule is expressed as a function with auditable inputs/outputs.
+	•	PoT-causality — no value enters the system without a verified process (verified === 1).
 
 ⸻
 
@@ -27,84 +28,96 @@ The Coin Engine (ACE) is the deterministic subsystem that defines:
 ```
 01_coin_engine/
 ├── README.md                    # This file
-├── coin_engine_overview.md      # Narrative architecture & invariants
-├── coin_emission_model.md       # Fee Distribution schedules & formulas (math spec)
-├── coin_use_cases.md            # Canonical flows: payments, fees, subsidies
-├── burn_and_mint_rules.md       # Allowed state transitions & guards
-├── payment_distribution.md       # Validator/actor payment logic
+├── coin_emission_model.md       # Canonical 1:1 emission formula, commission split, reserveIndex
+├── aro_emission_protocol.md     # Emission protocol: PoT gate, transient supply, burn symmetry
+├── coin_use_cases.md            # Canonical flows: payments, fees, node incentives
+├── burn_and_mint_rules.md       # PoT-gated mint/burn rules and guards
+├── payment_distribution.md     # Node payment logic: 75/25 split, PoT weight distribution
+├── node_participation_payments.md  # Node payment structure: NPI score, payout cycles
+├── coin_volatility_controls.md  # Anti-inflationary mechanisms
 ├── AROS_Coin_TokenSpec.json     # Machine-readable token spec
-├── /specs                       # JSON schemas, OpenAPI fragments
-├── /src                         # Reference implementation (TS/Rust)
-├── /tests                       # Unit/integration/property tests
-└── /fixtures                    # Deterministic samples for test vectors
+└── AST Node Infrastructure Specification.md  # Node registration and payment rules
 ```
-If some files are missing in your repo, keep this structure and create stubs. Tests should pass with --update-snapshots only when invariants remain intact.
 
 ⸻
 
 **3) Quick Start**
 
 Prerequisites
-	•	Node.js ≥ 20 or Rust ≥ 1.78 (choose one track)
+	•	Node.js ≥ 20
 	•	Docker (optional) for reproducible environments
 
-Install (TypeScript track)
+Install
 
-pnpm i # or npm i / yarn
+npm install
 
 Run tests
 
-pnpm test
+npm test
 
 Lint & type check
 
-pnpm lint && pnpm typecheck
-
+npm run lint && npm run typecheck
 
 ⸻
 
 **4) Token Specification (Essentials)**
-	•	Symbol: AROS
-	•	Base unit: arx (1 AROS = 10^6 arx, fixed)
-	•	Supply type: Fee Distribution-bounded with PoT-weighted payments
-	•	Decimals: 6
-	•	Pause switches:
-	•	EMISSION_PAUSE (governance circuit-breaker)
-	•	MINT_BURN_PAUSE (kill-switch for state transitions)
+	•	Symbol: ARO
+	•	Base unit: ARO (8 decimal places)
+	•	Supply type: Transaction-verified; minted 1:1 per confirmed process, burned on completion
+	•	Decimals: 8
+	•	Supply identity: `totalSupply = (processMinted - processBurned) + earnedRetained`
 
 Machine-readable spec lives in AROS_Coin_TokenSpec.json.
 
 ⸻
 
-**5) Fee Distribution Model (Summary)**
+**5) Canonical Emission Model**
 
-Fee Distribution = Base schedule × Network activity multiplier × Compliance factor.
+```
+Emission   = Transaction Amount        (1:1 — no multiplier)
+Commission = Transaction Amount × 0.5% (default feeRate)
+  Node pool  = Commission × 0.75       (75% → distributed to nodes by PoT weight)
+  AFC share  = Commission × 0.25       (25% → AFC Reserve, growing the capitalization index)
+Burn         = Emission amount          (burned on cycle completion; processNet → 0)
+```
 
-Base schedule is a predictable curve (piecewise geometric decay). Activity multiplier derives from PoT (volume/uniques/latency buckets). Compliance factor is a capped modifier from The All-Seeing Eye (0.0–1.0).
+### Example: $10,000 transaction
 
-Mathematical details are in coin_emission_model.md with reference vectors in /fixtures/emission/.
+```
+TX Amount   = 10,000 ARO
+Emission    = 10,000 ARO  (minted, 1:1, PoT-gated)
+Commission  = 10,000 × 0.005 = 50 ARO
+  Node pool = 50 × 0.75 = 37.50 ARO  (distributed by PoT weight at epoch finalization)
+  AFC share = 50 × 0.25 = 12.50 ARO  (routed to AFC Reserve)
+Burn        = 10,000 ARO  (destroyed after cycle completes)
+Net circulating change = 0
+```
 
 ⸻
 
 **6) Mint/Burn & Guards**
 
 Allowed transitions:
-	•	MINT[payment] — payment issuance per finalized PoT epoch.
-	•	BURN[fees] — protocol fee sink.
+	•	MINT — issued only for a PoT-verified process (`verified === 1`). No PoT confirmation → no mint.
+	•	BURN — the process part is burned on cycle completion; net contribution returns to zero.
 
-Each transition passes through guards:
-	1.	Supply invariant: totalSupply_next = totalSupply_prev + Σmint − Σburn.
-	2.	Policy window: emission caps per epoch, anti-burst throttling.
-	3.	Double-spend prevention via NodeChain event IDs.
+Guards:
+	1.	PoT gate: mint is refused if the recorded verdict is not `verified === 1`.
+	2.	Supply identity: `totalSupply = (processMinted - processBurned) + earnedRetained`.
+	3.	NodeChain recording: every mint and burn is appended as `emission.minted` / `emission.burned`.
 
-See burn_and_mint_rules.md for exhaustive truth tables and failure codes.
+See burn_and_mint_rules.md for the full rule set.
 
 ⸻
 
-**7) Payments & Distribution**
-	•	Epoch: fixed 600s (example; configurable via env POT_EPOCH_SECS).
-	•	Pool split: R_validator, R_operator, R_ecosystem with governance-locked ratios.
-	•	Weighting: validator shares proportional to PoT-contributed verified transactions, adjusted by reliability score and slashing events.
+**7) Commission & Payments**
+	•	Commission pool: fees accrue into an open epoch pool.
+	•	Distribution at epoch finalization:
+		- 75% → node pool, divided by PoT-confirmed participation weight per active node.
+		- 25% → AFC Reserve (recorded as `reserve.afc.accrual` in NodeChain).
+	•	Payment is strictly post-factum: earned only for confirmed (PoT-verified) work.
+	•	Node influence derives from work output and reputation, not from a held balance.
 
 Formulas and proofs in payment_distribution.md.
 
@@ -112,69 +125,44 @@ Formulas and proofs in payment_distribution.md.
 
 **8) Configuration**
 
-Environment variables (TypeScript impl):
+Environment variables (TypeScript implementation):
 
-AROS_DECIMALS=6
-POT_EPOCH_SECS=600
-EMISSION_BASE_RATE=1.0
-EMISSION_DECAY=0.965
-COMPLIANCE_MAX_REDUCTION=0.25
-NODECHAIN_RPC=http://nodechain:8545
-KILL_SWITCH=false
+```
+NODECHAIN_DATABASE_URL=postgres://...
+NODE_ENV=production
+```
 
-Never store secrets in repo. Use Docker secrets or CI variables. AST has no end-user auth; integration is service-to-service only.
+Never store secrets in the repository. Use Docker secrets or CI variables.
 
 ⸻
 
 **9) Reference API (Internal)**
 
-OpenAPI fragments live in /specs/openapi/*.yaml. Typical flows:
+See `src/emission/emission.service.ts` — `EmissionService`:
+- `calculate(txAmount, commissionRate?)` — pure canonical formula, no side effects
+- `emit(processId, amount)` — full PoT-gated lifecycle
+- `mint(processId, amount)` — mint the process part; throws if `verified !== 1`
+- `burn(processId, amount)` — burn the process part on cycle completion
 
-9.1 Calculate next emission
-
-POST /v1/emission/next
-
-{
-  "epoch": 102934,
-  "activity": {"tx_volume": "321904.200000", "unique_senders": 1842, "latency_bucket": "P50"},
-  "policy": {"base_rate": 1.0, "decay": 0.965},
-  "compliance_factor": 0.92
-}
-
-Response:
-
-{"mint_arx": "128900000", "cap_hit": false, "explanations": ["base*decay*activity*compliance"]}
-
-**9.2 Apply mint/burn**
-
-POST /v1/supply/transition
-
-{
-  "transition_id": "tx_01HXR...",
-  "kind": "MINT_payment",
-  "amount_arx": "128900000",
-  "evidence": {"nodechain_event": "evt_...", "proof": "0xabc..."}
-}
-
-Response:
-
-{"ok": true, "total_supply_arx": "123456789000000"}
-
+See `src/orchestrator/orchestrator.service.ts` for the full 9-step process lifecycle.
 
 ⸻
 
-**10) Data & Audit**
-	•	Event store: append-only log (hash-chained) mirrored to NodeChain.
-	•	Deterministic snapshots: created per epoch; reproducible from fixtures.
-	•	Audit adapters: write-ahead to audit-logger service; external read to compliance tools.
+**10) Capitalization Index**
+
+```
+reserveIndex  = log10(1 + totalProcessVolume)
+internalPrice = base × reserveIndex
+```
+
+Derived entirely from confirmed-work history in NodeChain (`emission.minted` events). AFC accruals are recorded as audit events but do not enter the formula (spec I-RS-1). The index is monotonically non-decreasing: each additional confirmed process raises it (spec I-RS-4).
 
 ⸻
 
 **11) Security & Invariants**
-	•	Zero-trust networking: service identity → mutual TLS; no public endpoints.
-	•	KillSwitch: KILL_SWITCH=true halts transitions; read-only mode persists.
-	•	Time consistency: monotonic epoch clock synced via Gateway; drift alarms.
-	•	Invariants tested:
-	•	Supply conservation under random sequences,
-	•	Idempotency on transition replay,
-	•	Bounded emission per policy caps.
+	•	PoT causality: every mint is bound to a PoT-verified process (I1, I2).
+	•	Cycle symmetry: process part minted then burned per cycle; processNet → 0 (I5).
+	•	Supply derivable: totalSupply reconstructible from NodeChain history (I6, I-RS-2).
+	•	Pool reconciliation: Σ(payments) + AFC share = Σ(fees) per epoch (I7).
+	•	NodeChain integrity: append-only, hash-continuous, tamper-detectable (I8).
+	•	All-Seeing Eye: passive observation only — log, compare, signal; no enforcement (I10).

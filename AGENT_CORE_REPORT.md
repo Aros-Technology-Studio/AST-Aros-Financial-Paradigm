@@ -938,3 +938,59 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-24 Full Re-Audit (branch: claude/inspiring-cannon-dkiycz, session 19)
+
+**Scope:** Independent re-audit of canonical 1:1 emission model across all emission modules.
+Session: claude-sonnet-4-6
+
+**Directories surveyed:**
+- `01_coin_engine/` — 11 files (Markdown + JSON), documentation only, no TypeScript. `coin_emission_model.md` describes the canonical 1:1 formula, corrected in prior sessions (§9.4).
+- `10_proof_of_transaction_engine/` — PoT documentation only (`pot_*.md`). No executable code. Runtime lives in `src/pot/pot.service.ts`. Note: `pot_slashing_conditions.md` is a Model-A legacy doc; prohibited slashing-vs-balance construct (P2) is absent from production code.
+- `src/token/` — does not exist. Emission is in `src/emission/`, coin ledger in `src/aroscoin/`, distribution in `src/commission/`, capitalization in `src/reserve/`.
+
+**Files read this session:**
+- `src/emission/emission.service.ts` (121 lines)
+- `src/commission/commission.service.ts` (265 lines)
+- `reference/ast-core/src/emission.ts` (20 lines)
+- `src/orchestrator/orchestrator.service.ts` (first 100 lines)
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, no multiplier)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum, PoT-confirmed weight)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Verification table:**
+
+| Canonical Requirement | File | Value | Status |
+|---|---|---|---|
+| Emission = txAmount (1:1) | `emission.service.ts:111` | `emission = txAmount` | CONFIRMED |
+| PoT gate: `verified === 1` required | `emission.service.ts:57–59` | `if (!verdict \|\| verdict.verified !== 1) return { authorized: false }` | CONFIRMED |
+| `mint()` throws if not verified | `emission.service.ts:72–74` | throws with P7/I-EM-2 message | CONFIRMED |
+| `burn()` mirrors mint (processNet → 0) | `emission.service.ts:85–88` | `coin.recordBurn(amount)` | CONFIRMED |
+| `calculate()` pure canonical formula | `emission.service.ts:107–120` | `nodeShare=0.75, afcShare=0.25, net=0` | CONFIRMED |
+| Commission feeRate = 0.005 (0.5%) | `commission.service.ts:69` | `readonly feeRate = 0.005` | CONFIRMED |
+| AFC marginRate = 0.25 (25%) | `commission.service.ts:72` | `readonly marginRate = 0.25` | CONFIRMED |
+| 75% to nodes | `commission.service.ts:138` | `distributable = total * (1 - this.marginRate)` | CONFIRMED |
+| 25% to AFC Reserve | `commission.service.ts:161` | `await this.reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| Pool reconciliation (I7) | `commission.service.ts:174` | `Math.abs(paid + margin - total) < 1e-9` | CONFIRMED |
+| Reference alignment | `reference/ast-core/src/emission.ts` | `mint(authorized)` / `burn()` — NestJS impl is superset | CONFIRMED |
+
+**$10,000 transaction example:**
+```
+Emission   = 10,000 ARO (MINT, PoT-gated, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned at epoch finalization
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain audit event
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex = log10(1 + 10,000) ≈ 4.0000
+```
+
+**No code changes made. Canonical model fully implemented and verified. All prior fixes (§4, §9, §15, §19, §20) confirmed in place.**

@@ -938,3 +938,76 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-25 Full Re-Audit (branch: claude/inspiring-cannon-4eqab3, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: claude-sonnet-4-6.
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only (11 Markdown/JSON files), no executable code, no deprecated module action needed
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic resides in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited in full
+- `src/aroscoin/aroscoin.service.ts` — audited in full
+- `src/commission/commission.service.ts` — audited in full
+- `src/reserve/reserve.service.ts` — audited in full
+- `src/orchestrator/orchestrator.service.ts` — audited in full
+- `reference/ast-core/src/emission.ts`, `reserve.ts`, `orchestrator.ts` — read
+
+**Canonical Model Verified (line-by-line):**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Key findings per file:**
+
+| File | Key Lines | Canonical Requirement | Status |
+|------|-----------|----------------------|--------|
+| `src/emission/emission.service.ts` | 111 | `emission = txAmount` (1:1, no multiplier) | CONFIRMED |
+| `src/emission/emission.service.ts` | 57–59 | PoT gate: returns `authorized: false` when `verified !== 1` | CONFIRMED |
+| `src/emission/emission.service.ts` | 73–75 | `mint()` throws error without gate | CONFIRMED |
+| `src/emission/emission.service.ts` | 62 | `burn(minted)` — symmetric; processNet → 0 | CONFIRMED |
+| `src/emission/emission.service.ts` | 107–120 | `calculate()` pure formula: 1:1, 0.5%, 75/25 | CONFIRMED |
+| `src/commission/commission.service.ts` | 69 | `feeRate = 0.005` | CONFIRMED |
+| `src/commission/commission.service.ts` | 72 | `marginRate = 0.25` | CONFIRMED |
+| `src/commission/commission.service.ts` | 138 | `distributable = total * (1 - 0.25)` = 75% | CONFIRMED |
+| `src/commission/commission.service.ts` | 161 | `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| `src/commission/commission.service.ts` | 174 | I7 reconciliation: `Math.abs(paid + margin - total) < 1e-9` | CONFIRMED |
+| `src/aroscoin/aroscoin.service.ts` | 88 | `totalSupply = (processMinted - processBurned) + earnedRetained` (I6) | CONFIRMED |
+| `src/reserve/reserve.service.ts` | 33–56 | Volume from `emission.minted` NodeChain events only (I-RS-1) | CONFIRMED |
+| `src/reserve/reserve.service.ts` | 92–94 | `reserveIndex = log10(1 + volume)` | CONFIRMED |
+| `src/orchestrator/orchestrator.service.ts` | 162–176 | Canonical order: mint → commission.accrue → burn | CONFIRMED |
+
+**Example — $10,000 transaction (traced through code):**
+```
+amount = 10,000
+→ verified === 1 (PoT gate passed)
+→ emission.mint(processId, 10,000) → coin.recordMint(10,000), NodeChain: emission.minted
+→ commission.computeFee(10,000) = 50 ARO; commission.accrue(epoch, 50, participants)
+→ emission.burn(processId, 10,000) → coin.recordBurn(10,000), NodeChain: emission.burned
+→ processNet = 10,000 − 10,000 = 0
+On epoch finalization:
+   distributable = 50 × 0.75 = 37.50 → coin.recordEarned per node
+   margin        = 50 − 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain, audit only]
+   reconciled    = |37.50 + 12.50 − 50| < 1e-9 ✓
+reserveIndex = log10(1 + 10,000) ≈ 4.0000
+internalPrice = 1 × 4.0000 = 4.0000 ARO/unit
+totalSupply after cycles = 0 + 37.50 = 37.50 ARO (= earnedRetained, I6 ✓)
+```
+
+**NestJS vs. Reference implementation note (Reserve):**
+The reference orchestrator calls `reserve.addConfirmedVolume(req.amount)` on an in-memory counter.
+The NestJS `ReserveService` derives the same figure by scanning `emission.minted` events in NodeChain on each call.
+Both produce `log10(1 + totalProcessVolume)`. The NestJS approach is persistence-correct and spec-aligned (I-RS-2: "derivable from NodeChain, not set manually").
+
+**All Invariants Confirmed (I1–I10, I-EM-1–I-EM-3, I-RS-1/2/4). All Prohibitions Clean (P1–P8).**
+
+**No code changes required. Canonical model fully implemented and verified.**

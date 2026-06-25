@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-25 (updated — see §31 for latest session; §9–§30 for prior sessions)
+**Date:** 2026-06-25 (updated — see §33 for latest session; §9–§32 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -1406,5 +1406,47 @@ Burn         = Emission amount on cycle completion; processNet → 0
 
 **All Invariants Confirmed (I1–I10, I-RS-1/I-RS-2/I-RS-4).**
 **All Prohibitions Clean (P1–P8).**
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified.**
+
+---
+
+## 33. 2026-06-25 Full Re-Audit (branch: agent/core-emission, session 33)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01UdudAZVMET6qFCUQXswyCn` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; no executable code; all prior corrections confirmed
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does NOT exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — read in full (122 lines)
+- `src/aroscoin/aroscoin.service.ts` — read in full (131 lines)
+- `src/commission/commission.service.ts` — read lines 1–80 (key constants and docstring confirmed)
+- `src/orchestrator/orchestrator.service.ts` — read in full (312 lines)
+- `reference/ast-core/src/emission.ts` — read (19 lines)
+- `reference/ast-core/src/orchestrator.ts` — read (91 lines)
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals NOT in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Production Code → Reference Cross-Check:**
+
+| Step | Reference (`reference/ast-core/src/orchestrator.ts`) | NestJS (`src/orchestrator/orchestrator.service.ts`) | Match |
+|------|------------------------------------------------------|-----------------------------------------------------|-------|
+| PoT gate | `!verdict.verified → return` line 55 | `verdict.verified !== 1 → return` line 139 | ✓ |
+| mint | `emission.mint(id, amount, authorized)` line 57 | `emission.mint(id, amount)` line 162 | ✓ |
+| commission.accrue | `commission.accrue(id, fee)` line 62 | `commission.accrue(epoch, fee, participants)` line 172 | ✓ |
+| burn | `emission.burn(id, minted)` line 65 | `emission.burn(id, minted)` line 175 | ✓ |
+| Eye passive | `eye.compareSupply(coin.snapshot())` line 71 | `eye.compareSupply(coin.supplyView())` line 188 | ✓ |
+
+**All Invariants Confirmed (I1–I10). All Prohibitions Clean (P1–P8). No DEPRECATED markers found.**
 
 **No code changes required. Canonical 1:1 emission model fully implemented and verified.**

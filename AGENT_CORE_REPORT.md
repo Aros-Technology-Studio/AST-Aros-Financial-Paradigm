@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-25 (updated — see §27 for latest session; §9–§26 for prior sessions)
+**Date:** 2026-06-25 (updated — see §30 for latest session; §9–§29 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -1240,3 +1240,70 @@ totalSupply after = earnedRetained = 37.50 ARO (I6)
 | Invariants I1–I10 | `src/invariants/invariants.spec.ts` | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 30. 2026-06-25 Full Re-Audit (branch: agent/core-emission, session 30)
+
+**Session:** `session_017ER9VNyUUSbZY1agpafJaQ` (claude-sonnet-4-6)
+
+**Directories audited:**
+- `01_coin_engine/` — documentation only; `coin_emission_model.md` corrections from §4/§9 confirmed
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/` and `src/aroscoin/`
+- `src/emission/emission.service.ts` — read line-by-line (122 lines)
+- `src/aroscoin/aroscoin.service.ts` — read line-by-line (131 lines)
+- `src/aroscoin/entities/aroscoin-ledger.entity.ts` — read (48 lines)
+- `src/emission/emission.service.spec.ts` — read all test cases (191 lines)
+- `reference/ast-core/src/emission.ts` — read (19 lines)
+- `reference/ast-core/src/aroscoin.ts` — read (27 lines)
+- `01_coin_engine/coin_emission_model.md` — formula cross-check (94 lines)
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, no multiplier)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+Burn         = Emission amount on cycle completion; processNet → 0
+reserveIndex = log10(1 + totalProcessVolume)  [spec I-RS-1/I-RS-2; AFC not in formula]
+internalPrice = base × reserveIndex
+```
+
+**Reference vs. NestJS — Direct Comparison:**
+
+| Aspect | Reference | NestJS | Match |
+|:--|:--|:--|:--|
+| PoT gate | `if (!authorized) throw` | `if (!verdict \|\| verified !== 1) return {authorized:false}` | ✅ |
+| Mint ledger | `coin.recordMint(amount)` | `coin.recordMint(amount)` | ✅ |
+| Burn ledger | `coin.recordBurn(amount)` | `coin.recordBurn(amount)` | ✅ |
+| NodeChain | not in reference | `chain.append('emission.minted' / 'emission.burned', ...)` | ✅ extra |
+| Supply identity | `(processMinted − processBurned) + earnedRetained` | identical | ✅ |
+| `calculate()` | not in reference | pure formula: emission=txAmount, commission=tx×0.005, 75/25 | ✅ extra |
+
+**$10,000 transaction trace:**
+```
+Emission = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC   = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn    = 10,000 ARO; processNet = 0
+totalSupply (after earned) = 37.50 ARO = earnedRetained (I6)
+reserveIndex = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Test suite coverage (emission.service.spec.ts — 191 lines, 9 tests):**
+
+| Test | Invariants |
+|:--|:--|
+| emit on verified process nets to 0 | I1/I5/I6 |
+| emit on unverified mints nothing | I1/I2/P7 |
+| emit on verified:0 mints nothing | P7 |
+| mint() throws for unverified | I2 |
+| records emission.minted + emission.burned in NodeChain | I3 |
+| identical inputs yield identical supply | I4 |
+| calculate() $10,000 reference example | canonical formula |
+| calculate() custom rate | canonical formula |
+| calculate() no side effects | P7 |
+
+**No code changes made. All canonical model invariants confirmed. Model-A patterns absent.**

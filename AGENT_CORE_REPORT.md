@@ -1450,3 +1450,75 @@ Burn         = Emission amount on cycle completion; processNet → 0
 **All Invariants Confirmed (I1–I10). All Prohibitions Clean (P1–P8). No DEPRECATED markers found.**
 
 **No code changes required. Canonical 1:1 emission model fully implemented and verified.**
+
+---
+
+## 34. 2026-06-25 Full Re-Audit + Fix (branch: agent/core-emission, session 34)
+
+**Scope:** Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/`.
+
+**Directories surveyed:**
+- `01_coin_engine/` — documentation only; `coin_emission_model.md` / `burn_and_mint_rules.md` corrected in prior sessions
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime is `src/pot/pot.service.ts`
+- `src/token/` — **does not exist**; active code is in `src/emission/` + `src/aroscoin/`
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+internalPrice = base × reserveIndex            (base = 1; rises with confirmed volume)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Deviation Found — /metrics API missing `internalPrice` and `velocity`:**
+
+The reference orchestrator (`reference/ast-core/src/orchestrator.ts:84-90`) returns both
+`internalPrice` and `velocity` from `metrics()`. All prior sessions (§25–§33) confirmed the
+model canonical but did not add these fields. Cross-checking against the reference revealed:
+
+```javascript
+// reference/ast-core/src/orchestrator.ts:84-90
+metrics() {
+  const reserveIndex = this.reserve.reserveIndex();
+  const velocity = this.coin.retained > 0 ? this.reserve.volume / this.coin.retained : 0;
+  return { reserveIndex, velocity, internalPrice: this.coin.internalPrice(reserveIndex), ... };
+}
+```
+
+The NestJS `OrchestratorService.metrics()` lacked `internalPrice` and `velocity`.
+
+- `internalPrice = base × reserveIndex` — the price signal: "AFC reserve grows → price of next emission higher"
+- `velocity = totalProcessVolume / earnedRetained` when retained > 0, else 0
+
+Since `base = 1`, `internalPrice = reserveIndex` numerically; the named field makes the price
+signal explicit and the API surface mirrors the reference exactly.
+
+**Fix applied this run:**
+- `MetricsSnapshot` interface: added `internalPrice: number` and `velocity: number`
+- `OrchestratorService.metrics()`: fetches `reserve.totalProcessVolume()`, computes
+  `internalPrice = coin.internalPrice(reserveIndex)` and `velocity = earnedRetained > 0 ? totalProcessVolume / earnedRetained : 0`
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after  = log10(1 + 10,000) ≈ 4.0000
+internalPrice after = 1 × 4.0000 = 4.0000 ARO/unit (rises with each confirmed process)
+velocity (after epoch finalization) = 10,000 / 37.50 ≈ 266.67
+```
+
+**All Invariants Confirmed:** I1–I10, I-RS-1, I-RS-2, I-RS-4. All prohibitions P1–P8 clean.
+
+**Files changed this run:**
+```
+src/orchestrator/orchestrator.service.ts   MetricsSnapshot + metrics(): added internalPrice, velocity
+AGENT_CORE_REPORT.md                       §34 added (this run)
+```

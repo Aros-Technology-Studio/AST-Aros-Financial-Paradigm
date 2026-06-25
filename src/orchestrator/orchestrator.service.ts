@@ -51,6 +51,10 @@ export interface MetricsSnapshot {
     totalSupply: number;
     earnedRetained: number;
     reserveIndex: number;
+    /** Internal price signal: `base × reserveIndex`. Rises as confirmed process volume accumulates. */
+    internalPrice: number;
+    /** Activity metric: `totalProcessVolume / earnedRetained` when retained > 0, else 0. */
+    velocity: number;
     verifiedProcessCount: number;
     currentEpoch: number;
     epochPool: number;
@@ -246,11 +250,12 @@ export class OrchestratorService {
      * the pool from the open epoch, and the chain length from NodeChain.
      */
     async metrics(epoch: number = DEFAULT_EPOCH): Promise<MetricsSnapshot> {
-        const [totalSupply, earnedRetained, reserveIndex, verdicts, epochRow, history, releaseActive] =
+        const [totalSupply, earnedRetained, reserveIndex, totalProcessVolume, verdicts, epochRow, history, releaseActive] =
             await Promise.all([
                 this.coin.totalSupply(),
                 this.coin.retained(),
                 this.reserve.reserveIndex(),
+                this.reserve.totalProcessVolume(),
                 this.pot.list(),
                 this.commission.getEpoch(epoch),
                 this.chain.list(),
@@ -258,11 +263,15 @@ export class OrchestratorService {
             ]);
 
         const verifiedProcessCount = verdicts.filter((v) => v.verified === 1).length;
+        const internalPrice = this.coin.internalPrice(reserveIndex);
+        const velocity = earnedRetained > 0 ? totalProcessVolume / earnedRetained : 0;
 
         return {
             totalSupply,
             earnedRetained,
             reserveIndex,
+            internalPrice,
+            velocity,
             verifiedProcessCount,
             currentEpoch: epoch,
             epochPool: epochRow ? epochRow.totalFees : 0,

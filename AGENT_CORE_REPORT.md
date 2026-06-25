@@ -938,3 +938,58 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-25 Full Re-Audit (branch: claude/inspiring-cannon-4u5r7f)
+
+**Scope:** Independent re-audit of emission logic against the canonical 1:1 model.
+Session: `session_01J57MAru8hnp3kMbiXPe5Lv` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — 11 markdown/JSON files; documentation only; no executable code; no deprecation marker
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/` and `src/aroscoin/`
+- `src/emission/emission.service.ts` — audited (122 lines)
+- `src/emission/emission.service.spec.ts` — audited (191 lines, 9 tests)
+- `src/aroscoin/aroscoin.service.ts` — audited (131 lines)
+- `src/aroscoin/entities/aroscoin-ledger.entity.ts` — audited (48 lines)
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts` — read for cross-check
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%, handled by CommissionService)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Production Code Findings:**
+
+| Check | File:Line | Status |
+|-------|-----------|--------|
+| Emission = txAmount (1:1) | `emission.service.ts:111` `emission = txAmount` | CONFIRMED |
+| PoT gate — unverified returns {authorized:false, minted:0} | `emission.service.ts:57–59` | CONFIRMED |
+| mint() throws without verified === 1 | `emission.service.ts:73–75` | CONFIRMED |
+| burn() mirrors mint exactly | `emission.service.ts:85–88` | CONFIRMED |
+| calculate() — pure canonical formula, no side effects | `emission.service.ts:107–120` | CONFIRMED |
+| Three-tally ledger: processMinted, processBurned, earnedRetained | `aroscoin.service.ts:48–80` | CONFIRMED |
+| totalSupply = (processMinted − processBurned) + earnedRetained (I6) | `aroscoin.service.ts:86–89` | CONFIRMED |
+| processNet() → 0 after cycles (I5) | `aroscoin.service.ts:92–95` | CONFIRMED |
+| Single-row persistence with numeric decimal transformer | `aroscoin-ledger.entity.ts:1–48` | CONFIRMED |
+| No Model-A prohibitions P1–P8 in src/ | grep across src/**/*.ts | CONFIRMED |
+
+**Test coverage for canonical invariants (emission.service.spec.ts):**
+- I1/I5/I6: verified process nets to 0; totalSupply == retained
+- I1/I2/P7: unverified process mints nothing
+- P7: verified:0 process refused
+- I2: mint() throws for unverified
+- I3: emission.minted / emission.burned recorded in NodeChain
+- I4: identical verified emissions → identical outcomes
+- Canonical $10,000 example: emission=10000, commission=50, nodeShare=37.5, afcShare=12.5, net=0
+- Custom rate: calculate(1000, 0.01) → commission=10, nodeShare=7.5, afcShare=2.5
+- Side-effect test: calculate() leaves ledger untouched
+
+**No code changes made. Canonical model fully implemented and verified.**

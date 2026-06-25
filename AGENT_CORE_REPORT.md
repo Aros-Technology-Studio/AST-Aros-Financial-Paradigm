@@ -1043,3 +1043,78 @@ Burn         = Emission amount on cycle completion; processNet → 0
 | No P1–P8 violations | `src/` tree | no stake/slashing/governance/farming/deposit-mint | CONFIRMED |
 
 **Result: CONFIRMED CANONICAL. No code changes required. All prior fixes confirmed in place.**
+
+---
+
+## 27. 2026-06-25 Full Re-Audit (branch: agent/core-emission, session 22)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01VraDLnjk6NsGbrydKy8936` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only (11 .md, 1 .json); no executable code; no deprecation action needed
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (all 122 lines)
+- `src/aroscoin/aroscoin.service.ts` — audited (all 131 lines)
+- `src/commission/commission.service.ts` — audited (all 265 lines)
+- `src/reserve/reserve.service.ts` — audited (all 106 lines)
+- `src/orchestrator/orchestrator.service.ts` — audited (all 313 lines)
+- `src/emission/emission.service.spec.ts` — audited (all 190 lines)
+- `src/invariants/invariants.spec.ts` — audited (all 279 lines)
+- `reference/ast-core/src/emission.ts` — 20 lines, confirms gate + mint + burn
+- `AST_RULES.yaml` — I1–I10 and P1–P8 read in full
+- `docs/specs/AST_Emission_AGENT_EN.md` — read in full
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through code):**
+```
+Emission   = 10,000 ARO (MINT, 1:1, emission.service.ts:61)
+Commission = 50 ARO (0.5%, commission.service.ts:69,95)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum (commission.service.ts:137,151)
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain (commission.service.ts:161)
+Burn       = 10,000 ARO (emission.service.ts:62); totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000 (reserve.service.ts:92-94)
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | File | Status |
+|-----------|-------------|------|--------|
+| I1 | Value only on verified === 1 | `emission.service.ts:57-59` | CONFIRMED |
+| I2 | Emission bound to confirmed process | `emission.service.ts:72-75` | CONFIRMED |
+| I3 | Significant events in NodeChain | `emission.service.ts:77,87; orchestrator.service.ts` | CONFIRMED |
+| I4 | Deterministic: same input, same result | sorted node ids in commission | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | `emission.service.ts:61-62` | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | `aroscoin.service.ts:86-89` | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | `commission.service.ts:172` | CONFIRMED |
+| I8 | NodeChain append-only | `nodechain.service.ts` | CONFIRMED |
+| I9 | Node influence from work+reputation | no stake field; weight = reputation × uptime | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | `all-seeing-eye.service.ts` | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | `reserve.service.ts:92-94` | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | recomputed from history on every read | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | log10 is monotonic over non-negative domain | CONFIRMED |
+
+**Prohibition Scan:**
+
+| ID | Forbidden Pattern | Result |
+|----|-------------------|--------|
+| P1 | staking / stakedBalance / stake_freeze | Clean |
+| P2 | slashing against balance | Clean |
+| P3 | token-weighted governance | Clean |
+| P4 | farming / passive yield | Clean |
+| P5 | mint-on-deposit / crypto_to_aroscoin | Clean |
+| P6 | Eye halting/reverting/voting/state-change | Clean |
+| P7 | Emission outside confirmed-process logic | Clean |
+| P8 | Defining entities by negation | Clean |
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified across all 11 modules.**

@@ -879,7 +879,7 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-2 | Derivable from NodeChain | CONFIRMED |
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
-**No code changes made. Canonical model fully implemented and verified.****
+**No code changes made. Canonical model fully implemented and verified.**
 
 ---
 
@@ -938,3 +938,84 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-25 Full Re-Audit (branch: claude/inspiring-cannon-w9n6hl, session 19)
+
+**Scope:** Independent re-audit of the canonical 1:1 emission model against all production modules.
+Session: `session_01T3kQZYpybTkLcBN9NfsVPn` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — 11 files, all Markdown/JSON documentation; zero TypeScript; no runnable code
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime resides in `src/pot/pot.service.ts`
+- `src/token/` — does not exist; production emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited line-by-line
+- `src/aroscoin/aroscoin.service.ts` — audited
+- `src/commission/commission.service.ts` — audited
+- `src/reserve/reserve.service.ts` — audited
+- `src/orchestrator/orchestrator.service.ts` — full lifecycle trace audited
+- `reference/ast-core/src/emission.ts`, `commission.ts`, `reserve.ts`, `orchestrator.ts` — read
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through code):**
+```
+amount = 10_000
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10_000)         [emission.service.ts:71-78]
+          → coin.recordMint(10_000)               [processMinted += 10_000]
+          → chain.append('emission.minted', ...)
+Step 7: commission.computeFee(10_000) = 50 ARO   [feeRate = 0.005]
+        commission.accrue(epoch, 50, participants)
+        emission.burn(processId, 10_000)          [orchestrator.service.ts:175]
+          → coin.recordBurn(10_000)               [processBurned += 10_000; processNet = 0]
+Epoch finalize:
+  distributable = 50 × 0.75 = 37.50 -> nodes (coin.recordEarned, earnedRetained += 37.50)
+  margin        = 50 - 37.50 = 12.50 -> reserve.addAfcAccrual(12.50) [NodeChain audit only]
+  reconciled    = |37.50 + 12.50 - 50| < 1e-9  OK
+reserveIndex    = log10(1 + 10_000) ~= 4.0000
+internalPrice   = 1 × 4.0000 = 4.0000 ARO/unit (rises monotonically with confirmed volume)
+totalSupply     = (10_000 - 10_000) + 37.50 = 37.50 ARO (= earnedRetained, I6)
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | File:Line | Status |
+|-----------|-------------|-----------|--------|
+| I1 | Value only on verified === 1 | `emission.service.ts:57-59` | CONFIRMED |
+| I2 | Emission bound to confirmed process | `emission.service.ts:71-75` | CONFIRMED |
+| I3 | Significant events in NodeChain | `nodechain.service.ts` | CONFIRMED |
+| I4 | Deterministic computation | sorted node iteration; log formula | CONFIRMED |
+| I5 | Process part nets to 0 | `orchestrator.service.ts:162,175` | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | `aroscoin.service.ts:86-88` | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | `commission.service.ts:172` | CONFIRMED |
+| I8 | NodeChain append-only | `nodechain.service.ts` | CONFIRMED |
+| I9 | Node influence from work+reputation | `nodes.service.ts` (no stake fields) | CONFIRMED |
+| I10 | All-Seeing Eye passive | `all-seeing-eye.service.ts` | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | `reserve.service.ts:46-55` | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | recomputed each call from chain history | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | `log10(1 + volume)` is monotonic | CONFIRMED |
+
+**Prohibitions (P1-P8) — all clean:**
+
+| ID | Forbidden Pattern | Result |
+|----|-------------------|--------|
+| P1/P2 | `stake / stakedBalance / slashing` | Only in negative-test assertions in spec tests |
+| P3/P4 | `token-weighted governance / farming` | Not present |
+| P5 | `mint-on-deposit / crypto_to_aroscoin` | Not present |
+| P6 | Eye halting/reverting/voting | `AllSeeingEyeService` read-only |
+| P7 | Emission outside confirmed-process logic | Gated by `pot.getVerdict` check |
+| P8 | Negative definitions in comments | Not present |
+
+**Result:**
+
+**CONFIRMED CANONICAL. No deviations found. No code changes required.** All prior fixes (§4, §9, §15, §19, §20) remain in place. The canonical 1:1 emission model is fully implemented across all 11 NestJS modules and matches the reference implementation at `reference/ast-core/src/` and the specs in `docs/specs/AST_*_AGENT_EN.md`.

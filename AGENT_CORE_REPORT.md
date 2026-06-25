@@ -1106,3 +1106,71 @@ totalSupply (after finalize) = 0 + 37.50 = 37.50 ARO (= earnedRetained; I6)
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 28. 2026-06-25 Full Re-Audit (branch: agent/core-emission, session 28)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01Hp9PydDtuLouLNk69oHcZ8` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only. `burn_mechanism.md` and `payment_distribution.md` contain
+  Model-A remnants (flagged below); `coin_emission_model.md` and `burn_and_mint_rules.md` were
+  corrected in §9.4–§9.5. No production code references any file in this directory.
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime is `src/pot/pot.service.ts`
+- `src/token/` — does not exist; all emission logic is in `src/emission/`, `src/aroscoin/`,
+  `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — read in full (122 lines)
+- `src/aroscoin/aroscoin.service.ts` — read in full (131 lines)
+- `src/commission/commission.service.ts` — read in full (265 lines)
+- `src/reserve/reserve.service.ts` — read in full (106 lines)
+- `src/emission/emission.service.spec.ts` — read in full (190 lines; includes §15 calculate() tests)
+- `src/invariants/invariants.spec.ts` — read in full (279 lines; I1–I10)
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts`, `commission.ts`, `reserve.ts`
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Code confirmed (line references read from source):**
+
+| Canonical Requirement | File:Line | Confirmed Value | Status |
+|---|---|---|---|
+| 1:1 emission | `emission.service.ts:111` | `const emission = txAmount` | CONFIRMED |
+| PoT gate | `emission.service.ts:57–59` | returns `{ authorized: false, minted: 0 }` if `verified !== 1` | CONFIRMED |
+| mint() guard | `emission.service.ts:73–74` | throws if not verified | CONFIRMED |
+| burn() mirrors mint (I5) | `emission.service.ts:85–88` | `coin.recordBurn(amount)` + NodeChain | CONFIRMED |
+| calculate() pure formula | `emission.service.ts:107–120` | `emission=txAmount; nodeShare=commission*0.75; afcShare=commission*0.25; net=0` | CONFIRMED |
+| feeRate = 0.5% | `commission.service.ts:69` | `readonly feeRate = 0.005` | CONFIRMED |
+| marginRate = 25% AFC | `commission.service.ts:72` | `readonly marginRate = 0.25` | CONFIRMED |
+| 75% to nodes post-factum | `commission.service.ts:138` | `total * (1 - this.marginRate)` | CONFIRMED |
+| 25% to AFC Reserve | `commission.service.ts:161` | `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| I7 reconciliation | `commission.service.ts:174` | `Math.abs(paid + allocatedMargin - total) < 1e-9` | CONFIRMED |
+| Supply identity I6 | `aroscoin.service.ts:88` | `(processMinted - processBurned) + earnedRetained` | CONFIRMED |
+| reserveIndex formula | `reserve.service.ts:93` | `log10(1 + volume)` — confirmed volume only | CONFIRMED |
+| AFC audit-only | `reserve.service.ts:64–83` | `reserve.afc.accrual` events not in formula | CONFIRMED |
+
+**Legacy doc flags (no production code impact):**
+
+| File | Issue |
+|------|-------|
+| `01_coin_engine/burn_mechanism.md` | Model-A: `burn_rate = 15%`, `target_ceiling = 1B ARO`, overflow burn — not referenced by `src/` |
+| `01_coin_engine/payment_distribution.md` | Wrong formula `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` — production uses `log10(1 + totalProcessVolume)` |
+
+**All Invariants Confirmed:**
+
+| Invariant | Status |
+|---|---|
+| I1–I10 | CONFIRMED |
+| I-RS-1, I-RS-2, I-RS-4 | CONFIRMED |
+| P1–P8 (no prohibited constructs) | CONFIRMED |
+
+**No code changes made. All prior fixes (§4, §9, §15, §19, §20) confirmed in place.
+Canonical model fully implemented and verified.**

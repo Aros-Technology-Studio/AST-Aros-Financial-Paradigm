@@ -1585,3 +1585,36 @@ reserveIndex = log10(1 + 10,000) ≈ 4.0000
 ```
 AGENT_CORE_REPORT.md   §35 added (this run); header updated to §35
 ```
+
+---
+
+## 36. 2026-06-25 Full Re-Audit (branch: agent/core-emission, session 36)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: claude-sonnet-4-6
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only (11 Markdown/JSON files); all prior corrections confirmed
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`; `pot_slashing_conditions.md` flags Model-A slashing (stake × severity — prohibited P1/P2), does not affect `src/` production code
+- `src/token/` — does NOT exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (lines 1–121)
+- `src/aroscoin/aroscoin.service.ts` — audited (lines 1–130)
+- `src/commission/commission.service.ts` — audited (lines 1–264)
+- `src/orchestrator/orchestrator.service.ts` — audited (lines 1–200)
+- `reference/ast-core/src/emission.ts` — confirms PoT-gated mint/burn baseline
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+internalPrice = base × reserveIndex  (rises with each confirmed process)
+```
+
+**All Invariants Confirmed:** I1–I10, I-EM-1–I-EM-3, I-RS-1, I-RS-2, I-RS-4.
+**All Prohibitions Confirmed Clean:** P1–P8.
+
+**No code changes required. Canonical model fully implemented and verified.**

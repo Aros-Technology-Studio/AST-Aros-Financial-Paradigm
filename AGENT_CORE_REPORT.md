@@ -938,3 +938,94 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-26 Full Re-Audit (branch: claude/inspiring-cannon-2euzhe, session 19)
+
+**Scope:** Independent re-audit of all emission-related modules against the canonical 1:1 model.
+Directories specified in task: `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent).
+
+**Directories audited:**
+- `01_coin_engine/` — 11 Markdown/JSON documentation files; no TypeScript; no runnable code; prior corrections (§9.4, §9.5) confirmed in place.
+- `10_proof_of_transaction_engine/` — PoT specification docs only; consistent with Model-1; no executable content; runtime lives in `src/pot/`.
+- `src/token/` — does not exist; historical Model-A reference; all emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+- `src/emission/emission.service.ts`, `src/aroscoin/aroscoin.service.ts`, `src/commission/commission.service.ts`, `src/reserve/reserve.service.ts`, `src/orchestrator/orchestrator.service.ts` — all audited.
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts`, `commission.ts`, `reserve.ts`, `orchestrator.ts` — cross-referenced.
+- `src/invariants/invariants.spec.ts` — I1–I10 confirmed present and exercising production stack.
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+Burn         = Emission amount on cycle completion; processNet → 0
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+internalPrice = base × reserveIndex            (rises with each additional confirmed process)
+```
+
+**$10,000 Example (verified through production code):**
+```
+TX Amount   = 10,000
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10_000) → coin.recordMint(10_000)   [processMinted += 10_000]
+        commission.accrue(epoch, 50, participants)
+        emission.burn(processId, 10_000) → coin.recordBurn(10_000)   [processBurned += 10_000]
+        processNet = 0
+Commission  = 10,000 × 0.005 = 50
+  Nodes     = 50 × 0.75 = 37.50 → coin.recordEarned (post-factum, epoch finalization)
+  AFC       = 50 × 0.25 = 12.50 → reserve.addAfcAccrual → NodeChain
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+internalPrice = 1 × 4.0000 = 4.0000 (monotonically rising with volume)
+totalSupply   = (10,000 - 10,000) + 37.50 = 37.50 ARO (= earnedRetained, I6)
+```
+
+**Fresh Prohibition Grep Results (src/ tree, 2026-06-26):**
+
+| ID | Pattern | Result |
+|----|---------|--------|
+| P1 | `staking\|stakedBalance\|stake_freeze` | One hit: `nodes.service.ts:21` — comment only, explaining absence of stake fields (I9 enforcement comment). No code. |
+| P2 | `slashing\|slash_against\|penaltyVsStake` | Clean |
+| P3 | `tokenWeighted\|voteByBalance\|token_weight` | Clean |
+| P4 | `farming\|passiveYield` | Clean |
+| P5 | `mintOnDeposit\|crypto_to_aroscoin` | Clean |
+| P7 | `scheduledMint\|manual_mint` | Clean |
+
+**Minor P8 Observation (not a code deviation):**
+
+`src/nodes/nodes.service.ts:21` contains the phrase "holds no stake or stakedBalance column and the service never mutates a token balance". This describes by negation (P8: positive definitions only). The statement is inside a JSDoc comment that explicitly confirms I9 compliance. Correcting to positive-only language to align with P8.
+
+**Changes Made This Session:**
+
+`src/nodes/nodes.service.ts:21` — Rewrote one JSDoc sentence from a negation form to a positive description:
+
+| | Before | After |
+|--|--------|-------|
+| Comment | "the entity holds no stake or stakedBalance column and the service never mutates a token balance to reward or punish a node. That keeps invariant I9 and prohibitions P1/P2 intact." | "Influence flows purely from confirmed work and reputation; node weight derives from the deterministic `reputation × uptime` formula (I9, P1, P2)." |
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Files Changed:**
+```
+src/nodes/nodes.service.ts      JSDoc comment P8 correction (positive language)
+AGENT_CORE_REPORT.md            §25 added (this run)
+```
+
+**Result: CANONICAL. One P8 JSDoc comment corrected. All prior fixes confirmed in place.**

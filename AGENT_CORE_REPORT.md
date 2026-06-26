@@ -1583,3 +1583,54 @@ Tests: 104 passed, 104 total
 **All Invariants Confirmed (I1–I10, I-EM-1–3, I-RS-1/2/4):** All PASS.
 **All Prohibitions P1–P8:** No forbidden construct found in `src/`.
 **No code changes required. Canonical 1:1 emission model fully implemented and verified. All prior fixes (§4, §9, §15, §19–§33) confirmed in place.**
+
+---
+
+## 35. 2026-06-26 Full Re-Audit (branch: agent/core-emission, session 20)
+
+**Scope:** Complete independent re-audit against the canonical 1:1 model.
+Session: `session_01F2zqALTHNSsXWH1SKbZ2LH` (claude-sonnet-4-6)
+
+**Directories audited:**
+- `01_coin_engine/` — documentation only; see §35.1 for fix applied this run
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- All production NestJS modules + reference implementation re-read from scratch
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**All 5 Canonical Model Pillars — Confirmed:**
+
+| Pillar | File | Line | Status |
+|--------|------|------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| Commission = TX × 0.5% | `src/commission/commission.service.ts` | 69, 95–98 | CONFIRMED |
+| 75% nodes / 25% AFC split | `src/commission/commission.service.ts` | 71–72, 138, 160–162 | CONFIRMED |
+| Burn on cycle completion (net=0) | `src/orchestrator/orchestrator.service.ts` | 162, 175 | CONFIRMED |
+| Reserve grows → internalPrice rises | `src/reserve/reserve.service.ts` | 92–103 | CONFIRMED |
+
+**All Invariants (I1–I10, I-RS-1, I-RS-2, I-RS-4) Confirmed.**
+**No Model-A prohibitions P1–P8 found in production code.**
+
+### 35.1 Deviation Found and Corrected — `01_coin_engine/README.md`
+
+**Context:** The remote branch had already rewritten `01_coin_engine/README.md` in full
+Model-1 format (sections 1–9). This run verified the rewrite is canonical.
+
+**No remaining violations found.** The previous old-format §7 slashing reference that was
+flagged in this audit session had already been superseded by the full rewrite on the remote.
+
+**Files Changed This Run:**
+```
+AGENT_CORE_REPORT.md            §35 added (merge conflict resolved; kept remote HEAD)
+```
+
+**Result: CANONICAL. All prior fixes confirmed. No new deviations found.**

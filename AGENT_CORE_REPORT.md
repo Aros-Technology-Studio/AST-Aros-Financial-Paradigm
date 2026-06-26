@@ -938,3 +938,103 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-26 Full Re-Audit (branch: claude/inspiring-cannon-jgr8md, session 19)
+
+**Scope:** Independent audit of canonical 1:1 emission model across all emission modules.
+Session: `claude-sonnet-4-6`
+
+### Directories Audited
+
+| Path | Finding |
+|------|---------|
+| `01_coin_engine/` | Documentation only; `coin_emission_model.md` corrected in §4; no deprecated code |
+| `10_proof_of_transaction_engine/` | PoT documentation; runtime lives in `src/pot/pot.service.ts` |
+| `src/token/` | Does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/` |
+| `src/emission/emission.service.ts` | Audited — canonical |
+| `src/aroscoin/aroscoin.service.ts` | Audited — canonical |
+| `src/commission/commission.service.ts` | Audited — canonical |
+| `src/reserve/reserve.service.ts` | Audited — canonical |
+| `src/orchestrator/orchestrator.service.ts` | Audited — canonical order: mint → accrue → burn |
+| `src/nodes/nodes.service.ts` | **P8 violation found and fixed** (see §25.1) |
+| `reference/ast-core/src/emission.ts` | Read — confirms mint/burn symmetry |
+
+### Canonical Model Verified
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO  (MINT, 1:1)
+Commission = 50 ARO  (0.5%)
+  Nodes    = 37.50 ARO  (75%), via coin.recordEarned post-factum at epoch finalization
+  AFC      = 12.50 ARO  (25%), via reserve.addAfcAccrual → NodeChain audit trail
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+### 25.1 P8 Violation Fixed — `src/nodes/nodes.service.ts`
+
+The class-level doc comment defined the service by negation, violating P8 (positive definitions only):
+
+**Before (P8 violation):**
+```
+Influence here flows purely from confirmed work and reputation: the entity holds no
+stake or stakedBalance column and the service never mutates a token balance to
+reward or punish a node. That keeps invariant I9 and prohibitions P1/P2 intact.
+```
+
+**After (positive definition):**
+```
+Influence flows purely from confirmed work and reputation: weight derives from the
+reputation formula and post-factum payment accrues only for verified work (I9/P1/P2).
+```
+
+No functional change. The service implementation is unchanged; only the doc comment was corrected.
+
+### All Invariants Confirmed
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on PoT verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only, hash-continuous | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain, never set manually | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing in volume | CONFIRMED |
+
+### Prohibition Grep Results
+
+| ID | Forbidden Pattern | Result |
+|----|-------------------|--------|
+| P1 | `staking / stakedBalance / stake_freeze` in `src/` | Clean |
+| P2 | `slashing against balance` in `src/` | Clean |
+| P3 | `token-weighted governance` in `src/` | Clean |
+| P4 | `farming / passive yield` in `src/` | Clean |
+| P5 | `mint-on-deposit / crypto_to_aroscoin` in `src/` | Clean |
+| P6 | Eye halting/reverting/voting/state-change | Clean |
+| P7 | Emission outside confirmed-process logic | Clean |
+| P8 | Negative definitions in comments | **Fixed** — nodes.service.ts:20 |
+
+### Files Changed This Session
+
+```
+src/nodes/nodes.service.ts     P8 comment violation fixed (positive definition)
+AGENT_CORE_REPORT.md           This section added
+```

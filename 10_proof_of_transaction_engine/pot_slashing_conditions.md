@@ -1,37 +1,45 @@
-# PoT Deposit Forfeiture Conditions
+# PoT Node Accountability — Model 1
 
-**Module:** AST PoT Engine  
-**Status:** Draft  
-**Date:** 2025-08-24  
+**Module:** AST PoT Engine
+**Status:** Model-1 Canon
+**Updated:** 2026-06-26 (supersedes Model-A draft)
 
 ## 1. Purpose
-Defines conditions for slashing (penalizing) nodes in PoT for misbehavior in NodeChain.
 
-## 2. Principles
-- Proportional: Slash % based on severity.
-- Automatic: Triggered by anomalies detected in NodeChain.
+Defines how AST PoT holds nodes accountable for execution quality in NodeChain under
+the Model-1 canon. Node influence derives entirely from confirmed work and accumulated
+reputation — there is no stake balance to penalise.
 
-## 3. Conditions
-- Invalid Attestation: 25% slash.
-- No Response to Challenge: 50% slash.
-- Repeated Failures (>3/epoch): 100% slash.
+## 2. Model-1 Accountability Principles
 
-## 4. Formula
-Slash Amount = stake * severity_factor (0.25-1.0)
+- **Work-based influence:** Node weight is computed from PoT-verified executions and
+  reputation history. A node that fails to attest correctly accumulates no weight and
+  earns no commission share.
+- **Reputation decay:** The PoT engine tracks attestation quality per epoch. Nodes with
+  poor attestation records receive lower weight in future commission distributions.
+- **Exclusion, not slashing:** A node whose attestations are invalid is excluded from
+  the PoT-confirmed participant set for that process. Its weight for the epoch reflects
+  only confirmed work; it earns nothing for unconfirmed participation.
+- **No stake register:** There is no staked-balance field in the Node entity. Balance
+  cannot be slashed, frozen, or penalised.
 
-## 5. Solidity Example
-```solidity
-function slash(address node, uint256 severity) public {
-    uint256 stake = getStake(node);
-    uint256 slashAmt = stake * severity / 100;
-    burnStake(node, slashAmt);
-    emit Slashed(node, slashAmt);
-}
-```
+## 3. PoT Verdict Gate
 
-## 6. Dependencies
-- 11_validator_staking_payments/slashing_and_penalty_rules.md (burn logic).
-- 13_extra_supervisory_layer/anomaly_detection_patterns.md (triggers).
+A participation is counted toward a node's epoch weight only when the associated
+process carries a verdict with `verified === 1`. Invalid attestations produce `verified === 0`,
+excluding the node from the distributable pool for that process.
 
-## 7. Notes
-- Appeal: Via governance (06_governance_layer/).
+## 4. Implementation References
+
+- Node weight: `src/nodes/nodes.service.ts` — `currentWeight(nodeId)`
+- Epoch distribution: `src/commission/commission.service.ts` — `confirmedWeights()`
+- PoT verdict: `src/pot/pot.service.ts` — `verify(processId)`
+- Spec: `docs/specs/AST_PoT_AGENT_EN.md`, `docs/specs/AST_Commission_AGENT_EN.md`
+
+## 5. Superseded Model-A Content
+
+The previous version of this file described stake-based slashing (slash % of staked
+balance). That mechanism belongs to Model-A and is not present in Model-1. The
+constructs `getStake`, `burnStake`, and stake-severity formulas do not exist in the
+current implementation and must not be introduced. AST_RULES.yaml P1 and P2 prohibit
+staking balances and slashing against balance respectively.

@@ -45,7 +45,7 @@ Each node runs:
 ```mermaid
 graph TD;
   A[Node Registration Request] --> B[Identity Verification];
-  B --> C[Smart Contract Validator Security Deposit];
+  B --> C[Smart Contract Identity Confirmation];
   C --> D[Node Key Signing];
   D --> E[Start Observing];
   E --> F[Active Validator Role via rotation];
@@ -53,12 +53,12 @@ graph TD;
 
 ---
 
-## 4. Registration and Security Deposit
+## 4. Registration
 
-- Validator node must stake minimum X ARO (configurable).
-- Smart contract verifies identity and stake.
+- Validator node identity is verified by smart contract (no token stake required, P1).
 - Generates node keypair and tokenizes node ID.
-- Adds node to candidate pool.
+- Initial reputation weight assigned on registration.
+- Adds node to candidate pool; weight grows with confirmed participation (I9).
 
 ---
 
@@ -85,11 +85,14 @@ graph TD;
 
 ## 7. Misbehavior Handling
 
-| Violation Type       | Penalty                           |
-| -------------------- | --------------------------------- |
-| Downtime > threshold | Temporary suspension              |
-| Malicious tampering  | Stake slashing & blacklist        |
-| Collusion behavior   | AI-auditor flag → governance vote |
+Node influence derives from work quality and reputation — penalties reduce reputation weight
+and participation eligibility, not a token balance (I9, P1, P2).
+
+| Violation Type       | Response                                         |
+| -------------------- | ------------------------------------------------ |
+| Downtime > threshold | Temporary suspension from active rotation        |
+| Malicious tampering  | Reputation weight reduction and rotation blacklist |
+| Collusion behavior   | All-Seeing Eye signals → role-based governance review |
 
 ---
 

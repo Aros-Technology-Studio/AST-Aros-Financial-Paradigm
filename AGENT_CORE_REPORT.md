@@ -938,3 +938,76 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-26 Full Re-Audit (branch: claude/inspiring-cannon-ab0y1e, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model,
+specifically targeting the three directories listed in the task:
+`01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`.
+
+**Directories audited:**
+- `01_coin_engine/` — 11 files, all Markdown/JSON documentation; zero TypeScript. `coin_emission_model.md` and `burn_and_mint_rules.md` are canonical and correctly reflect the Model-1 formulas.
+- `10_proof_of_transaction_engine/` — PoT documentation only; `pot_slashing_conditions.md` contained **Model-A staking/slashing constructs** (P1/P2 violation) — **corrected this run**.
+- `src/token/` — does not exist. Emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+- `src/emission/emission.service.ts` — fully audited.
+- `src/aroscoin/aroscoin.service.ts` — fully audited.
+- `src/commission/commission.service.ts` — fully audited.
+- `reference/ast-core/src/emission.ts` — read and matched.
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (verified against calculate() method):**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; net = 0; totalSupply = 37.50 ARO (earnedRetained)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Deviation Found and Corrected:**
+
+`10_proof_of_transaction_engine/pot_slashing_conditions.md` contained a Model-A
+stake-slashing specification including:
+- `Slash Amount = stake × severity_factor (0.25–1.0)`
+- Solidity `burnStake(node, slashAmt)` example
+- References to `11_validator_staking_payments/slashing_and_penalty_rules.md`
+
+This directly violates AST_RULES.yaml **P1** (no staking balances) and **P2** (no slashing
+against balance). File rewritten to describe Model-1 accountability: work-based weight,
+reputation decay, and PoT-verdict exclusion. The Model-A constructs are explicitly flagged
+in the "Superseded Model-A Content" section.
+
+**All NestJS Source Code Confirmed Canonical:**
+
+| Component | File | Status |
+|-----------|------|--------|
+| `EmissionService.emit()` — 1:1 PoT-gated | `src/emission/emission.service.ts:55–63` | CONFIRMED |
+| `EmissionService.mint()` — throws on unverified | `src/emission/emission.service.ts:71–74` | CONFIRMED |
+| `EmissionService.burn()` — mirrors mint | `src/emission/emission.service.ts:85–88` | CONFIRMED |
+| `EmissionService.calculate()` — pure canonical formula | `src/emission/emission.service.ts:107–120` | CONFIRMED |
+| `ArosCoinService` — three-tally ledger, derived totalSupply | `src/aroscoin/aroscoin.service.ts` | CONFIRMED |
+| `CommissionService.feeRate` = 0.005 (0.5%) | `src/commission/commission.service.ts:69` | CONFIRMED |
+| `CommissionService.marginRate` = 0.25 (25%) | `src/commission/commission.service.ts:72` | CONFIRMED |
+| Pool reconciliation (I7) | `src/commission/commission.service.ts:172` | CONFIRMED |
+| No staking / slashing / farming / mint-on-deposit | `src/` tree | CONFIRMED |
+
+**Files Changed This Run:**
+
+```
+10_proof_of_transaction_engine/pot_slashing_conditions.md   Rewritten: Model-A staking/slashing removed (P1/P2)
+AGENT_CORE_REPORT.md                                        §25 added (this run)
+```
+
+**Result: CANONICAL. One Model-A legacy document corrected. All NestJS emission code confirmed fully compliant.**

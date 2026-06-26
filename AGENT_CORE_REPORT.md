@@ -1400,3 +1400,68 @@ Burn         = Emission amount on cycle completion; processNet → 0
 **All Invariants Confirmed (I1–I10, I-EM-1–3, I-RS-1/2/4):** All PASS.
 
 **No code changes made. Canonical 1:1 emission model fully implemented and verified. All prior fixes (§4, §9, §15, §19–§30) confirmed in place.**
+
+---
+
+## 32. 2026-06-26 Full Re-Audit (branch: agent/core-emission, session 20)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01NMNMMJqk2DtZRGPzxFXvgT` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — 9 Markdown + 1 JSON files; documentation only; no TypeScript; not deprecated
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime in `src/pot/`
+- `src/token/` — does NOT exist; token/coin logic lives in `src/aroscoin/`
+- `src/emission/emission.service.ts` — audited (121 LOC)
+- `src/aroscoin/aroscoin.service.ts` — audited (130 LOC)
+- `src/commission/commission.service.ts` — audited (264 LOC)
+- `src/reserve/reserve.service.ts` — audited (105 LOC)
+- `reference/ast-core/src/emission.ts` — read (20 LOC)
+- `reference/ast-core/src/aroscoin.ts` — read (26 LOC)
+
+**Canonical Model — Verified:**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+internalPrice = base × reserveIndex            (rises with each confirmed process)
+```
+
+**Key code locations verified:**
+
+| Canonical Requirement | File:Line | Value | Status |
+|-----------------------|-----------|-------|--------|
+| Emission = TX × 1 (1:1) | `emission.service.ts:111` | `const emission = txAmount` | CONFIRMED |
+| PoT gate (verified === 1) | `emission.service.ts:57-59` | returns `{ authorized: false, minted: 0 }` when not verified | CONFIRMED |
+| mint() throws without PoT | `emission.service.ts:73-74` | `throw new Error('emission refused ... verified === 1 required')` | CONFIRMED |
+| Burn = Minted (processNet → 0) | `emission.service.ts:62` | `burned = await this.burn(processId, minted)` | CONFIRMED |
+| Commission rate = 0.5% | `commission.service.ts:69` | `readonly feeRate = 0.005` | CONFIRMED |
+| AFC margin rate = 25% | `commission.service.ts:72` | `readonly marginRate = 0.25` | CONFIRMED |
+| 75% to nodes | `commission.service.ts:137` | `distributable = total * (1 - this.marginRate)` | CONFIRMED |
+| 25% to AFC Reserve | `commission.service.ts:161` | `await this.reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| Pool reconciles (I7) | `commission.service.ts:174` | `Math.abs(paid + allocatedMargin - total) < 1e-9` | CONFIRMED |
+| Supply identity (I6) | `aroscoin.service.ts:88` | `(processMinted - processBurned) + earnedRetained` | CONFIRMED |
+| reserveIndex formula (I-RS-1) | `reserve.service.ts:93` | `return log10(1 + volume)` (processVolume only) | CONFIRMED |
+| AFC accrual recorded, not in formula | `reserve.service.ts:82` | `chain.append('reserve.afc.accrual', { amount })` | CONFIRMED |
+
+**Example — $10,000 transaction:**
+```
+TX Amount   = 10,000
+Emission    = 10,000 ARO  <- MINT (1:1, PoT verified === 1)
+Commission  = 10,000 x 0.005 = 50 ARO
+  Nodes     = 50 x 0.75 = 37.50 ARO  (coin.recordEarned, post-factum epoch finalization)
+  AFC       = 50 x 0.25 = 12.50 ARO  (reserve.addAfcAccrual -> NodeChain audit event)
+Burn        = 10,000 ARO  <- BURN (processNet = 0)
+reserveIndex after = log10(1 + 10,000) = 4.0000
+totalSupply after cycles = 37.50 ARO (= earnedRetained, I6)
+```
+
+**All Prohibitions (P1-P8):** No prohibited construct found in `src/`.
+**All Invariants (I1-I10, I-RS-1/2/4):** Confirmed in production code and test suite.
+
+**No code changes required. Canonical 1:1 emission model is fully and correctly implemented.
+All prior fixes (§4, §9, §15, §19-§31) confirmed in place.**

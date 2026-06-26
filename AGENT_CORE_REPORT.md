@@ -938,3 +938,86 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-26 Full Re-Audit (branch: claude/inspiring-cannon-ebwfy2, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_0133T37WaZDZtRgZtPkjStUw` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only, no executable code; `coin_emission_model.md` documents Model-1 formulas correctly and cross-references `src/emission/emission.service.ts`
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`; `pot_slashing_conditions.md` contains Model-A staking/slashing language but is not running code
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (full source read)
+- `src/aroscoin/aroscoin.service.ts` — audited (full source read)
+- `src/commission/commission.service.ts` — audited (full source read)
+- `src/orchestrator/orchestrator.service.ts` — audited (full source read)
+- `reference/ast-core/src/emission.ts` — read; confirms PoT-gated mint/burn pattern
+- `01_coin_engine/coin_emission_model.md` — read; documents canonical formulas correctly
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction (traced through code):**
+```
+amount = 10_000
+→ emission.emit(processId, 10_000): verified=1 → mint 10_000 → burn 10_000  (net = 0)
+→ commission.computeFee(10_000) = 10_000 × 0.005 = 50 ARO
+    epoch pool += 50
+    On epoch finalize:
+      distributable = 50 × 0.75 = 37.50 → nodes via coin.recordEarned
+      margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual (NodeChain audit event)
+      reconciled    = |37.50 + 12.50 - 50| < 1e-9  ✓
+→ reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
+→ totalSupply after = (10_000 - 10_000) + 37.50 = 37.50 ARO (= earnedRetained, I6)
+```
+
+**Key Code Locations Confirmed:**
+
+| Check | File | Line(s) | Status |
+|-------|------|---------|--------|
+| Emission = txAmount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| PoT gate (verified !== 1 → authorized: false) | `src/emission/emission.service.ts` | 57–59 | CONFIRMED |
+| mint() throws without verified === 1 | `src/emission/emission.service.ts` | 73–75 | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| feeRate = 0.005 | `src/commission/commission.service.ts` | 69 | CONFIRMED |
+| marginRate = 0.25 (75/25 split) | `src/commission/commission.service.ts` | 72 | CONFIRMED |
+| distributable = total × (1 - marginRate) = 75% | `src/commission/commission.service.ts` | 138 | CONFIRMED |
+| AFC routed to reserve.addAfcAccrual | `src/commission/commission.service.ts` | 161 | CONFIRMED |
+| Pool reconciles I7: paid + margin = total ± ε | `src/commission/commission.service.ts` | 174 | CONFIRMED |
+| totalSupply = (minted - burned) + earned (I6) | `src/aroscoin/aroscoin.service.ts` | 86–89 | CONFIRMED |
+| Orchestrator: mint → accrue → burn canonical order | `src/orchestrator/orchestrator.service.ts` | 162–175 | CONFIRMED |
+| All-Seeing Eye passive (I10) | `src/orchestrator/orchestrator.service.ts` | 107, 120, 137, 165, 177, 187 | CONFIRMED |
+
+**Note on `pot_slashing_conditions.md`:**
+`10_proof_of_transaction_engine/pot_slashing_conditions.md` documents staking/slashing
+(Model-A, P1/P2 prohibited). This is documentation only — no staking, slash, or
+stakedBalance fields exist in any production TypeScript file. Prohibition checks in
+`AST_RULES.yaml` target running code. This doc can be removed in a cleanup task.
+
+**All Invariants:**
+
+| ID | Rule | Status |
+|----|------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation (no stake) | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+
+**No code changes made. Canonical model fully implemented and confirmed.**

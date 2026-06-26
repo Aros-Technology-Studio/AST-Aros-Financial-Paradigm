@@ -1,3 +1,9 @@
+> **DEPRECATED — Model-A Historical Documentation**
+> This directory contains pre-Model-1 reference material. It is not authoritative and is not executed.
+> Deposit forfeiture / slashing constructs described here (see `pot_slashing_conditions.md`) are prohibited in Model 1 (P1, P2).
+> Production PoT runtime lives in: `src/pot/pot.service.ts`.
+> Authoritative spec: `docs/specs/AST_PoT_AGENT_EN.md`.
+
 # Proof of Transaction Engine
 
 ## Purpose

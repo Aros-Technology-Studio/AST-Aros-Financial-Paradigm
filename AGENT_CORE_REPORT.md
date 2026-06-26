@@ -938,3 +938,94 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-26 Audit with Doc Remediation (branch: claude/inspiring-cannon-ksgabd, session 19)
+
+**Scope:** Complete independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/`.
+Session: `session_01Fk3TvtptXDSUui7ZCsm9yr` (claude-sonnet-4-6)
+
+### Canonical Model — All Requirements Confirmed in Production Code
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+### `src/token/` — Confirmed Absent
+
+Token logic lives in `src/emission/` (process lifecycle), `src/aroscoin/` (ledger),
+`src/commission/` (fee settlement), `src/reserve/` (capitalization index).
+
+### `01_coin_engine/` and `10_proof_of_transaction_engine/` — Docs Only
+
+No TypeScript implementation, no deprecated code. Three Model-A remnants found and
+corrected this session (see below).
+
+### Model-A Documentation Remnants Corrected
+
+Three documentation files contained prohibited constructs (P1/P2/P3/P4). All corrected.
+
+#### `10_proof_of_transaction_engine/pot_slashing_conditions.md` — P1/P2
+
+The file described stake-based slashing: `Slash Amount = stake * severity_factor`, Solidity
+`burnStake()`, and a reference to `11_validator_staking_payments/`.
+
+**Fix:** Renamed "Deposit Forfeiture" → "Misbehavior Response". Replaced stake formula with
+reputation-weight reduction (`new_weight = current_weight * (1 - severity_factor)`).
+Penalties recorded as `node.penalty` NodeChain events. No token balance touched.
+
+#### `01_coin_engine/coin_use_cases.md` — P1/P3/P4
+
+- Section 3: described token-holder voting rights and "risk-score-based staking privileges"
+- Section 4: required users to "stake or spend ARO" for service access
+- Section 6: described "staking-like passive earnings" from liquidity pools
+
+**Fix:** Governance → role-based (not token-weighted). Access → identity-verified registration.
+Section 6 replaced with canonical AFC reserve growth (commission-driven, no holder deposits).
+
+#### `01_coin_engine/AST Node Infrastructure Specification.md` — P1/P2
+
+- Section 4: "Validator node must stake minimum X ARO"
+- Section 7 misbehavior table: "Stake slashing & blacklist"
+- Lifecycle diagram: "Smart Contract Validator Security Deposit" step
+
+**Fix:** Stake requirement → identity-verified registration with reputation weight.
+Misbehavior → reputation weight reduction and rotation blacklist.
+Lifecycle diagram: "Security Deposit" → "Identity Confirmation".
+
+### All Production Invariants Confirmed
+
+| ID | Status | | ID | Status |
+|---|---|---|---|---|
+| I1 | CONFIRMED | | P1 staking/stakedBalance | FIXED in docs; clean in src/ |
+| I2 | CONFIRMED | | P2 slashing against balance | FIXED in docs; clean in src/ |
+| I3 | CONFIRMED | | P3 token-weighted governance | FIXED in docs; clean in src/ |
+| I4 | CONFIRMED | | P4 farming/passive yield | FIXED in docs; clean in src/ |
+| I5 | CONFIRMED | | P5 mint-on-deposit | CLEAN |
+| I6 | CONFIRMED | | P6 Eye state-change | CLEAN |
+| I7 | CONFIRMED | | P7 emission outside process | CLEAN |
+| I8 | CONFIRMED | | P8 negative definitions | CLEAN |
+| I9 | CONFIRMED | | | |
+| I10 | CONFIRMED | | | |
+
+### Files Changed This Session
+
+```
+10_proof_of_transaction_engine/pot_slashing_conditions.md   Stake slashing → reputation-weight penalty
+01_coin_engine/coin_use_cases.md                            Sections 3, 4, 6: Model-A staking/governance removed
+01_coin_engine/AST Node Infrastructure Specification.md     Registration + misbehavior + diagram: stake refs removed
+AGENT_CORE_REPORT.md                                        §25 added (this run)
+```
+
+### Result
+
+**CANONICAL. Three documentation files corrected (P1/P2/P3/P4 violations removed).
+No production code changes required — `src/` implementation was already fully conformant.**

@@ -32,24 +32,24 @@ Used as an **intermediary token** to bridge fiat and crypto domains within AFC (
 
 ---
 
-### 3. **Governance Token (Internal AST Layer)**
+### 3. **Governance Participation (Internal AST Layer, Role-Based)**
 
-AROS Coin holders may gain limited access to:
+Authorized participants may contribute to protocol evolution through role-based governance:
 
-- Voting rights for protocol updates (within AST, not AFC).
-- Proposal submissions to The All-Seeing Eye.
-- Risk-score-based staking privileges.
+- Proposal submissions for protocol updates (scoped to AST internal architecture).
+- Participation through assigned roles (validator, operator, observer), not by token balance.
+- All-Seeing Eye surfaces anomalies for human review; it does not vote or enforce.
 
-> ⚠️ Not equivalent to DAO or external voting systems — governance is scoped *only to AST internal architecture.*
+> Governance is role-based, not token-weighted (P3). Coin balance confers no voting power.
 
 ---
 
 ### 4. **Access Token for AST Services**
 
-Certain high-tier services in the AROS Tokenomics platform will require users to stake or spend ARO to:
+Certain high-tier services in the AROS Tokenomics platform require verified registration to:
 
 - Access encrypted data services.
-- Register validator/observer nodes.
+- Register as a validator or observer node (identity-verified, reputation-tracked).
 - Unlock development sandbox layers.
 
 ---
@@ -66,13 +66,16 @@ AROS Coin may be distributed as **payments** in:
 
 ---
 
-### 6. **Liquidity Contribution + Stability Reserve**
+### 6. **AFC Reserve Growth**
 
-Holders may contribute ARO into liquidity pools or stability reserves:
+The AFC reserve grows through the canonical 25% commission share accrued on each epoch
+finalization. This reserve underpins the capitalization index and raises the internal price
+of the next emission cycle. Reserve contributions are protocol-driven, not holder-deposited:
 
-- Used to ensure conversion smoothness in tokenization layers.
-- May generate staking-like passive earnings (non-yield farming).
-- Governed by transparent reserve contract.
+- Reserve grows automatically as a consequence of verified transaction volume.
+- The capitalization index (`reserveIndex = log10(1 + totalProcessVolume)`) is derived from
+  NodeChain history and is monotonically non-decreasing (I-RS-2, I-RS-4).
+- There is no deposit, farming, or passive yield for holding ARO (P4, P5).
 
 ---
 

@@ -938,3 +938,55 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-27 Full Re-Audit (branch: claude/inspiring-cannon-4srpeh, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_016GdYdsbgXj4aJcdRNgQgdk` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only, no executable code; all formulas match implementation
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (122 lines)
+- `src/aroscoin/aroscoin.service.ts` — audited (131 lines)
+- `src/commission/commission.service.ts` — audited (265 lines)
+- `src/reserve/reserve.service.ts` — audited (105 lines)
+- `src/emission/emission.service.spec.ts` — audited (190 lines, 7 tests)
+- `reference/ast-core/src/emission.ts` — read (20 lines, behavior matches NestJS)
+- `docs/specs/AST_Emission_AGENT_EN.md` — read
+
+**Canonical Model Verification:**
+
+| Formula | Canonical | Code | File:Line | Status |
+|---------|-----------|------|-----------|--------|
+| Emission = TX Amount (1:1) | `emission = txAmount` | `emission = txAmount` | `emission.service.ts:111` | CONFIRMED |
+| Commission = TX × 0.5% | `txAmount × 0.005` | `txAmount * commissionRate` (default 0.005) | `emission.service.ts:112` | CONFIRMED |
+| Node Share = Commission × 75% | `commission × 0.75` | `commission * 0.75` | `emission.service.ts:115` | CONFIRMED |
+| AFC Share = Commission × 25% | `commission × 0.25` | `commission * 0.25` | `emission.service.ts:116` | CONFIRMED |
+| Net = 0 (mint then burn) | net = 0 | `net: 0` explicit | `emission.service.ts:117` | CONFIRMED |
+| PoT gate: `verified === 1` | Required | `verdict.verified !== 1` → refused | `emission.service.ts:57` | CONFIRMED |
+| Burn on completion | Symmetric | `burn(processId, minted)` | `emission.service.ts:62` | CONFIRMED |
+| `totalSupply = (minted-burned) + earnedRetained` | Derivable | Exact formula | `aroscoin.service.ts:88` | CONFIRMED |
+| `processNet → 0` after cycle | After burn | `processMinted - processBurned` | `aroscoin.service.ts:94` | CONFIRMED |
+| `reserveIndex = log10(1 + totalProcessVolume)` | Log growth | `log10(1 + volume)` | `reserve.service.ts:92-94` | CONFIRMED |
+| `internalPrice = base × reserveIndex` | Rising price | `base * index` | `reserve.service.ts:101-103` | CONFIRMED |
+| AFC accrual 25% routed to reserve | Per epoch | `reserve.addAfcAccrual(allocatedMargin)` | `commission.service.ts:161` | CONFIRMED |
+| Node 75% by PoT weight | Post-factum | `(weight * distributable) / totalWeight` | `commission.service.ts:148` | CONFIRMED |
+| Pool reconciles: Σpayments + margin = fees | I7 | `Math.abs(paid + margin - total) < 1e-9` | `commission.service.ts:172` | CONFIRMED |
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; processNet = 0; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000; internalPrice rises with each confirmed process
+```
+
+**Test suite:** 7 tests in `emission.service.spec.ts` cover I1/I2/I4/I5/I6/P7 and `calculate()`.
+
+**No code changes made. Canonical model fully implemented and verified. All prior fixes confirmed in place.**

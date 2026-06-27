@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-21 (updated — see §23 for latest session; §9–§22 for prior sessions)
+**Date:** 2026-06-27 (updated — see §25 for latest session; §9–§24 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -938,3 +938,88 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-27 Full Re-Audit (branch: claude/inspiring-cannon-22abor, session 19)
+
+**Scope:** AGENT-CORE re-audit of 1:1 canonical emission model against current codebase.
+Session: `claude-sonnet-4-6`
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; `coin_emission_model.md` and `burn_and_mint_rules.md` confirmed correct per §4 (prior correction)
+- `10_proof_of_transaction_engine/` — documentation only; PoT runtime lives in `src/pot/pot.service.ts`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — fully audited
+- `src/aroscoin/aroscoin.service.ts` — fully audited
+- `src/commission/commission.service.ts` — fully audited
+- `src/reserve/reserve.service.ts` — fully audited
+- `src/orchestrator/orchestrator.service.ts` — fully audited
+- `src/invariants/invariants.spec.ts` — fully audited (I1–I10)
+- `reference/ast-core/src/` — cross-referenced
+
+**Where emission logic lives (Module 01 status):**
+
+`01_coin_engine/` is documentation only — not executable code and not deprecated in the software sense.
+The production emission runtime was always in `src/emission/`; no migration needed.
+
+**Canonical Model Verified (2026-06-27):**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization by PoT weight)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit record)
+reserveIndex = log10(1 + totalProcessVolume)   (confirmed volume only; AFC accruals NOT in formula)
+Burn         = Emission amount on cycle completion; processNet → 0 per cycle
+totalSupply  = (processMinted − processBurned) + earnedRetained
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum at epoch finalization
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain audit record
+Burn       = 10,000 ARO on cycle completion; net Δ supply = 0 for process part
+totalSupply after = 37.50 ARO (= earnedRetained, invariant I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Conformance table (all pass):**
+
+| Component | File | Canonical Rule | Status |
+|-----------|------|----------------|--------|
+| `EmissionService.emit()` | `src/emission/emission.service.ts:55` | PoT-gated; mint+burn 1:1; returns `authorized: false` when unverified | CONFIRMED |
+| `EmissionService.mint()` | `src/emission/emission.service.ts:71` | Throws if `verified !== 1`; double-checked verdict | CONFIRMED |
+| `EmissionService.burn()` | `src/emission/emission.service.ts:85` | Burns exactly minted; records to NodeChain | CONFIRMED |
+| `EmissionService.calculate()` | `src/emission/emission.service.ts:107` | Pure formula: `emission = txAmount`, `commission = txAmount × 0.005`, 75/25 split, `net = 0` | CONFIRMED |
+| `ArosCoinService.totalSupply()` | `src/aroscoin/aroscoin.service.ts:86` | `(processMinted − processBurned) + earnedRetained` | CONFIRMED |
+| `CommissionService.feeRate` | `src/commission/commission.service.ts:69` | `0.005` (0.5%) | CONFIRMED |
+| `CommissionService.marginRate` | `src/commission/commission.service.ts:72` | `0.25` (25% AFC) | CONFIRMED |
+| Commission 75/25 split | `src/commission/commission.service.ts:148–159` | `distributable = total × 0.75`; AFC = remainder | CONFIRMED |
+| Commission pool reconciliation | `src/commission/commission.service.ts:172` | `paid + margin == total` within `1e-9` | CONFIRMED |
+| `ReserveService.reserveIndex()` | `src/reserve/reserve.service.ts:92` | `log10(1 + totalProcessVolume)` from `emission.minted` events only | CONFIRMED |
+| AFC accrual routing | `src/reserve/reserve.service.ts:81` | `addAfcAccrual()` appends to NodeChain; not in index formula | CONFIRMED |
+| Orchestrator burn order | `src/orchestrator/orchestrator.service.ts:step 6–7` | mint → commission.accrue → burn (canonical reference order) | CONFIRMED |
+| PoT gate | `src/pot/pot.service.ts` | Binary verdict; composite criteria; gates all value | CONFIRMED |
+| NodeChain | `src/nodechain/nodechain.service.ts` | Append-only; hash-continuous; reconstruct() audit | CONFIRMED |
+| Nodes | `src/nodes/nodes.service.ts` | `weight = reputation × uptime`; no stake/slashing fields | CONFIRMED |
+| All-Seeing Eye | `src/all-seeing-eye/all-seeing-eye.service.ts` | Passive: observe, log, signal; zero state mutations | CONFIRMED |
+
+**Invariants (I1–I10, all CONFIRMED by `src/invariants/invariants.spec.ts`):**
+
+| ID | Rule | Test |
+|----|------|------|
+| I1 | Value only on verified === 1 | `inadmissible/unverified process mints nothing` |
+| I2 | Emission bound to confirmed process | `mint(unrecorded) throws; emit → authorized: false` |
+| I3 | Significant events in NodeChain | `completeness gate blocks emission on missing events` |
+| I4 | Deterministic computation | `two fresh stacks, same input → identical supply & metrics` |
+| I5 | Process part nets to 0 | `processMinted == processBurned after run` |
+| I6 | totalSupply derivable from history | `totalSupply == earnedRetained after burns` |
+| I7 | Pool reconciles per epoch | `paid + margin == fees within 1e-9` |
+| I8 | NodeChain append-only & hash-continuous | `reconstruct().ok == true; tamper breaks it` |
+| I9 | Node influence from work+reputation | `no stake/stakedBalance/stakeFreeze field; weight = reputation × uptime` |
+| I10 | All-Seeing Eye passive | `eye operations never mutate supply, chain, or other state` |
+
+**No code changes required. The canonical 1:1 emission model is fully implemented and verified.**

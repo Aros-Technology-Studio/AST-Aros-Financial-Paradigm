@@ -938,3 +938,82 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-27 Full Re-Audit (branch: agent/core-emission, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_018LV3cQpiTE18uR4mBELMJy` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only (Markdown + JSON); no executable code; no deprecated module
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — full read; audited line-by-line
+- `src/aroscoin/aroscoin.service.ts` — full read; audited
+- `src/commission/commission.service.ts` — full read; audited
+- `src/reserve/reserve.service.ts` — full read; audited
+- `reference/ast-core/src/emission.ts` — read (behavior authority)
+- `reference/ast-core/src/aroscoin.ts` — read (behavior authority)
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, no multiplier, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Prohibited Pattern Scan (P1–P8):**
+
+| Prohibition | Production `src/` | Status |
+|-------------|------------------|--------|
+| P1: staking / stakedBalance | Test file asserts absence; not in service code | CLEAN |
+| P2: slashing against balance | Test asserts absent; not in service code | CLEAN |
+| P3: token-weighted governance | Not present | CLEAN |
+| P4: farming / passive yield | Not present | CLEAN |
+| P5: mint-on-deposit | Not present | CLEAN |
+| P6: Eye changing state | Eye service is read-only | CLEAN |
+| P7: Emission outside confirmed-process | PoT gate mandatory on all emit/mint paths | CLEAN |
+| P8: Negation-defined comments | Not found in service files | CLEAN |
+
+**Example — $10,000 transaction (traced through code):**
+```
+amount = 10,000
+→ emission.emit(processId, 10_000)
+    pot.getVerdict(processId) → verified === 1 (gate passes)
+    mint(processId, 10_000) → coin.recordMint(10_000)    [processMinted += 10,000]
+    burn(processId, 10_000) → coin.recordBurn(10_000)    [processBurned += 10,000]
+    processNet = 0 ✓
+→ commission.computeFee(10_000) = 10,000 × 0.005 = 50 ARO
+    On epoch finalize:
+      distributable = 50 × 0.75 = 37.50 → coin.recordEarned per node (earnedRetained += 37.50)
+      margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit]
+      reconciled    = |37.50 + 12.50 - 50| < 1e-9  ✓
+→ reserve.reserveIndex() = log10(1 + 10,000) ≈ 4.0000
+→ internalPrice = 1 × 4.0000 (rises monotonically with confirmed volume)
+totalSupply after cycles = (10,000 − 10,000) + 37.50 = 37.50 ARO (= earnedRetained, I6 ✓)
+```
+
+**No code changes required. Canonical model fully implemented and verified.**

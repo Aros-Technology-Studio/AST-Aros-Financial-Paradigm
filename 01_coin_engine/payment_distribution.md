@@ -48,10 +48,13 @@ PoT weight is normalized so that `Σ node_weight = 1.0` across all active nodes.
 ## 4. AFC Reserve Logic
 
 - Funds accumulate in `SYSTEM_AFC_RESERVE_000000000000000000`.
-- Drive the emission price index: `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000`.
+- The capitalization index is derived from confirmed PoT-verified process volume:
+  `reserveIndex = log10(1 + totalProcessVolume)`
+  (spec I-RS-1/I-RS-2; implemented in `src/reserve/reserve.service.ts`)
+- AFC accruals (25% commission share) are recorded as `reserve.afc.accrual` events in
+  NodeChain for audit purposes; they do not enter the reserveIndex formula directly.
 - Used for:
   - Ecosystem grants (via governance vote),
-  - Emergency compensation (slashing fallback),
   - Node bootstrap funding.
 
 ---

@@ -1718,3 +1718,57 @@ AGENT_CORE_REPORT.md   §36 added (2026-06-27 re-audit)
 ```
 
 **Result: CANONICAL. No code changes required. All prior fixes confirmed. All invariants (I1–I10) and prohibitions (P1–P8) passing.**
+
+---
+
+## 37. 2026-06-27 Full Re-Audit (branch: agent/core-emission, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_015MKyj4VSKXbG878yt267e5` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only; prior corrections (§9.4) confirmed in place
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime is `src/pot/`
+- `src/token/` — does not exist; emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (122 lines, read in full)
+- `src/aroscoin/aroscoin.service.ts` — audited (131 lines, read in full)
+- `src/commission/commission.service.ts` — audited (265 lines, read in full)
+- `reference/ast-core/src/emission.ts` — read (19 lines; confirms PoT-gate pattern)
+
+**Canonical Model — Line-by-Line Verification:**
+
+| Requirement | File | Line(s) | Confirmed Value | Status |
+|---|---|---|---|---|
+| Emission = TX Amount (1:1) | `emission.service.ts` | 61, 111 | `emission = txAmount` | CONFIRMED |
+| PoT gate (verified === 1) | `emission.service.ts` | 57–59 | returns `{ authorized: false, minted: 0 }` | CONFIRMED |
+| mint() throws without gate | `emission.service.ts` | 73–74 | `throw new Error("...verified === 1 required")` | CONFIRMED |
+| Burn = Minted (net → 0) | `emission.service.ts` | 62, 85–88 | `burned = burn(processId, minted)` | CONFIRMED |
+| calculate() pure formula | `emission.service.ts` | 107–120 | `emission=txAmount, nodeShare=c*0.75, afcShare=c*0.25, net=0` | CONFIRMED |
+| Commission rate = 0.5% | `commission.service.ts` | 69 | `readonly feeRate = 0.005` | CONFIRMED |
+| AFC margin = 25% | `commission.service.ts` | 72 | `readonly marginRate = 0.25` | CONFIRMED |
+| 75% to nodes | `commission.service.ts` | 138 | `distributable = total * (1 - this.marginRate)` | CONFIRMED |
+| 25% to AFC Reserve | `commission.service.ts` | 161 | `reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| I7 reconciliation | `commission.service.ts` | 174 | `Math.abs(paid + allocatedMargin - total) < 1e-9` | CONFIRMED |
+| Supply identity (I6) | `aroscoin.service.ts` | 88 | `(processMinted - processBurned) + earnedRetained` | CONFIRMED |
+| Three-tally ledger | `aroscoin.service.ts` | 62–80 | `recordMint`, `recordBurn`, `recordEarned` | CONFIRMED |
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1, PoT-gated; verified === 1)
+Commission = 10,000 × 0.005 = 50 ARO
+  Nodes    = 50 × 0.75 = 37.50 ARO → coin.recordEarned (post-factum, epoch finalization)
+  AFC      = 50 × 0.25 = 12.50 ARO → reserve.addAfcAccrual → NodeChain audit event
+Burn       = 10,000 ARO; processNet = 0
+totalSupply after = (10,000 − 10,000) + 37.50 = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**All Invariants Confirmed (I1–I10, I-RS-1, I-RS-2, I-RS-4):** All passing.
+**Prohibition Grep (P1–P8):** Clean — no prohibited constructs found in `src/`.
+
+**Files Changed This Run:**
+```
+AGENT_CORE_REPORT.md   §37 added (2026-06-27 re-audit)
+```
+
+**Result: CANONICAL. No code changes required. All prior fixes confirmed. All invariants (I1–I10) and prohibitions (P1–P8) passing.**

@@ -938,3 +938,71 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-27 Full Re-Audit + Doc Corrections (branch: claude/inspiring-cannon-ejdrns)
+
+**Session:** claude-sonnet-4-6 — AGENT-CORE routine audit
+
+**Directories audited:**
+- `01_coin_engine/` — documentation; `coin_emission_model.md`, `burn_and_mint_rules.md`, `aro_emission_protocol.md`, `payment_distribution.md` audited
+- `10_proof_of_transaction_engine/` — PoT documentation; `pot_slashing_conditions.md` audited
+- `src/token/` — does not exist (confirmed again)
+- `src/emission/emission.service.ts` — audited (production canonical)
+- `src/reserve/reserve.service.ts` — audited
+- `reference/ast-core/src/emission.ts`, `aroscoin.ts`, `reserve.ts` — read
+
+**Canonical Model Confirmed:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Production code: NO DEVIATIONS.** All invariants I1–I10 and prohibitions P1–P8 confirmed.
+
+### Deviations Found and Corrected (legacy docs only)
+
+**1. `01_coin_engine/payment_distribution.md` §4 — wrong reserveIndex formula**
+
+| | Before | After |
+|--|--------|-------|
+| Formula | `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000` (Model-A) | `reserveIndex = log10(1 + totalProcessVolume)` (spec I-RS-1/I-RS-2) |
+| AFC note | "Drive the emission price index" (implied AFC drives index) | AFC accruals recorded in NodeChain for audit; they do not enter the formula |
+| Prohibited ref | "Emergency compensation (slashing fallback)" | Removed |
+
+**2. `01_coin_engine/aro_emission_protocol.md` §IV — wrong reserveIndex formula**
+
+| | Before | After |
+|--|--------|-------|
+| Formula | `AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000` (Model-A) | `reserveIndex = log10(1 + totalProcessVolume)` + `internalPrice = base × reserveIndex` |
+| Note | — | Added: AFC accruals are NodeChain audit records, not index inputs (spec I-RS-1) |
+
+**3. `10_proof_of_transaction_engine/pot_slashing_conditions.md` — Model-A staking/slashing rewritten**
+
+File was a Model-A draft containing:
+- Stake lockup and `burnStake()` Solidity function (violates P1/P2)
+- Slash amounts denominated as `stake * severity_factor` (P1/P2)
+- References to `11_validator_staking_payments/` (prohibited module)
+
+Rewritten to Model-1 canonical: reputation-based penalties only. Misbehavior reduces
+`successRate` / `uptime` counters in `NodesService`, lowering the node's PoT weight
+and future payment share. No token balance is locked or burned.
+
+### Files Changed
+
+```
+01_coin_engine/payment_distribution.md                     §4 reserveIndex formula corrected; slashing ref removed
+01_coin_engine/aro_emission_protocol.md                    §IV reserveIndex formula corrected; AFC note added
+10_proof_of_transaction_engine/pot_slashing_conditions.md  Rewritten: Model-A stake-slashing → Model-1 reputation penalties
+AGENT_CORE_REPORT.md                                       §25 added (this run)
+```
+
+### Result
+
+**CANONICAL. Three legacy docs corrected; no production code changes needed.**
+Production emission code was already fully canonical at the start of this run.

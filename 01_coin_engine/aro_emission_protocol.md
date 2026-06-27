@@ -50,13 +50,18 @@ sequenceDiagram
 ## IV. Canonical Emission Formula
 
 ```
-Emission     = Transaction Amount           (1:1)
-Commission   = Transaction Amount × rate    (default 0.5%)
-Node Share   = Commission × 0.75
-AFC Reserve  = Commission × 0.25
+Emission       = Transaction Amount           (1:1)
+Commission     = Transaction Amount × rate    (default 0.5%)
+Node Share     = Commission × 0.75
+AFC Reserve    = Commission × 0.25
 
-AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
+reserveIndex   = log10(1 + totalProcessVolume)
+internalPrice  = base × reserveIndex
 ```
+
+`totalProcessVolume` is the sum of confirmed PoT-verified process amounts recorded as
+`emission.minted` events in NodeChain. AFC accruals are logged separately for audit but
+do not enter the reserveIndex formula (spec I-RS-1; `src/reserve/reserve.service.ts`).
 
 ---
 

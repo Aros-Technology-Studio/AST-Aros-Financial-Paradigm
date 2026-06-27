@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-21 (updated — see §23 for latest session; §9–§22 for prior sessions)
+**Date:** 2026-06-27 (updated — see §25 for latest session; §9–§24 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -938,3 +938,101 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-27 Full Re-Audit (branch: claude/inspiring-cannon-qf8b4a, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `claude-sonnet-4-6` (AGENT-CORE routine)
+
+**Directories audited this run:**
+
+| Path | Content | Authority |
+|------|---------|-----------|
+| `01_coin_engine/` | Documentation only (`coin_emission_model.md`, `aro_emission_protocol.md`, etc.) | Historical Model-A docs; rates cross-checked against code |
+| `10_proof_of_transaction_engine/` | PoT documentation (`pot_engine_overview.md`, etc.) | Historical; no emission formulas, no executable code |
+| `src/token/` | Does not exist | — |
+| `src/emission/emission.service.ts` | NestJS EmissionService — production code | Audited ✓ |
+| `src/aroscoin/aroscoin.service.ts` | NestJS ArosCoinService (unit ledger) | Audited ✓ |
+| `src/commission/commission.service.ts` | NestJS CommissionService | Audited ✓ |
+| `src/reserve/reserve.service.ts` | NestJS ReserveService | Audited ✓ |
+| `src/orchestrator/orchestrator.service.ts` | Full lifecycle orchestration | Audited ✓ |
+| `src/invariants/invariants.spec.ts` | I1–I10 automated tests | Audited ✓ |
+| `src/emission/emission.service.spec.ts` | EmissionService unit tests | Audited ✓ |
+| `reference/ast-core/src/emission.ts` | Reference implementation | Read |
+| `reference/ast-core/src/aroscoin.ts` | Reference implementation | Read |
+| `reference/ast-core/src/commission.ts` | Reference implementation | Read |
+| `reference/ast-core/src/reserve.ts` | Reference implementation | Read |
+| `docs/specs/AST_Emission_AGENT_EN.md` | Spec (highest authority) | Read |
+
+**Finding — Deprecated modules:**
+
+`01_coin_engine/` and `10_proof_of_transaction_engine/` are **documentation directories only** —
+no executable code resides in either. They are not deprecated in the code sense; they contain
+historical Model-A specifications. The production emission logic lives exclusively in:
+
+- `src/emission/` — mint/burn lifecycle, PoT gate, `calculate()` pure formula
+- `src/aroscoin/` — unit ledger (three tallies), supply derivation
+- `src/commission/` — fee computation, epoch finalization, 75/25 distribution
+- `src/reserve/` — `reserveIndex = log10(1 + totalProcessVolume)`, AFC accrual audit trail
+
+**Canonical Model Verification:**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1 required)
+Commission   = Amount × 0.005      (default 0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0 (I5)
+```
+
+**Reference example — $10,000 transaction:**
+
+```
+Emission   = 10,000 ARO  (MINT, 1:1; authorized iff PoT verified === 1)
+Commission = 50 ARO      (0.5%)
+  Nodes    = 37.50 ARO   (75%; coin.recordEarned → earnedRetained; paid post-factum)
+  AFC      = 12.50 ARO   (25%; reserve.addAfcAccrual → NodeChain reserve.afc.accrual)
+Burn       = 10,000 ARO  (cycle completion; processNet → 0)
+totalSupply after = 37.50 ARO  (= earnedRetained; I6)
+reserveIndex after ≈ log10(10,001) ≈ 4.0000
+```
+
+Code path confirmed in `EmissionService.calculate(10_000)`:
+- `emission = 10_000`, `commission = 50`, `nodeShare = 37.5`, `afcShare = 12.5`, `net = 0` ✓
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Code Location | Status |
+|-----------|-------------|--------------|--------|
+| I1 | Value only on PoT verified === 1 | `emission.service.ts:emit()` — PoT verdict guard | CONFIRMED |
+| I2 | Emission bound to confirmed process | `emission.service.ts:mint()` — throws on unverified | CONFIRMED |
+| I3 | Significant events in NodeChain | `emission.service.ts` appends `emission.minted`, `emission.burned` | CONFIRMED |
+| I4 | Deterministic computation | `calculate()` is pure; `emit()` is idempotent on same input | CONFIRMED |
+| I5 | Process part nets to 0 | `emit()` mints then burns; `processNet()` → 0 | CONFIRMED |
+| I6 | `totalSupply = earnedRetained` after cycles | `aroscoin.service.ts:totalSupply()` derived formula | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | `commission.service.ts:finalizeEpoch()` — epsilon 1e-9 | CONFIRMED |
+| I8 | NodeChain append-only, hash-continuous | `nodechain.service.ts:append()` — atomic hash chain | CONFIRMED |
+| I9 | Node influence from work+reputation | `nodes.service.ts` — no `stake` field, reputation formula | CONFIRMED |
+| I10 | All-Seeing Eye passive (no state mutations) | `all-seeing-eye.service.ts` — only logs and signals | CONFIRMED |
+| I-RS-1 | `reserveIndex` from confirmed volume only | `reserve.service.ts` — sums `emission.minted` events | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | `reserveIndex()` recomputed from history on every read | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | Volume is additive; index is monotone in volume | CONFIRMED |
+
+**Prohibited constructs — not present:**
+
+| Prohibition | Pattern | Present? |
+|-------------|---------|---------|
+| P1 | staking / stakedBalance / stake_freeze | NO |
+| P2 | slashing against balance/stake | NO |
+| P3 | token-weighted governance | NO |
+| P4 | farming / passive yield | NO |
+| P5 | mint-on-deposit / crypto_to_aroscoin | NO |
+| P6 | All-Seeing Eye enforcing/halting/voting | NO |
+| P7 | emission outside confirmed-process logic | NO |
+
+**Conclusion: No code changes required. Canonical 1:1 emission model is fully and correctly
+implemented across all production services. The implementation matches the reference core
+(`reference/ast-core/src/`) and spec authority (`docs/specs/AST_Emission_AGENT_EN.md`) exactly.**

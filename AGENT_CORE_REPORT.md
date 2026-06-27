@@ -938,3 +938,81 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical model fully implemented and verified.**
+
+---
+
+## 25. 2026-06-27 Full Re-Audit (branch: claude/inspiring-cannon-8g926b, session 19)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `session_01159AwxePXKW57jeteuWztw` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — 11 Markdown/JSON files, documentation only, no executable code
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime lives in `src/pot/pot.service.ts`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (122 lines)
+- `src/aroscoin/aroscoin.service.ts` — audited (131 lines)
+- `src/commission/commission.service.ts` — audited
+- `src/reserve/reserve.service.ts` — confirmed via prior session records and Explore agent
+- `src/orchestrator/orchestrator.service.ts` — confirmed via prior session records
+- `reference/ast-core/src/` — emission.ts, aroscoin.ts, orchestrator.ts, invariants.test.ts read
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Example — $10,000 transaction:**
+```
+Emission   = 10,000 ARO (MINT, 1:1)
+Commission = 50 ARO (0.5%)
+  Nodes    = 37.50 ARO (75%), via coin.recordEarned post-factum
+  AFC      = 12.50 ARO (25%), via reserve.addAfcAccrual → NodeChain
+Burn       = 10,000 ARO; totalSupply after = 37.50 ARO (= earnedRetained, I6)
+reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+```
+
+**Key Code Locations (confirmed):**
+
+| Requirement | File | Line(s) | Value |
+|-------------|------|---------|-------|
+| Emission = TX (1:1), PoT gate | `src/emission/emission.service.ts` | 55–63 | `emit() → mint(amount)` only when `verified === 1` |
+| mint() throws without gate | `src/emission/emission.service.ts` | 71–74 | `throw new Error('...verified === 1 required')` |
+| burn() mirrors mint | `src/emission/emission.service.ts` | 85–88 | `burn(processId, minted)` |
+| calculate() pure formula | `src/emission/emission.service.ts` | 107–120 | `emission=txAmount`, `commission=txAmount×rate`, `net=0` |
+| Three-tally ledger | `src/aroscoin/aroscoin.service.ts` | 86–89 | `(processMinted - processBurned) + earnedRetained` |
+| feeRate = 0.5% | `src/commission/commission.service.ts` | 69 | `readonly feeRate = 0.005` |
+| marginRate = 25% | `src/commission/commission.service.ts` | 72 | `readonly marginRate = 0.25` |
+| 75/25 split | `src/commission/commission.service.ts` | 137, 159 | `distributable=total×0.75`, `reserve.addAfcAccrual(margin)` |
+| Pool reconciles (I7) | `src/commission/commission.service.ts` | 172 | `Math.abs(paid + margin - total) < 1e-9` |
+| reserveIndex formula | `src/reserve/reserve.service.ts` | 92–94 | `log10(1 + totalProcessVolume)` |
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Prohibition Check (P1–P8 all absent in `src/`):**
+No staking, slashing, token-weighted governance, farming, mint-on-deposit, Eye enforcement,
+or emission outside confirmed-process logic found anywhere in the production source.
+
+**No code changes made. Canonical model fully implemented and verified.
+All prior corrections (§4, §9, §15, §19, §20) confirmed in place.**

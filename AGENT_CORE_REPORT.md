@@ -1019,3 +1019,55 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000; internalPrice = 1 × 4.0000 =
 | I-RS-4 | Monotonic non-decreasing | CONFIRMED |
 
 **No code changes made. Canonical 1:1 emission model fully implemented and verified. All prior fixes confirmed in place.**
+
+---
+
+## 26. 2026-06-27 Full Re-Audit (branch: claude/inspiring-cannon-wrdsoq, session 20)
+
+**Scope:** Independent re-audit of all emission modules against the canonical 1:1 model.
+Session: `cc347722-2922-5f07-8fef-494344f0e484` (claude-sonnet-4-6)
+
+**Directories audited this run:**
+- `01_coin_engine/` — documentation only, no executable code; corrections from §9.4 confirmed in place
+- `10_proof_of_transaction_engine/` — PoT documentation; runtime in `src/pot/`
+- `src/token/` — does not exist; emission logic is in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+- `src/emission/emission.service.ts` — audited (lines 1–121 read)
+- `src/aroscoin/aroscoin.service.ts` — audited (lines 1–130 read)
+- `src/orchestrator/orchestrator.service.ts` — lifecycle order verified (lines 95–215)
+- `reference/ast-core/src/emission.ts` — read (confirms same PoT-gated mint/burn pattern)
+
+**Canonical Model Verified:**
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1)
+Commission   = Amount × 0.005      (0.5%)
+Node Share   = Commission × 0.75   (75% → nodes, post-factum at epoch finalization)
+AFC Share    = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0
+```
+
+**Key Code References (read verbatim this session):**
+
+| Canonical Requirement | File | Line(s) | Value |
+|-----------------------|------|---------|-------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 111 | `emission = txAmount` |
+| Commission = Amount × rate | `src/emission/emission.service.ts` | 112 | `commission = txAmount * commissionRate` |
+| Node share = 75% | `src/emission/emission.service.ts` | 116 | `nodeShare: commission * 0.75` |
+| AFC share = 25% | `src/emission/emission.service.ts` | 117 | `afcShare: commission * 0.25` |
+| Net = 0 (process part cycles) | `src/emission/emission.service.ts` | 118 | `net: 0` |
+| PoT gate (returns unauthorized) | `src/emission/emission.service.ts` | 57–59 | `if (!verdict \|\| verified !== 1) return { authorized: false, minted: 0, burned: 0 }` |
+| mint() throws without gate | `src/emission/emission.service.ts` | 73–74 | `throw new Error('emission refused ... verified === 1 required')` |
+| Supply identity (I6) | `src/aroscoin/aroscoin.service.ts` | 88 | `(processMinted - processBurned) + earnedRetained` |
+| Orchestrator order | `src/orchestrator/orchestrator.service.ts` | 162–176 | mint → commission.accrue → burn |
+
+**Reference conformance:** `reference/ast-core/src/emission.ts` uses the same pattern:
+```js
+mint(processId, amount, authorized) {
+    if (!authorized) throw new Error('14.1 violation: mint refused — no PoT confirmation');
+    this.coin.recordMint(amount);
+}
+burn(processId, amount) { this.coin.recordBurn(amount); }
+```
+Production code matches reference exactly.
+
+**No code changes made. Canonical 1:1 emission model fully implemented and verified. All prior fixes (§4, §9, §15, §19, §20) confirmed in place.**

@@ -4,6 +4,11 @@ on:
     workflows: ["AST CI"]
     types: [completed]
 
+permissions:
+  contents: write
+  actions: read
+  issues: write
+
 jobs:
   auto-fix:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}

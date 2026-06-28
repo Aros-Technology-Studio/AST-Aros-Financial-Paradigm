@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aros.studio/schemas/epoch.schema.json",
+  "title": "Epoch",
+  "description": "Определяет структуру сетевой эпохи, включая ее длительность, эмиссию и активные шарды.",
+  "type": "object",
+  "properties": {
+    "epochId": {
+      "description": "Порядковый номер эпохи.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "startTime": {
+      "description": "Время начала эпохи в формате ISO 8601 UTC.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration": {
+      "description": "Длительность эпохи в секундах.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "maxSupply": {
+      "description": "Максимальное общее предложение (total supply) в этой эпохе, в виде строки для больших чисел.",
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "minted": {
+      "description": "Количество токенов, выпущенных (эмитированных) в этой эпохе, в виде строки.",
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "shards": {
+      "description": "Список активных шардов в этой эпохе.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^shard-[0-9a-f]{8}$"
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "epochId",
+    "startTime",
+    "duration",
+    "maxSupply",
+    "minted",
+    "shards"
+  ],
+  "additionalProperties": false
+}

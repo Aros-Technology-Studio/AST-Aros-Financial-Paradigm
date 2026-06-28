@@ -1,23 +1,38 @@
-name: Lint Code Base
+name: AST CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: [ "main" ]
-jobs:
-  run-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
-          fetch-depth: 0
+    branches: [ "main", "develop" ]
 
-      - name: Lint Code Base
-        uses: github/super-linter@v4
-        env:
-          VALIDATE_ALL_CODEBASE: false
-          DEFAULT_BRANCH: "main"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_ACTIONS }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Build NestJS
+      run: npm run build
+
+    - name: Check Model-1 Prohibitions (P1-P8)
+      run: npm run check:prohibitions
+
+    - name: Run Tests
+      run: npm test
+
+    - name: Compile Contracts
+      run: |
+        cd smart_contracts
+        npm install
+        npx hardhat compile

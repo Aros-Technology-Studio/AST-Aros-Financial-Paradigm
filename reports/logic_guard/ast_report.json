@@ -1,0 +1,1422 @@
+{
+  "timestamp": "2025-12-11T09:18:27.589700Z",
+  "score": 0.0,
+  "threshold": 75.0,
+  "hard_fail": true,
+  "summary": {
+    "KYC-LINK": {
+      "errors": 58,
+      "warnings": 0
+    },
+    "DOC-STYLE": {
+      "errors": 20,
+      "warnings": 1
+    },
+    "TIME-SYNC": {
+      "errors": 6,
+      "warnings": 8
+    },
+    "CRYPTO-LINK": {
+      "errors": 66,
+      "warnings": 0
+    },
+    "TERM-FORBID": {
+      "errors": 9,
+      "warnings": 0
+    },
+    "NON-SPEC": {
+      "errors": 1,
+      "warnings": 0
+    },
+    "AUD-ROLLBACK": {
+      "errors": 3,
+      "warnings": 0
+    },
+    "POT-LOGIC": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "XREF": {
+      "errors": 0,
+      "warnings": 0
+    }
+  },
+  "findings": [
+    {
+      "file": "CODE_OF_CONDUCT.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "CODE_OF_CONDUCT.md",
+      "line": 74,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Forbidden marker \"TODO\"",
+      "excerpt": "TODO"
+    },
+    {
+      "file": "CHANGELOG.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "CHANGELOG.md",
+      "line": 26,
+      "rule": "TIME-SYNC",
+      "severity": "warning",
+      "message": "TTL used without time source mention",
+      "excerpt": "TTL 7"
+    },
+    {
+      "file": "CHANGELOG.md",
+      "line": 94,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Forbidden marker \"TODO\"",
+      "excerpt": "TODO"
+    },
+    {
+      "file": "glossary.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "threat_model_global.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "architecture_diagrams.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "architecture_diagrams.md",
+      "line": 148,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "README.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "deployment_guide.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "roadmap.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "package-lock.json",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "package-lock.json",
+      "line": 9487,
+      "rule": "TIME-SYNC",
+      "severity": "warning",
+      "message": "TTL used without time source mention",
+      "excerpt": "TTL 48"
+    },
+    {
+      "file": "package-lock.json",
+      "line": 4937,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "package.json",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "CONTRIBUTING.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "CONTRIBUTING.md",
+      "line": 24,
+      "rule": "TIME-SYNC",
+      "severity": "warning",
+      "message": "TTL used without time source mention",
+      "excerpt": "TTL 7"
+    },
+    {
+      "file": "CONTRIBUTING.md",
+      "line": 88,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Forbidden marker \"TODO\"",
+      "excerpt": "TODO"
+    },
+    {
+      "file": "economic_simulation.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "13_extra_supervisory_layer/observer_node_interface.md",
+      "line": 16,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "13_extra_supervisory_layer/meta_event_logging_protocol.md",
+      "line": 26,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "13_extra_supervisory_layer/integrity_signal_emission.md",
+      "line": 36,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "tools/spec_rules.json",
+      "line": 4,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"reward\" found",
+      "excerpt": "reward"
+    },
+    {
+      "file": "tools/spec_rules.json",
+      "line": 5,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"rewards\" found",
+      "excerpt": "rewards"
+    },
+    {
+      "file": "tools/spec_rules.json",
+      "line": 4,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"Reward\" found",
+      "excerpt": "Reward"
+    },
+    {
+      "file": "tools/spec_rules.json",
+      "line": 7,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"woзнагражд\" found",
+      "excerpt": "woзнагражд"
+    },
+    {
+      "file": "tools/spec_rules.json",
+      "line": 8,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"stake-to-validate\" found",
+      "excerpt": "stake-to-validate"
+    },
+    {
+      "file": "tools/spec_rules.json",
+      "line": 65,
+      "rule": "NON-SPEC",
+      "severity": "error",
+      "message": "Non‑speculative design violated (\"staking rewards\")",
+      "excerpt": "staking rewards"
+    },
+    {
+      "file": "09_crypto_ingestion_pipeline/External Crypto Ingestion.md",
+      "line": 21,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "10_proof_of_transaction_engine/pot_tx_validation_logic.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "10_proof_of_transaction_engine/pot_tx_validation_logic.md",
+      "line": 12,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "10_proof_of_transaction_engine/pot_engine_overview.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "10_proof_of_transaction_engine/pot_engine_overview.md",
+      "line": 39,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "10_proof_of_transaction_engine/pot_tx_signature_model.md",
+      "line": 1,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "10_proof_of_transaction_engine/pot_challenge_response.md",
+      "line": 35,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "14_decentralized_tx_encoding/README.md",
+      "line": 7,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "contracts/package-lock.json",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "contracts/artifacts/@openzeppelin/contracts/utils/cryptography/ECDSA.sol/ECDSA.json",
+      "line": 8,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "contracts/artifacts/build-info/7a13139eac0bd1671c1f9de02e287da8.json",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "contracts/artifacts/build-info/7a13139eac0bd1671c1f9de02e287da8.json",
+      "line": 1,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "contracts/artifacts/build-info/750de3a4d0d47c5b2820d756717ac205.json",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "contracts/artifacts/src/ArosCoinReserveManager.sol/ArosCoinReserveManager.json",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "contracts/artifacts/src/ArosCoinReserveManager.sol/ArosCoinReserveManager.json",
+      "line": 13,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "contracts/cache/solidity-files-cache.json",
+      "line": 766,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "04_aros_value_circulation/aroscoin_distribution_tiers.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "04_aros_value_circulation/aroscoin_buyback_mechanism.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "03_token_management_layer/contract_self_destruct_policy.md",
+      "line": 23,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "03_token_management_layer/smart_contract_registry.md",
+      "line": 14,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "03_token_management_layer/smart_contract_upgrade_policy.md",
+      "line": 54,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "03_token_management_layer/token_issuance_protocol.md",
+      "line": 24,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "03_token_management_layer/token_audit_trail.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "03_token_management_layer/token_audit_trail.md",
+      "line": 99,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "03_token_management_layer/token_lock_unlock_rules.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "03_token_management_layer/token_lock_unlock_rules.md",
+      "line": 42,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "03_token_management_layer/contract_upgrade_proxy.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "03_token_management_layer/contract_versioning_policy.md",
+      "line": 38,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/glossary.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/README.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/AST_Developer_Deep_Dive.md",
+      "line": 13,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/development_guide.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/architecture_team_roles.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/adr/ADR-003-Regulatory-Compliance-Bridge.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/adr/ADR-005-Emergency-Governance-Procedures.md",
+      "line": 12,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/adr/ADR-002-AI_Supervisory_Framework.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/adr/ADR-001-Network_Consensus_Model.md",
+      "line": 31,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/security/Security_Standard.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/security/ZeroTrust_Compliance.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/security/GDPR_KVKK_Controls.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/processing/Processing_Spec.md",
+      "line": 25,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/requirements/SRS_AST.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/requirements/SRS_AST.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/requirements/SRS_AST.md",
+      "line": 104,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Forbidden marker \"TBD\"",
+      "excerpt": "TBD"
+    },
+    {
+      "file": "docs/requirements/schemas/transaction.schema.json",
+      "line": 38,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/requirements/schemas/bridge_request.schema.json",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/conceptual/AST_Whitepaper.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/testing/Test_Coverage_Map.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/testing/Test_Strategy.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/architecture/sequence_diagrams.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/architecture/sequence_diagrams.md",
+      "line": 36,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/architecture/Module_Map.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/architecture/Architecture_Overview.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/architecture/AST_AFC_Interface.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/api/module_02_nodechain.md",
+      "line": 65,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/api/AST_API_Spec.md",
+      "line": 25,
+      "rule": "TIME-SYNC",
+      "severity": "error",
+      "message": "TTL 300s exceeds limit",
+      "excerpt": "TTL 300"
+    },
+    {
+      "file": "docs/api/AST_API_Spec.md",
+      "line": 25,
+      "rule": "TIME-SYNC",
+      "severity": "warning",
+      "message": "TTL used without time source mention",
+      "excerpt": "TTL 300"
+    },
+    {
+      "file": "docs/api/AST_API_Spec.md",
+      "line": 26,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/api/module_12_ai_agents.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/api/module_05_bridge.md",
+      "line": 18,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/legal/Patent_References.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/legal/Principles & Paradigm.md",
+      "line": 81,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/legal/Intellectual_Property.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/legal/Legal & Compliance Commentary .md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/legal/Legal Commentary on Asset Backing & Double Issuan.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/data/Data_Model.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/data/Data_Model.md",
+      "line": 13,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/tokenomics/validator_metrics.md",
+      "line": 13,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/tokenomics/proofs.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/tokenomics/proofs.md",
+      "line": 7,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "docs/standards/Contribution_Guide.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "docs/standards/Security_Policy.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/standards/Coding_Standards.md",
+      "line": 38,
+      "rule": "TIME-SYNC",
+      "severity": "error",
+      "message": "TTL 300s exceeds limit",
+      "excerpt": "TTL 300"
+    },
+    {
+      "file": "docs/standards/Coding_Standards.md",
+      "line": 38,
+      "rule": "TIME-SYNC",
+      "severity": "warning",
+      "message": "TTL used without time source mention",
+      "excerpt": "TTL 300"
+    },
+    {
+      "file": "docs/standards/ZeroTrust_Compliance.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "docs/standards/Logging_Conventions.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "07_processing_layer/tx_failure_modes.md",
+      "line": 25,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "07_processing_layer/tx_queue_handler.md",
+      "line": 21,
+      "rule": "TIME-SYNC",
+      "severity": "error",
+      "message": "TTL 300s exceeds limit",
+      "excerpt": "TTL 300"
+    },
+    {
+      "file": "07_processing_layer/tx_queue_handler.md",
+      "line": 21,
+      "rule": "TIME-SYNC",
+      "severity": "error",
+      "message": "TTL 300s exceeds limit",
+      "excerpt": "TTL 300"
+    },
+    {
+      "file": "07_processing_layer/tx_queue_handler.md",
+      "line": 21,
+      "rule": "TIME-SYNC",
+      "severity": "error",
+      "message": "TTL 300s exceeds limit",
+      "excerpt": "TTL 300"
+    },
+    {
+      "file": "07_processing_layer/tx_queue_handler.md",
+      "line": 21,
+      "rule": "TIME-SYNC",
+      "severity": "error",
+      "message": "TTL 300s exceeds limit",
+      "excerpt": "TTL 300"
+    },
+    {
+      "file": "07_processing_layer/tx_queue_handler.md",
+      "line": 23,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "07_processing_layer/tx_ttl_expiration.md",
+      "line": 4,
+      "rule": "AUD-ROLLBACK",
+      "severity": "error",
+      "message": "Contradiction: rollback and no rollback present",
+      "excerpt": "rollback / no rollback"
+    },
+    {
+      "file": "07_processing_layer/tx_ttl_expiration.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "07_processing_layer/tx_ttl_expiration.md",
+      "line": 1,
+      "rule": "TIME-SYNC",
+      "severity": "warning",
+      "message": "TTL used without time source mention",
+      "excerpt": "TTL 3"
+    },
+    {
+      "file": "07_processing_layer/tx_state_snapshot_hook.md",
+      "line": 125,
+      "rule": "TIME-SYNC",
+      "severity": "warning",
+      "message": "TTL used without time source mention",
+      "excerpt": "TTL 10"
+    },
+    {
+      "file": "07_processing_layer/tx_state_snapshot_hook.md",
+      "line": 160,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "07_processing_layer/tx_validation_pipeline.md",
+      "line": 17,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "07_processing_layer/tx_execution_guardrails.md",
+      "line": 155,
+      "rule": "AUD-ROLLBACK",
+      "severity": "error",
+      "message": "Contradiction: rollback and no rollback present",
+      "excerpt": "rollback / no rollback"
+    },
+    {
+      "file": "07_processing_layer/tx_execution_guardrails.md",
+      "line": 141,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "07_processing_layer/tx_journal_writer.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "07_processing_layer/tx_simulation_mode.md",
+      "line": 91,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "07_processing_layer/tx_audit_log_format.md",
+      "line": 45,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "07_processing_layer/TX STRUCTURE & METADATA.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "warning",
+      "message": "Possible mixed languages",
+      "excerpt": ""
+    },
+    {
+      "file": "07_processing_layer/tx_trace_flags.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "07_processing_layer/tx_ttl_expiration md  250f1989022c80c0bc35da35a8324342/tx_lifecycle_management.md",
+      "line": 5,
+      "rule": "AUD-ROLLBACK",
+      "severity": "error",
+      "message": "Contradiction: rollback and no rollback present",
+      "excerpt": "rollback / no rollback"
+    },
+    {
+      "file": "07_processing_layer/tx_ttl_expiration md  250f1989022c80c0bc35da35a8324342/tx_lifecycle_management.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "07_processing_layer/tx_ttl_expiration md  250f1989022c80c0bc35da35a8324342/tx_lifecycle_management.md",
+      "line": 5,
+      "rule": "TIME-SYNC",
+      "severity": "warning",
+      "message": "TTL used without time source mention",
+      "excerpt": "TTL 3"
+    },
+    {
+      "file": "06_governance_layer/emergency_governance_procedures.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "06_governance_layer/emergency_governance_procedures.md",
+      "line": 37,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "06_governance_layer/quorum_validation_rules.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "06_governance_layer/governance_auditability.md",
+      "line": 87,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "06_governance_layer/governance_token_logic.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "06_governance_layer/voting_mechanism.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "05_bridge_layer/bridge_layer_overview.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "05_bridge_layer/bridge_threat_model.md",
+      "line": 54,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "05_bridge_layer/README.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": ".github/ISSUE_TEMPLATE/feature_request.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "12_nodechain_ai_agents/agent_roles_matrix.md",
+      "line": 24,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"reward\" found",
+      "excerpt": "reward"
+    },
+    {
+      "file": "12_nodechain_ai_agents/agent_roles_matrix.md",
+      "line": 24,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"Reward\" found",
+      "excerpt": "Reward"
+    },
+    {
+      "file": "12_nodechain_ai_agents/agent_roles_matrix.md",
+      "line": 25,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "12_nodechain_ai_agents/agent_architecture.md",
+      "line": 65,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "12_nodechain_ai_agents/tx_pattern_recognition.md",
+      "line": 25,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "12_nodechain_ai_agents/audit_trace_emitter.md",
+      "line": 49,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "12_nodechain_ai_agents/validator_behavior_monitor.md",
+      "line": 65,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"reward\" found",
+      "excerpt": "reward"
+    },
+    {
+      "file": "12_nodechain_ai_agents/validator_behavior_monitor.md",
+      "line": 65,
+      "rule": "TERM-FORBID",
+      "severity": "error",
+      "message": "Forbidden term \"Reward\" found",
+      "excerpt": "Reward"
+    },
+    {
+      "file": "12_nodechain_ai_agents/validator_behavior_monitor.md",
+      "line": 25,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "12_nodechain_ai_agents/anomaly_detection_engine.md",
+      "line": 21,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "12_nodechain_ai_agents/ai_governance_escalation.md",
+      "line": 68,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "12_nodechain_ai_agents/fraud_signal_dispatcher.md",
+      "line": 28,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "01_coin_engine/coin_use_cases.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "01_coin_engine/aro_emission_protocol.md",
+      "line": 85,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "01_coin_engine/AST Node Infrastructure Specification.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "01_coin_engine/README.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "01_coin_engine/README.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "01_coin_engine/coin_volatility_controls.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "01_coin_engine/node_participation_payments.md",
+      "line": 1,
+      "rule": "DOC-STYLE",
+      "severity": "error",
+      "message": "Missing H1 title",
+      "excerpt": ""
+    },
+    {
+      "file": "08_emission_layer/emission_reporting_and_traceability.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "08_emission_layer/emission_reporting_and_traceability.md",
+      "line": 40,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "08_emission_layer/emission_rollbacks_and_freeze_rules.md",
+      "line": 73,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "08_emission_layer/emission_layer_overview.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "11_validator_staking_and_payments/staking_governance_interface.md",
+      "line": 70,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "11_validator_staking_and_payments/validator_registration.md",
+      "line": 64,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "11_validator_staking_and_payments/payment_distribution_engine.md",
+      "line": 77,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "11_validator_staking_and_payments/slashing_and_penalty_rules.md",
+      "line": 33,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "02_nodechain_engine/nodechain_fault_tolerance.md",
+      "line": 52,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "02_nodechain_engine/shard_validation_protocol.md",
+      "line": 5,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "02_nodechain_engine/shard_quorum_protocol.md",
+      "line": 33,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "02_nodechain_engine/nodechain_security_model.md",
+      "line": 1,
+      "rule": "KYC-LINK",
+      "severity": "error",
+      "message": "KYC/AML mentioned without region/jurisdiction/retention",
+      "excerpt": "kyc aml compliance"
+    },
+    {
+      "file": "02_nodechain_engine/nodechain_security_model.md",
+      "line": 25,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "02_nodechain_engine/network_consensus_model.md",
+      "line": 48,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    },
+    {
+      "file": "02_nodechain_engine/node_registration_and_auth.md",
+      "line": 62,
+      "rule": "CRYPTO-LINK",
+      "severity": "error",
+      "message": "Crypto marker without nonce/hash/quorum",
+      "excerpt": "signature"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aros.studio/schemas/audit_log_entry.schema.json",
+  "title": "AuditLogEntry",
+  "description": "Описывает единичную запись в журнале аудита для отслеживания критических действий в системе.",
+  "type": "object",
+  "properties": {
+    "eventId": {
+      "description": "Уникальный идентификатор события (например, 32-значный hex-ID).",
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{32}$"
+    },
+    "timestamp": {
+      "description": "Время события в формате ISO 8601 UTC.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor": {
+      "description": "ID или роль субъекта, выполняющего действие (например, 'governance-module', 'user-uuid', 'node-id').",
+      "type": "string"
+    },
+    "action": {
+      "description": "Тип выполненного действия.",
+      "type": "string",
+      "enum": [
+        "TOKENIZE",
+        "REVERSE_TOKENIZE",
+        "MINT",
+        "BURN",
+        "LOCK",
+        "UNLOCK",
+        "FREEZE",
+        "GOVERNANCE_VOTE",
+        "CONFIG_CHANGE"
+      ]
+    },
+    "ref": {
+      "description": "Ссылка на объект действия (например, 'txId', 'accountId', 'proposalId').",
+      "type": "string"
+    },
+    "details": {
+      "description": "Дополнительные метаданные, связанные с событием.",
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "eventId",
+    "timestamp",
+    "actor",
+    "action",
+    "ref"
+  ],
+  "additionalProperties": false
+}

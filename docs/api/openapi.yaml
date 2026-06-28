@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: AST (Aros Studio) Platform API
+  description: |
+    Formal API specification for the Aros Studio "Swiss Watch" Platform.
+    This spec covers three main API surfaces:
+    1.  **Public API**: For end-users and wallets (submitting TXs, checking balances).
+    2.  **Bridge API (ALB)**: For partners (KYC, Tokenization).
+    3.  **AI Agents API**: For internal modules and auditors (Risk Scores, Fraud Signals).
+  version: 1.0.0
+
+servers:
+  - url: https://api.aros.studio/v1
+    description: Production Environment
+
+tags:
+  - name: Public (User & Wallet)
+    description: Endpoints for public interaction (TXs, Account data).
+  - name: Bridge (Partner & KYC)
+    description: Endpoints for trusted partners (ALB) to manage compliance and value flow (Module 05).
+  - name: AI Supervision (Audit & Internal)
+    description: Endpoints for querying the AI Supervisory Framework (Module 12).
+
+paths:
+
+  # ---== 1. Public API (AST_API_Spec.md) ==---
+
+  /tx/submit:
+    tags:
+      - Public (User & Wallet)
+    summary: Submit a Signed Transaction
+    description: Submits a new, signed transaction to the network's TX Queue (Module 07).
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../requirements/schemas/transaction.schema.json'
+      responses:
+        '202':
+          description: Transaction accepted and pending validation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  txId: { type: string, example: "0x..." }
+                  status: { type: string, example: "Pending" }
+                  receivedAt: { type: string, format: "date-time" }
+        '400':
+          description: Invalid transaction format or signature.
+
+  /tx/{txId}:
+    tags:
+      - Public (User & Wallet)
+    summary: Get Transaction Status
+    description: Retrieves the current status and details of a specific transaction by its hash.
+    get:
+      parameters:
+        - name: txId
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[A-Fa-f0-9]{64}$" }
+      responses:
+        '200':
+          description: Transaction details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction: { $ref: '../requirements/schemas/transaction.schema.json' }
+                  status: { type: string, enum: ["Pending", "Finalized", "Failed"] }
+                  blockId: { type: integer, example: 876543 }
+                  failureReason: { type: string, nullable: true }
+        '404':
+          description: Transaction not found.
+
+  /account/{astAccountId}/balance:
+    tags:
+      - Public (User & Wallet)
+    summary: Get Account Balance
+    get:
+      parameters:
+        - name: astAccountId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Account balance details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  astAccountId: { type: string }
+                  balance: { type: string, pattern: "^[0-9]+\\.[0-9]{9}$" }
+                  locked: { type: string, pattern: "^[0-9]+\\.[0-9]{9}$" }
+                  status: { type: string, enum: ["Verified", "None", "Suspended"] }
+
+  # ---== 2. Bridge API (module_05_bridge.md) ==---
+
+  /kyc/submit:
+    tags:
+      - Bridge (Partner & KYC)
+    summary: Submit KYC Decision (Partner Only)
+    description: Called by a 3rd-party KYC Provider (or partner) to submit off-chain identity results.
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId: { type: string }
+                astAccountId: { type: string }
+                kycDecision: { type: string, enum: ["APPROVED", "REJECTED", "REVIEW"] }
+                riskScore: { type: integer, minimum: 0, maximum: 100 }
+                providerSignature: { type: string }
+      responses:
+        '202':
+          description: KYC data accepted and being processed by the Compliance Oracle.
+
+  /kyc/status/{astAccountId}:
+    tags:
+      - Bridge (Partner & KYC)
+    summary: Get KYC Status (Partner Only)
+    get:
+      parameters:
+        - name: astAccountId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Current compliance status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: ["Verified", "Limited", "Suspended", "None"] }
+                  complianceScore: { type: integer }
+
+  /bridge/tokenize:
+    tags:
+      - Bridge (Partner & KYC)
+    summary: Request Tokenization (Partner Only)
+    description: Initiates a request to mint new tokens after fiat funds are confirmed off-chain.
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../requirements/schemas/bridge_request.schema.json'
+      responses:
+        '202':
+          description: Tokenization request accepted and pending on-chain processing.
+
+  # ---== 3. AI Supervision API (module_12_ai_agents.md) ==---
+
+  /ai/score/transaction:
+    tags:
+      - AI Supervision (Audit & Internal)
+    summary: Get Transaction Risk Score (Internal)
+    description: Calculates a real-time risk score for a new, pending transaction (called by Module 07).
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../requirements/schemas/transaction.schema.json'
+      responses:
+        '200':
+          description: Risk score details.
+          content:
+            application/json:
+              schema:
+                $ref: '../requirements/schemas/risk_score.schema.json'
+
+  /ai/audit-trace:
+    tags:
+      - AI Supervision (Audit & Internal)
+    summary: Query AI Meta-Audit Log (Audit Only)
+    description: Queries the immutable log of the AI agents' own observations (ADR-006, Layer 4).
+    get:
+      parameters:
+        - name: subject
+          in: query
+          schema: { type: string }
+        - name: time_start
+          in: query
+          schema: { type: string, format: "date-time" }
+      responses:
+        '200':
+          description: A list of meta-audit log entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../requirements/schemas/audit_log_entry.schema.json'

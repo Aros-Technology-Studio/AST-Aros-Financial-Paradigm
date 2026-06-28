@@ -1,0 +1,9 @@
+langchain
+torch
+pandas
+scikit-learn
+fastapi
+uvicorn
+numpy
+pytest
+httpx

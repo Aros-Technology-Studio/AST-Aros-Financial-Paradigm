@@ -50,8 +50,10 @@ jobs:
             -H "Authorization: Bearer $OPENAI_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$BODY" \
-            | jq -r '.choices[0].message.content' > openai.md
-          gh pr comment ${{ github.event.pull_request.number }} --body-file openai.md
+            | jq -r '.choices[0].message.content // empty' > openai.md
+          if [ -s openai.md ] && [ "$(cat openai.md)" != "null" ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body-file openai.md
+          fi
 
       - name: Comment via Grok
         if: ${{ env.GROK_API_KEY != '' }}
@@ -74,8 +76,10 @@ jobs:
             -H "Authorization: Bearer $GROK_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$BODY" \
-            | jq -r '.choices[0].message.content' > grok.md
-          gh pr comment ${{ github.event.pull_request.number }} --body-file grok.md
+            | jq -r '.choices[0].message.content // empty' > grok.md
+          if [ -s grok.md ] && [ "$(cat grok.md)" != "null" ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body-file grok.md
+          fi
 
       - name: Comment via Gemini
         if: ${{ env.GEMINI_API_KEY != '' }}
@@ -98,6 +102,8 @@ jobs:
           curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}" \
             -H "Content-Type: application/json" \
             -d "$BODY" \
-            | jq -r '.candidates[0].content.parts[0].text' > gemini.md
-          gh pr comment ${{ github.event.pull_request.number }} --body-file gemini.md
+            | jq -r '.candidates[0].content.parts[0].text // empty' > gemini.md
+          if [ -s gemini.md ] && [ "$(cat gemini.md)" != "null" ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body-file gemini.md
+          fi
 

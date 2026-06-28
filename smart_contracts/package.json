@@ -1,0 +1,23 @@
+{
+    "name": "ast-external-reserve-interface",
+    "version": "1.0.0",
+    "description": "Smart contracts for AST External Reserve Interface",
+    "scripts": {
+        "test": "npx hardhat test",
+        "compile": "npx hardhat compile",
+        "node": "npx hardhat node",
+        "deploy:local": "npx hardhat run scripts/deploy.ts --network localhost"
+    },
+    "devDependencies": {
+        "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+        "hardhat": "^2.22.0",
+        "typescript": "^5.0.0",
+        "ts-node": "^10.0.0",
+        "@types/node": "^20.0.0",
+        "@types/mocha": "^10.0.0"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "^5.0.0",
+        "dotenv": "^16.4.0"
+    }
+}

@@ -1,0 +1,80 @@
+name: Auto-Fix CI
+on:
+  workflow_run:
+    workflows: ["AST CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+
+jobs:
+  auto-fix:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Get failed CI logs
+        id: ci-logs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
+            });
+            const failed = jobs.data.jobs
+              .filter(j => j.conclusion === 'failure')
+              .map(j => j.name + ': ' + j.steps
+                .filter(s => s.conclusion === 'failure')
+                .map(s => s.name).join(', '))
+              .join('\n');
+            core.setOutput('failed_jobs', failed);
+
+      - name: Run Claude Auto-Fix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILED_JOBS: ${{ steps.ci-logs.outputs.failed_jobs }}
+        run: |
+          claude --print "
+          Репозиторий: AST-Aros-Financial-Paradigm
+          CI упал в следующих jobs: $FAILED_JOBS
+
+          Твои действия:
+          1. Прочитай все файлы связанные с упавшими jobs
+          2. Найди точную причину ошибки
+          3. Исправь код
+          4. Запусти npm run build && npm test локально
+          5. Если всё зелёное - закоммить:
+             git config user.email 'agent@aros.finance'
+             git config user.name 'AGENT-FIXER'
+             git add -A
+             git commit -m 'auto-fix: $FAILED_JOBS'
+             git push
+          6. Если не можешь исправить - напиши ESCALATE: [причина]
+          "
+
+      - name: Create Issue if escalation needed
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Auto-Fix Failed - Human Required',
+              body: `CI падал 3+ раза. Агент не смог исправить автоматически.\n\nFailed jobs: ${process.env.FAILED_JOBS}\n\nНужно ручное вмешательство.`,
+              labels: ['needs-human', 'auto-fix-failed']
+            });

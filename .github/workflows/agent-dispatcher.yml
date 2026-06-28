@@ -1,0 +1,59 @@
+name: Agent Dispatcher
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed modules
+        id: changes
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD" 2>/dev/null || git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          AGENTS="AGENT-TEST-INT"
+          echo "$CHANGED" | grep -q "02_nodechain"          && AGENTS="AGENT-CHAIN,$AGENTS"
+          echo "$CHANGED" | grep -q "05_bridge"             && AGENTS="AGENT-BRIDGE,$AGENTS"
+          echo "$CHANGED" | grep -q "06_governance"         && AGENTS="AGENT-GOV,$AGENTS"
+          echo "$CHANGED" | grep -q "10_proof_of_transaction" && AGENTS="AGENT-EMISSION,$AGENTS"
+
+          echo "agents=$AGENTS" >> $GITHUB_OUTPUT
+          echo "Assigned agents: $AGENTS"
+
+      - name: Setup Node
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run assigned agents
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ASSIGNED_AGENTS: ${{ steps.changes.outputs.agents }}
+        run: |
+          echo "Запускаю агентов: $ASSIGNED_AGENTS"
+          if ! claude --print "Запущены агенты: $ASSIGNED_AGENTS. PR содержит изменения в соответствующих модулях. Проверь изменения, запусти тесты, отчитайся."; then
+            echo "::warning::Claude dispatch skipped because ANTHROPIC_API_KEY is invalid or unavailable."
+          fi
+
+      - name: Skip assigned agents (missing API key)
+        if: ${{ secrets.ANTHROPIC_API_KEY == '' }}
+        run: echo "::warning::Skipping Claude agent dispatch because ANTHROPIC_API_KEY is not configured."

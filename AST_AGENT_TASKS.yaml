@@ -1,0 +1,103 @@
+# Per-agent task manifest to port the Model-1 core (reference/ast-core) into this NestJS repo.
+# Dispatch one agent per task. Each agent reads CLAUDE.md + AST_RULES.yaml first.
+# Acceptance = listed invariants pass as tests AND no prohibition present.
+
+meta:
+  goal: "Production NestJS service implementing AST Model 1, behavior-equivalent to reference/ast-core, with persistence + REST API."
+  stack: [NestJS, TypeScript, TypeORM, PostgreSQL, Jest]
+  rule_files: [CLAUDE.md, AST_RULES.yaml]
+
+tasks:
+  - id: T0
+    role: backend-architect
+    goal: "Scaffold Nest app: module skeleton for all entities, config, TypeORM+Postgres, Jest harness, ValidationPipe."
+    output: [src/app.module.ts, src/main.ts, ormconfig, test-setup]
+    acceptance: [app boots, empty modules wired]
+    depends_on: []
+
+  - id: T1
+    role: blockchain-dev
+    goal: "NodeChain module: TypeORM ExecutionSnapshot entity, append-only service, hash-link, reconstruct(), height/head."
+    inputs: { spec: AST_NodeChain_AGENT_EN.md, ref: nodechain.ts }
+    output: src/nodechain
+    acceptance: [I3, I8]
+    depends_on: [T0]
+
+  - id: T2
+    role: backend-dev
+    goal: "StateRecording module: capture events, completeness gate, submit to NodeChain unchanged."
+    inputs: { spec: AST_StateRecording_AGENT_EN.md, ref: stateRecording.ts }
+    output: src/state-recording
+    acceptance: [I3]
+    depends_on: [T1]
+
+  - id: T3
+    role: blockchain-dev
+    goal: "PoT module: verify composite criteria -> binary verdict (idempotent), authorizeEmission gate."
+    inputs: { spec: AST_PoT_AGENT_EN.md, ref: pot.ts }
+    output: src/pot
+    acceptance: [I1, I4]
+    depends_on: [T1, T2]
+
+  - id: T4
+    role: tokenomics-dev
+    goal: "ArosCoin + Emission modules: supply (process vs earned), internalPrice; mint on PoT-verified, burn on completion."
+    inputs: { specs: [AST_ArosCoin_AGENT_EN.md, AST_Emission_AGENT_EN.md], ref: [aroscoin.ts, emission.ts] }
+    output: [src/aroscoin, src/emission]
+    acceptance: [I2, I5, I6, P7]
+    depends_on: [T3]
+
+  - id: T5
+    role: settlement-dev
+    goal: "Commission module: fee, epoch pool, post-factum distribution by node weight, pool reconciliation, EpochEntity persistence."
+    inputs: { spec: AST_Commission_AGENT_EN.md, ref: commission.ts }
+    output: src/commission
+    acceptance: [I7]
+    depends_on: [T4, T7]
+
+  - id: T6
+    role: tokenomics-dev
+    goal: "Reserve + Release modules: reserveIndex from confirmed volume; release condition (reserveIndex>threshold AND velocity>target)."
+    inputs: { specs: [AST_Reserve_AGENT_EN.md, AST_Release_AGENT_EN.md], ref: [reserve.ts, release.ts] }
+    output: [src/reserve, src/release]
+    acceptance: [I4]
+    depends_on: [T4]
+
+  - id: T7
+    role: backend-dev
+    goal: "Nodes module: register/execute/validate, reputation+weight, post-factum payment, retention. NO staking/slashing-vs-balance."
+    inputs: { spec: AST_Nodes_AGENT_EN.md, ref: nodes.ts }
+    output: src/nodes
+    acceptance: [I9, P1, P2]
+    depends_on: [T1]
+
+  - id: T8
+    role: ai-systems-dev
+    goal: "AllSeeingEye module: passive observe->log->compare->signal; immutable oversight ledger; Observer Node read-only interface. No enforcement."
+    inputs: { spec: AST_AllSeeingEye_AGENT_EN.md, ref: allSeeingEye.ts }
+    output: src/all-seeing-eye
+    acceptance: [I10, P6]
+    depends_on: [T1]
+
+  - id: T9
+    role: backend-architect
+    goal: "ProcessOrchestrator + REST API: full lifecycle endpoint(s), DTOs, finalizeEpoch, metrics endpoint."
+    inputs: { spec: AST_Ontology_FULL_AGENT_EN.md, ref: orchestrator.ts }
+    output: [src/orchestrator, src/api]
+    acceptance: [I1, I3, I5, I7]
+    depends_on: [T4, T5, T6, T7, T8]
+
+  - id: T10
+    role: qa-dev
+    goal: "Port reference invariant tests to Jest (unit+e2e); CI gate runs all invariants + prohibition greps on every PR."
+    inputs: { ref: invariants.test.ts }
+    output: [test/, .github/workflows/ast-ci.yml]
+    acceptance: [I1, I2, I3, I4, I5, I6, I7, I8, I9, I10]
+    depends_on: [T9]
+
+  - id: T11
+    role: refactor-dev
+    goal: "Remove/disable Model-A modules and references (staking, slashing-vs-balance, crypto-conversion, token-governance)."
+    acceptance: [P1, P2, P3, P4, P5]
+    depends_on: [T0]
+    note: "Can run in parallel; final state must pass all prohibition greps."

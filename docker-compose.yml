@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ast-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-aros_ast}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ast-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: ast-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ast-network
+    restart: always
+
+  app:
+    build: .
+    container_name: ast-node
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_DATABASE=${DB_DATABASE:-aros_ast}
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ast-network
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+networks:
+  ast-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

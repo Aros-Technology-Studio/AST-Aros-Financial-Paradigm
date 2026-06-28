@@ -1,0 +1,23 @@
+# Node
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+yarn-error.log*
+*.log
+# Env & cache
+.env
+.env.*
+!.env.example
+.nyc_output/
+.cache/
+# OS
+.DS_Store
+Thumbs.db
+
+.venv
+
+contracts/cache
+contracts/artifacts
+
+*.tsbuildinfo

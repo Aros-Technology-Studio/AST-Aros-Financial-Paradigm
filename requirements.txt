@@ -1,1 +1,2 @@
-requests>=2.31.0
+# Python tooling
+black==24.8.0

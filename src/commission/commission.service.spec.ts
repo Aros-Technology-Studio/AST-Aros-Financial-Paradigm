@@ -237,4 +237,39 @@ describe('CommissionService', () => {
         const again = await run();
         expect(again).toEqual(distribution);
     });
+
+    // list() returns every epoch in ascending order.
+    it('list returns all epochs in ascending order', async () => {
+        await service.accrue(2, 5);
+        await service.accrue(1, 10);
+        const epochs = await service.list();
+        expect(epochs.map((e) => e.epochNumber)).toEqual([1, 2]);
+    });
+
+    // Finalizing an already-finalized epoch is idempotent: it re-derives the stored result
+    // without paying again or appending a second distribution to NodeChain.
+    it('re-finalizing a finalized epoch returns the stored result without paying again', async () => {
+        const pot = moduleRef.get(require('../pot/pot.service').PotService);
+        await nodes.register('n1', 'worker');
+        await recordFullSequence('p');
+        await pot.verify('p');
+        await service.accrue(1, 100, [{ processId: 'p', nodeId: 'n1' }]);
+
+        const first = await service.finalizeEpoch(1);
+        const chainLenAfterFirst = (await chain.list()).length;
+
+        const second = await service.finalizeEpoch(1);
+
+        expect(second.epochNumber).toBe(first.epochNumber);
+        expect(second.paid).toBeCloseTo(first.paid, 9);
+        expect(second.operationalMargin).toBeCloseTo(first.operationalMargin, 9);
+        expect(second.reconciled).toBe(true);
+        // No second distribution snapshot was appended.
+        expect((await chain.list()).length).toBe(chainLenAfterFirst);
+    });
+
+    // Finalizing an epoch that was never opened is a not-found condition.
+    it('finalizing an unknown epoch throws NotFoundException', async () => {
+        await expect(service.finalizeEpoch(999)).rejects.toThrow('Epoch 999 does not exist');
+    });
 });

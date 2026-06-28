@@ -929,4 +929,89 @@ reserveIndex after = log10(1 + 10,000) ≈ 4.0000; internalPrice = 1 × 4.0000 =
 | PR #289 | `claude/ast-model1-rewrite` | Full NestJS Model-1 rewrite (all 11 modules) |
 | PR #296 | `claude/inspiring-cannon-9niouj` | Invariants + CI; code confirmed canonical |
 | PR #298 | `claude/inspiring-cannon-wdv1j3` | Commission 75/25 + AFC reserve routing corrected |
-| **This run** | `claude/inspiring-cannon-pl0dei` | Full re-audit; all components verified canonical; no code changes required |
+| 2026-06-20 | `claude/inspiring-cannon-pl0dei` | Full re-audit; all components verified canonical; no code changes required |
+| **2026-06-28** | `claude/inspiring-cannon-9faak1` | Fresh AGENT-CORE audit; canonical 1:1 model confirmed in place; see §20 |
+
+---
+
+## 20. 2026-06-28 Full Re-Audit (branch: claude/inspiring-cannon-9faak1)
+
+### Scope
+
+Directories examined per task specification:
+- `01_coin_engine/` — documentation only (Model-A historical; no runnable code)
+- `10_proof_of_transaction_engine/` — PoT documentation (no runnable code)
+- `src/token/` — **does not exist**; emission logic lives in `src/emission/` + `src/aroscoin/`
+- `src/emission/emission.service.ts` — audited (sole minter, PoT-gated)
+- `src/aroscoin/aroscoin.service.ts` — audited (3-tally ledger)
+- `reference/ast-core/src/emission.ts` + `aroscoin.ts` + `orchestrator.ts` — canonical authority
+
+### Canonical Model Verified (line-by-line)
+
+| Requirement | File:Line | Implementation | Status |
+|-------------|-----------|----------------|--------|
+| Emission = TX Amount (1:1) | `emission.service.ts:61,111` | `minted = await this.mint(processId, amount)` / `emission = txAmount` | ✅ CONFIRMED |
+| PoT gate (verified === 1) | `emission.service.ts:57-59` | `if (!verdict \|\| verdict.verified !== 1) return { authorized: false, minted: 0, burned: 0 }` | ✅ CONFIRMED |
+| mint() throws without PoT | `emission.service.ts:73-75` | throws `emission refused … verified === 1 required` | ✅ CONFIRMED |
+| Burn = Minted (net → 0) | `emission.service.ts:62` | `burned = await this.burn(processId, minted)` | ✅ CONFIRMED |
+| NodeChain recording | `emission.service.ts:77,87` | `chain.append('emission.minted', ...)` + `chain.append('emission.burned', ...)` | ✅ CONFIRMED |
+| Commission = TX × 0.5% | `emission.service.ts:109,112` | `commissionRate = 0.005; commission = txAmount * commissionRate` | ✅ CONFIRMED |
+| NodeShare = commission × 0.75 | `emission.service.ts:116` | `nodeShare: commission * 0.75` | ✅ CONFIRMED |
+| AfcShare = commission × 0.25 | `emission.service.ts:117` | `afcShare: commission * 0.25` | ✅ CONFIRMED |
+| Net = 0 | `emission.service.ts:118` | `net: 0` | ✅ CONFIRMED |
+| 3-tally ledger | `aroscoin.service.ts:63-65` | `processMinted`, `processBurned`, `earnedRetained` | ✅ CONFIRMED |
+| totalSupply identity (I6) | `aroscoin.service.ts:106` | `(processMinted - processBurned) + earnedRetained` | ✅ CONFIRMED |
+| processNet → 0 (I5) | `aroscoin.service.ts:112` | `processMinted - processBurned` | ✅ CONFIRMED |
+| internalPrice formula | `aroscoin.service.ts:122` | `return this.base * reserveIndex` | ✅ CONFIRMED |
+
+### Transaction Example ($10,000) — Code-Traced
+
+```
+TX amount = 10,000
+→ PoT verified === 1 (gate passes)
+→ emission.emit('p-1', 10_000):
+    mint(10_000) → coin.recordMint(10_000)   [processMinted = 10,000]
+    burn(10_000) → coin.recordBurn(10_000)   [processBurned = 10,000]
+    processNet = 0; minted = 10,000; burned = 10,000
+→ commission breakdown (calculate(10_000)):
+    emission   = 10,000 ARO  (1:1)
+    commission = 50 ARO      (0.5%)
+    nodeShare  = 37.50 ARO   (75% → nodes, post-factum at epoch finalization)
+    afcShare   = 12.50 ARO   (25% → Reserve AFC)
+    net        = 0           (symmetric cycle)
+→ reserveIndex after = log10(1 + 10,000) ≈ 4.0000
+→ internalPrice = 1 × 4.0000 = 4.0000 (rises with confirmed work)
+→ totalSupply after cycle = 0 (process part canceled); after epoch earn = earnedRetained
+```
+
+### Invariants Checked
+
+| ID | Rule | Status |
+|----|------|--------|
+| I1/I-EM-1 | Value only on PoT verified === 1 | ✅ Gate enforced in `emit()` and `mint()` |
+| I2/I-EM-2 | Every emission bound to a confirmed process | ✅ `mint()` throws on unauthorized |
+| I5/I-EM-3 | Process part nets to 0 (symmetric cycle) | ✅ `burn(minted)` always called |
+| I6/I-AC-5 | `totalSupply = (minted-burned) + earnedRetained` | ✅ Formula at line 106 |
+| P7 | No emission outside confirmed-process logic | ✅ No standalone/scheduled mint exists |
+| P5 | No mint-on-deposit / crypto→ArosCoin | ✅ No deposit method present |
+| P1 | No staking / stakedBalance | ✅ Absent in both modules |
+
+### Model-A Prohibition Scan (src/emission/ and src/aroscoin/)
+
+| Prohibited Pattern | Found |
+|--------------------|-------|
+| `staking` / `stakedBalance` / `stake_freeze` | ❌ None |
+| `slashing` / `penalty` | ❌ None |
+| `token-weighted` / `governance` | ❌ None |
+| `farming` / `yield` | ❌ None |
+| `crypto_to_aroscoin` / `mint-on-deposit` | ❌ None |
+| Manual/scheduled emission outside process | ❌ None |
+
+### Result
+
+**CONFIRMED CANONICAL. No deviations found. No code changes required.**
+
+The canonical 1:1 emission model is fully implemented and matches both the reference
+implementation (`reference/ast-core/src/emission.ts`) and the agent specs
+(`docs/specs/AST_Emission_AGENT_EN.md`, `docs/specs/AST_ArosCoin_AGENT_EN.md`).
+All prior fixes from previous sessions confirmed in place.

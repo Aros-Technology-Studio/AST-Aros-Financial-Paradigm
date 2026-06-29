@@ -1,0 +1,22 @@
+﻿2026-05-12T12:09:01.8324369Z ##[group]Run actions/setup-node@v3
+2026-05-12T12:09:01.8325378Z with:
+2026-05-12T12:09:01.8326067Z   node-version: 20.x
+2026-05-12T12:09:01.8326842Z   cache: npm
+2026-05-12T12:09:01.8327560Z   always-auth: false
+2026-05-12T12:09:01.8328556Z   check-latest: false
+2026-05-12T12:09:01.8329609Z   token: ***
+2026-05-12T12:09:01.8330317Z ##[endgroup]
+2026-05-12T12:09:02.1245008Z Found in cache @ /opt/hostedtoolcache/node/20.20.2/x64
+2026-05-12T12:09:02.1249969Z ##[group]Environment details
+2026-05-12T12:09:02.9878343Z node: v20.20.2
+2026-05-12T12:09:02.9879804Z npm: 10.8.2
+2026-05-12T12:09:02.9880906Z yarn: 1.22.22
+2026-05-12T12:09:02.9882766Z ##[endgroup]
+2026-05-12T12:09:02.9897679Z [command]/opt/hostedtoolcache/node/20.20.2/x64/bin/npm config get cache
+2026-05-12T12:09:03.1079609Z /home/runner/.npm
+2026-05-12T12:09:03.2151403Z Cache hit for: node-cache-Linux-npm-fe742eda00c7aaab27391b0001748efe4958e3364d5974ef3c7a076f6f2ce665
+2026-05-12T12:09:04.2460131Z Received 190635018 of 190635018 (100.0%), 182.0 MBs/sec
+2026-05-12T12:09:04.2461297Z Cache Size: ~182 MB (190635018 B)
+2026-05-12T12:09:04.2523994Z [command]/usr/bin/tar -xf /home/runner/work/_temp/1518f26e-57be-4257-92a4-5a2472c4fa22/cache.tzst -P -C /home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm --use-compress-program unzstd
+2026-05-12T12:09:04.7594229Z Cache restored successfully
+2026-05-12T12:09:04.7678692Z Cache restored from key: node-cache-Linux-npm-fe742eda00c7aaab27391b0001748efe4958e3364d5974ef3c7a076f6f2ce665

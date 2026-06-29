@@ -1,0 +1,161 @@
+﻿2026-05-12T12:09:18.2315476Z ##[group]Run npm test
+2026-05-12T12:09:18.2315764Z [36;1mnpm test[0m
+2026-05-12T12:09:18.2336762Z shell: /usr/bin/bash -e {0}
+2026-05-12T12:09:18.2337018Z ##[endgroup]
+2026-05-12T12:09:18.3478956Z 
+2026-05-12T12:09:18.3479681Z > aros-paradigm-ast@0.1.0 test
+2026-05-12T12:09:18.3480160Z > jest
+2026-05-12T12:09:18.3480334Z 
+2026-05-12T12:09:25.6306112Z PASS src/nodechain_engine/quorum.engine.spec.ts (5.076 s)
+2026-05-12T12:09:25.6313181Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=4.0000/4.0000, reached=true[39m
+2026-05-12T12:09:25.6316214Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=6/6, weight=6.0000/6.0000, reached=true[39m
+2026-05-12T12:09:25.6319318Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=10, approved=8/8, weight=8.0000/8.0000, reached=true[39m
+2026-05-12T12:09:25.6322160Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=0/6, weight=0.0000/6.0000, reached=false[39m
+2026-05-12T12:09:25.6324842Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=5/6, weight=5.0000/6.0000, reached=false[39m
+2026-05-12T12:09:25.6369770Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=3/6, weight=3.0000/6.0000, reached=false[39m
+2026-05-12T12:09:25.6417597Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=3/4, weight=5.0000/5.0000, reached=false[39m
+2026-05-12T12:09:25.6449061Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=6.0000/5.0000, reached=true[39m
+2026-05-12T12:09:25.6459670Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=0.4000/2.0000, reached=false[39m
+2026-05-12T12:09:25.6484236Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=10, approved=8/8, weight=8.0000/8.0000, reached=true[39m
+2026-05-12T12:09:25.6486802Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=20.0000/15.0000, reached=true[39m
+2026-05-12T12:09:25.6489993Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=2.0000/3.0000, reached=false[39m
+2026-05-12T12:09:25.6492515Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=6/6, weight=6.0000/6.0000, reached=true[39m
+2026-05-12T12:09:25.6495058Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=0/6, weight=0.0000/6.0000, reached=false[39m
+2026-05-12T12:09:27.0009094Z PASS src/governance/governance.service.spec.ts
+2026-05-12T12:09:27.0045225Z PASS tests/unit/governance/governance_logic.spec.ts (6.349 s)
+2026-05-12T12:09:27.3329252Z PASS src/nodechain_engine/nodechain.service.spec.ts
+2026-05-12T12:09:27.4250093Z [31m[Nest] 2564  - [39m05/12/2026, 12:09:27 PM [31m  ERROR[39m [38;5;3m[TokenService] [39m[31mMint failed: Ledger Error[39m
+2026-05-12T12:09:27.4684887Z PASS src/token/token.service.spec.ts (6.814 s)
+2026-05-12T12:09:27.6005997Z PASS tests/unit/ai_agents/active_agent.spec.ts
+2026-05-12T12:09:27.8128923Z PASS tests/unit/supervisory/anomaly_detection.spec.ts
+2026-05-12T12:09:27.8819311Z FAIL src/fee_distribution/fee_distribution.service.test.ts
+2026-05-12T12:09:27.8838958Z   ● FeeDistributionService › should be defined
+2026-05-12T12:09:27.8868132Z 
+2026-05-12T12:09:27.8871477Z     Nest can't resolve dependencies of the FeeDistributionService (EpochEntityRepository, DistributionLogEntityRepository, TransactionRepository, PoTService, TokenService, ?, NodeChainService, SmartContractIntegration, DataSource). Please make sure that the argument EmissionService at index [5] is available in the RootTestModule context.
+2026-05-12T12:09:27.8898116Z 
+2026-05-12T12:09:27.8928295Z     Potential solutions:
+2026-05-12T12:09:27.8928965Z     - Is RootTestModule a valid NestJS module?
+2026-05-12T12:09:27.8958716Z     - If EmissionService is a provider, is it part of the current RootTestModule?
+2026-05-12T12:09:27.9018830Z     - If EmissionService is exported from a separate @Module, is that module imported within RootTestModule?
+2026-05-12T12:09:27.9019784Z       @Module({
+2026-05-12T12:09:27.9020354Z         imports: [ /* the Module containing EmissionService */ ]
+2026-05-12T12:09:27.9021012Z       })
+2026-05-12T12:09:27.9064007Z 
+2026-05-12T12:09:27.9078684Z     [0m [90m 65 |[39m
+2026-05-12T12:09:27.9085139Z      [90m 66 |[39m     beforeEach([36masync[39m () [33m=>[39m {
+2026-05-12T12:09:27.9091735Z     [31m[1m>[22m[39m[90m 67 |[39m         [36mconst[39m module[33m:[39m [33mTestingModule[39m [33m=[39m [36mawait[39m [33mTest[39m[33m.[39mcreateTestingModule({
+2026-05-12T12:09:27.9093608Z      [90m    |[39m                                       [31m[1m^[22m[39m
+2026-05-12T12:09:27.9094742Z      [90m 68 |[39m             providers[33m:[39m [
+2026-05-12T12:09:27.9096290Z      [90m 69 |[39m                 [33mFeeDistributionService[39m[33m,[39m
+2026-05-12T12:09:27.9098606Z      [90m 70 |[39m                 { provide[33m:[39m getRepositoryToken([33mEpochEntity[39m)[33m,[39m useValue[33m:[39m mockEpochRepo }[33m,[39m[0m
+2026-05-12T12:09:27.9099855Z 
+2026-05-12T12:09:27.9100842Z       at TestingInjector.lookupComponentInParentModules (node_modules/@nestjs/core/injector/injector.js:262:19)
+2026-05-12T12:09:27.9102681Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/core/injector/injector.js:215:33)
+2026-05-12T12:09:27.9104481Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/testing/testing-injector.js:19:45)
+2026-05-12T12:09:27.9105988Z       at resolveParam (node_modules/@nestjs/core/injector/injector.js:129:38)
+2026-05-12T12:09:27.9107026Z           at async Promise.all (index 5)
+2026-05-12T12:09:27.9108518Z       at TestingInjector.resolveConstructorParams (node_modules/@nestjs/core/injector/injector.js:144:27)
+2026-05-12T12:09:27.9110195Z       at TestingInjector.loadInstance (node_modules/@nestjs/core/injector/injector.js:70:13)
+2026-05-12T12:09:27.9111737Z       at TestingInjector.loadProvider (node_modules/@nestjs/core/injector/injector.js:98:9)
+2026-05-12T12:09:27.9113057Z       at node_modules/@nestjs/core/injector/instance-loader.js:56:13
+2026-05-12T12:09:27.9114017Z           at async Promise.all (index 3)
+2026-05-12T12:09:27.9115436Z       at TestingInstanceLoader.createInstancesOfProviders (node_modules/@nestjs/core/injector/instance-loader.js:55:9)
+2026-05-12T12:09:27.9116998Z       at node_modules/@nestjs/core/injector/instance-loader.js:40:13
+2026-05-12T12:09:27.9118195Z           at async Promise.all (index 1)
+2026-05-12T12:09:27.9119519Z       at TestingInstanceLoader.createInstances (node_modules/@nestjs/core/injector/instance-loader.js:39:9)
+2026-05-12T12:09:27.9121440Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/core/injector/instance-loader.js:22:13)
+2026-05-12T12:09:27.9123518Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-instance-loader.js:9:9)
+2026-05-12T12:09:27.9125584Z       at TestingModuleBuilder.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-module.builder.js:118:9)
+2026-05-12T12:09:27.9127470Z       at TestingModuleBuilder.compile (node_modules/@nestjs/testing/testing-module.builder.js:74:9)
+2026-05-12T12:09:27.9129361Z       at Object.<anonymous> (src/fee_distribution/fee_distribution.service.test.ts:67:39)
+2026-05-12T12:09:27.9130586Z 
+2026-05-12T12:09:27.9131513Z   ● FeeDistributionService › startNewEpoch › should create a new epoch if none exists
+2026-05-12T12:09:27.9132430Z 
+2026-05-12T12:09:27.9135225Z     Nest can't resolve dependencies of the FeeDistributionService (EpochEntityRepository, DistributionLogEntityRepository, TransactionRepository, PoTService, TokenService, ?, NodeChainService, SmartContractIntegration, DataSource). Please make sure that the argument EmissionService at index [5] is available in the RootTestModule context.
+2026-05-12T12:09:27.9152999Z 
+2026-05-12T12:09:27.9153403Z     Potential solutions:
+2026-05-12T12:09:27.9154194Z     - Is RootTestModule a valid NestJS module?
+2026-05-12T12:09:27.9155321Z     - If EmissionService is a provider, is it part of the current RootTestModule?
+2026-05-12T12:09:27.9156892Z     - If EmissionService is exported from a separate @Module, is that module imported within RootTestModule?
+2026-05-12T12:09:27.9158423Z       @Module({
+2026-05-12T12:09:27.9159234Z         imports: [ /* the Module containing EmissionService */ ]
+2026-05-12T12:09:27.9160076Z       })
+2026-05-12T12:09:27.9160473Z 
+2026-05-12T12:09:27.9160918Z     [0m [90m 65 |[39m
+2026-05-12T12:09:27.9161891Z      [90m 66 |[39m     beforeEach([36masync[39m () [33m=>[39m {
+2026-05-12T12:09:27.9163993Z     [31m[1m>[22m[39m[90m 67 |[39m         [36mconst[39m module[33m:[39m [33mTestingModule[39m [33m=[39m [36mawait[39m [33mTest[39m[33m.[39mcreateTestingModule({
+2026-05-12T12:09:27.9166086Z      [90m    |[39m                                       [31m[1m^[22m[39m
+2026-05-12T12:09:27.9167286Z      [90m 68 |[39m             providers[33m:[39m [
+2026-05-12T12:09:27.9168711Z      [90m 69 |[39m                 [33mFeeDistributionService[39m[33m,[39m
+2026-05-12T12:09:27.9170647Z      [90m 70 |[39m                 { provide[33m:[39m getRepositoryToken([33mEpochEntity[39m)[33m,[39m useValue[33m:[39m mockEpochRepo }[33m,[39m[0m
+2026-05-12T12:09:27.9171896Z 
+2026-05-12T12:09:27.9172888Z       at TestingInjector.lookupComponentInParentModules (node_modules/@nestjs/core/injector/injector.js:262:19)
+2026-05-12T12:09:27.9174739Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/core/injector/injector.js:215:33)
+2026-05-12T12:09:27.9176508Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/testing/testing-injector.js:19:45)
+2026-05-12T12:09:27.9178321Z       at resolveParam (node_modules/@nestjs/core/injector/injector.js:129:38)
+2026-05-12T12:09:27.9179368Z           at async Promise.all (index 5)
+2026-05-12T12:09:27.9180654Z       at TestingInjector.resolveConstructorParams (node_modules/@nestjs/core/injector/injector.js:144:27)
+2026-05-12T12:09:27.9182248Z       at TestingInjector.loadInstance (node_modules/@nestjs/core/injector/injector.js:70:13)
+2026-05-12T12:09:27.9184007Z       at TestingInjector.loadProvider (node_modules/@nestjs/core/injector/injector.js:98:9)
+2026-05-12T12:09:27.9194179Z       at node_modules/@nestjs/core/injector/instance-loader.js:56:13
+2026-05-12T12:09:27.9195109Z           at async Promise.all (index 3)
+2026-05-12T12:09:27.9196371Z       at TestingInstanceLoader.createInstancesOfProviders (node_modules/@nestjs/core/injector/instance-loader.js:55:9)
+2026-05-12T12:09:27.9198007Z       at node_modules/@nestjs/core/injector/instance-loader.js:40:13
+2026-05-12T12:09:27.9199002Z           at async Promise.all (index 1)
+2026-05-12T12:09:27.9200183Z       at TestingInstanceLoader.createInstances (node_modules/@nestjs/core/injector/instance-loader.js:39:9)
+2026-05-12T12:09:27.9201972Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/core/injector/instance-loader.js:22:13)
+2026-05-12T12:09:27.9204043Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-instance-loader.js:9:9)
+2026-05-12T12:09:27.9206158Z       at TestingModuleBuilder.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-module.builder.js:118:9)
+2026-05-12T12:09:27.9208514Z       at TestingModuleBuilder.compile (node_modules/@nestjs/testing/testing-module.builder.js:74:9)
+2026-05-12T12:09:27.9209945Z       at Object.<anonymous> (src/fee_distribution/fee_distribution.service.test.ts:67:39)
+2026-05-12T12:09:27.9210808Z 
+2026-05-12T12:09:27.9211714Z   ● FeeDistributionService › finalizeEpoch › should distribute rewards if totalFees > 0
+2026-05-12T12:09:27.9212570Z 
+2026-05-12T12:09:27.9215259Z     Nest can't resolve dependencies of the FeeDistributionService (EpochEntityRepository, DistributionLogEntityRepository, TransactionRepository, PoTService, TokenService, ?, NodeChainService, SmartContractIntegration, DataSource). Please make sure that the argument EmissionService at index [5] is available in the RootTestModule context.
+2026-05-12T12:09:27.9218156Z 
+2026-05-12T12:09:27.9218511Z     Potential solutions:
+2026-05-12T12:09:27.9219229Z     - Is RootTestModule a valid NestJS module?
+2026-05-12T12:09:27.9220280Z     - If EmissionService is a provider, is it part of the current RootTestModule?
+2026-05-12T12:09:27.9221723Z     - If EmissionService is exported from a separate @Module, is that module imported within RootTestModule?
+2026-05-12T12:09:27.9222785Z       @Module({
+2026-05-12T12:09:27.9223473Z         imports: [ /* the Module containing EmissionService */ ]
+2026-05-12T12:09:27.9224256Z       })
+2026-05-12T12:09:27.9224636Z 
+2026-05-12T12:09:27.9225057Z     [0m [90m 65 |[39m
+2026-05-12T12:09:27.9226306Z      [90m 66 |[39m     beforeEach([36masync[39m () [33m=>[39m {
+2026-05-12T12:09:27.9228527Z     [31m[1m>[22m[39m[90m 67 |[39m         [36mconst[39m module[33m:[39m [33mTestingModule[39m [33m=[39m [36mawait[39m [33mTest[39m[33m.[39mcreateTestingModule({
+2026-05-12T12:09:27.9230338Z      [90m    |[39m                                       [31m[1m^[22m[39m
+2026-05-12T12:09:27.9231422Z      [90m 68 |[39m             providers[33m:[39m [
+2026-05-12T12:09:27.9232625Z      [90m 69 |[39m                 [33mFeeDistributionService[39m[33m,[39m
+2026-05-12T12:09:27.9234404Z      [90m 70 |[39m                 { provide[33m:[39m getRepositoryToken([33mEpochEntity[39m)[33m,[39m useValue[33m:[39m mockEpochRepo }[33m,[39m[0m
+2026-05-12T12:09:27.9235544Z 
+2026-05-12T12:09:27.9236485Z       at TestingInjector.lookupComponentInParentModules (node_modules/@nestjs/core/injector/injector.js:262:19)
+2026-05-12T12:09:27.9238477Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/core/injector/injector.js:215:33)
+2026-05-12T12:09:27.9240230Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/testing/testing-injector.js:19:45)
+2026-05-12T12:09:27.9241665Z       at resolveParam (node_modules/@nestjs/core/injector/injector.js:129:38)
+2026-05-12T12:09:27.9242677Z           at async Promise.all (index 5)
+2026-05-12T12:09:27.9243900Z       at TestingInjector.resolveConstructorParams (node_modules/@nestjs/core/injector/injector.js:144:27)
+2026-05-12T12:09:27.9245399Z       at TestingInjector.loadInstance (node_modules/@nestjs/core/injector/injector.js:70:13)
+2026-05-12T12:09:27.9246799Z       at TestingInjector.loadProvider (node_modules/@nestjs/core/injector/injector.js:98:9)
+2026-05-12T12:09:27.9248226Z       at node_modules/@nestjs/core/injector/instance-loader.js:56:13
+2026-05-12T12:09:27.9249098Z           at async Promise.all (index 3)
+2026-05-12T12:09:27.9250394Z       at TestingInstanceLoader.createInstancesOfProviders (node_modules/@nestjs/core/injector/instance-loader.js:55:9)
+2026-05-12T12:09:27.9251825Z       at node_modules/@nestjs/core/injector/instance-loader.js:40:13
+2026-05-12T12:09:27.9252735Z           at async Promise.all (index 1)
+2026-05-12T12:09:27.9253928Z       at TestingInstanceLoader.createInstances (node_modules/@nestjs/core/injector/instance-loader.js:39:9)
+2026-05-12T12:09:27.9255780Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/core/injector/instance-loader.js:22:13)
+2026-05-12T12:09:27.9258245Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-instance-loader.js:9:9)
+2026-05-12T12:09:27.9260337Z       at TestingModuleBuilder.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-module.builder.js:118:9)
+2026-05-12T12:09:27.9290318Z       at TestingModuleBuilder.compile (node_modules/@nestjs/testing/testing-module.builder.js:74:9)
+2026-05-12T12:09:27.9291852Z       at Object.<anonymous> (src/fee_distribution/fee_distribution.service.test.ts:67:39)
+2026-05-12T12:09:27.9292703Z 
+2026-05-12T12:09:27.9293153Z PASS tests/unit/security_deposit/slashing.spec.ts
+2026-05-12T12:09:28.0359655Z PASS tests/unit/integration/ingestion.spec.ts
+2026-05-12T12:09:28.1242255Z PASS tests/unit/processing/tx_queue.spec.ts
+2026-05-12T12:09:28.1965204Z 
+2026-05-12T12:09:28.1969151Z Test Suites: 1 failed, 10 passed, 11 total
+2026-05-12T12:09:28.1969971Z Tests:       3 failed, 66 passed, 69 total
+2026-05-12T12:09:28.1970542Z Snapshots:   0 total
+2026-05-12T12:09:28.1970977Z Time:        7.976 s
+2026-05-12T12:09:28.1971368Z Ran all test suites.
+2026-05-12T12:09:28.2322274Z ##[error]Process completed with exit code 1.

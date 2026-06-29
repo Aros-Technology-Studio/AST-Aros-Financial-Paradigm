@@ -1,0 +1,12 @@
+﻿2026-05-12T12:09:28.2430179Z Post job cleanup.
+2026-05-12T12:09:28.3153251Z [command]/usr/bin/git version
+2026-05-12T12:09:28.3186378Z git version 2.53.0
+2026-05-12T12:09:28.3227518Z Temporarily overriding HOME='/home/runner/work/_temp/86b4f438-a1ad-4bf3-b216-0528cb85e75b' before making global git config changes
+2026-05-12T12:09:28.3228797Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-12T12:09:28.3231591Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm
+2026-05-12T12:09:28.3260392Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-12T12:09:28.3287484Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-12T12:09:28.3499863Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-12T12:09:28.3518280Z http.https://github.com/.extraheader
+2026-05-12T12:09:28.3529112Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-05-12T12:09:28.3555144Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"

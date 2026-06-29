@@ -1,0 +1,718 @@
+﻿2026-05-12T12:09:00.1309971Z Current runner version: '2.334.0'
+2026-05-12T12:09:00.1343625Z ##[group]Runner Image Provisioner
+2026-05-12T12:09:00.1344717Z Hosted Compute Agent
+2026-05-12T12:09:00.1345630Z Version: 20260213.493
+2026-05-12T12:09:00.1346503Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+2026-05-12T12:09:00.1347596Z Build Date: 2026-02-13T00:28:41Z
+2026-05-12T12:09:00.1349032Z Worker ID: {ae74f75f-82dd-44ca-88e5-dc4d7ea6f2a6}
+2026-05-12T12:09:00.1350088Z Azure Region: eastus2
+2026-05-12T12:09:00.1350922Z ##[endgroup]
+2026-05-12T12:09:00.1353109Z ##[group]Operating System
+2026-05-12T12:09:00.1354084Z Ubuntu
+2026-05-12T12:09:00.1354745Z 24.04.4
+2026-05-12T12:09:00.1355494Z LTS
+2026-05-12T12:09:00.1356165Z ##[endgroup]
+2026-05-12T12:09:00.1356982Z ##[group]Runner Image
+2026-05-12T12:09:00.1358147Z Image: ubuntu-24.04
+2026-05-12T12:09:00.1358946Z Version: 20260413.86.1
+2026-05-12T12:09:00.1360895Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260413.86/images/ubuntu/Ubuntu2404-Readme.md
+2026-05-12T12:09:00.1363345Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260413.86
+2026-05-12T12:09:00.1364778Z ##[endgroup]
+2026-05-12T12:09:00.1366548Z ##[group]GITHUB_TOKEN Permissions
+2026-05-12T12:09:00.1379004Z Contents: read
+2026-05-12T12:09:00.1379899Z Metadata: read
+2026-05-12T12:09:00.1380846Z Packages: read
+2026-05-12T12:09:00.1381734Z ##[endgroup]
+2026-05-12T12:09:00.1384520Z Secret source: Actions
+2026-05-12T12:09:00.1386285Z Prepare workflow directory
+2026-05-12T12:09:00.1893097Z Prepare all required actions
+2026-05-12T12:09:00.1951998Z Getting action download info
+2026-05-12T12:09:00.5256118Z Download action repository 'actions/checkout@v3' (SHA:f43a0e5ff2bd294095638e18286ca9a3d1956744)
+2026-05-12T12:09:00.6824393Z Download action repository 'actions/setup-node@v3' (SHA:3235b876344d2a9aa001b8d1453c930bba69e610)
+2026-05-12T12:09:00.9258435Z Complete job name: build
+2026-05-12T12:09:00.9997283Z ##[group]Run actions/checkout@v3
+2026-05-12T12:09:00.9998492Z with:
+2026-05-12T12:09:00.9999197Z   repository: Aros-Technology-Studio/AST-Aros-Financial-Paradigm
+2026-05-12T12:09:01.0000080Z   token: ***
+2026-05-12T12:09:01.0000518Z   ssh-strict: true
+2026-05-12T12:09:01.0000969Z   persist-credentials: true
+2026-05-12T12:09:01.0001441Z   clean: true
+2026-05-12T12:09:01.0001861Z   sparse-checkout-cone-mode: true
+2026-05-12T12:09:01.0002387Z   fetch-depth: 1
+2026-05-12T12:09:01.0002805Z   fetch-tags: false
+2026-05-12T12:09:01.0003243Z   lfs: false
+2026-05-12T12:09:01.0003636Z   submodules: false
+2026-05-12T12:09:01.0004079Z   set-safe-directory: true
+2026-05-12T12:09:01.0004772Z ##[endgroup]
+2026-05-12T12:09:01.0901888Z Syncing repository: Aros-Technology-Studio/AST-Aros-Financial-Paradigm
+2026-05-12T12:09:01.0905069Z ##[group]Getting Git version info
+2026-05-12T12:09:01.0906685Z Working directory is '/home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm'
+2026-05-12T12:09:01.0908376Z [command]/usr/bin/git version
+2026-05-12T12:09:01.0933749Z git version 2.53.0
+2026-05-12T12:09:01.0963100Z ##[endgroup]
+2026-05-12T12:09:01.0979654Z Temporarily overriding HOME='/home/runner/work/_temp/efa66735-2d95-4ddc-8ee9-769611792a37' before making global git config changes
+2026-05-12T12:09:01.0982724Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-12T12:09:01.0985715Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm
+2026-05-12T12:09:01.1019233Z Deleting the contents of '/home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm'
+2026-05-12T12:09:01.1022486Z ##[group]Initializing the repository
+2026-05-12T12:09:01.1027140Z [command]/usr/bin/git init /home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm
+2026-05-12T12:09:01.1108491Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-05-12T12:09:01.1110602Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-05-12T12:09:01.1112877Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-05-12T12:09:01.1114384Z hint: call:
+2026-05-12T12:09:01.1115171Z hint:
+2026-05-12T12:09:01.1116192Z hint: 	git config --global init.defaultBranch <name>
+2026-05-12T12:09:01.1117492Z hint:
+2026-05-12T12:09:01.1118874Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-05-12T12:09:01.1120733Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-05-12T12:09:01.1122185Z hint:
+2026-05-12T12:09:01.1122902Z hint: 	git branch -m <name>
+2026-05-12T12:09:01.1123720Z hint:
+2026-05-12T12:09:01.1124921Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-05-12T12:09:01.1126659Z Initialized empty Git repository in /home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm/.git/
+2026-05-12T12:09:01.1129310Z [command]/usr/bin/git remote add origin https://github.com/Aros-Technology-Studio/AST-Aros-Financial-Paradigm
+2026-05-12T12:09:01.1149077Z ##[endgroup]
+2026-05-12T12:09:01.1150553Z ##[group]Disabling automatic garbage collection
+2026-05-12T12:09:01.1151978Z [command]/usr/bin/git config --local gc.auto 0
+2026-05-12T12:09:01.1179049Z ##[endgroup]
+2026-05-12T12:09:01.1180537Z ##[group]Setting up auth
+2026-05-12T12:09:01.1185143Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-12T12:09:01.1212245Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-12T12:09:01.1550437Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-12T12:09:01.1579190Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-12T12:09:01.1803735Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-05-12T12:09:01.1839797Z ##[endgroup]
+2026-05-12T12:09:01.1841737Z ##[group]Fetching the repository
+2026-05-12T12:09:01.1851366Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +7d50be93d2cd55b6e8d33247db56984aa1f9e420:refs/remotes/pull/85/merge
+2026-05-12T12:09:01.5409432Z remote: Enumerating objects: 576, done.        
+2026-05-12T12:09:01.5410687Z remote: Counting objects:   0% (1/576)        
+2026-05-12T12:09:01.5411589Z remote: Counting objects:   1% (6/576)        
+2026-05-12T12:09:01.5412468Z remote: Counting objects:   2% (12/576)        
+2026-05-12T12:09:01.5413418Z remote: Counting objects:   3% (18/576)        
+2026-05-12T12:09:01.5414302Z remote: Counting objects:   4% (24/576)        
+2026-05-12T12:09:01.5415236Z remote: Counting objects:   5% (29/576)        
+2026-05-12T12:09:01.5416130Z remote: Counting objects:   6% (35/576)        
+2026-05-12T12:09:01.5417025Z remote: Counting objects:   7% (41/576)        
+2026-05-12T12:09:01.5418193Z remote: Counting objects:   8% (47/576)        
+2026-05-12T12:09:01.5419126Z remote: Counting objects:   9% (52/576)        
+2026-05-12T12:09:01.5420086Z remote: Counting objects:  10% (58/576)        
+2026-05-12T12:09:01.5498166Z remote: Counting objects:  11% (64/576)        
+2026-05-12T12:09:01.5500911Z remote: Counting objects:  12% (70/576)        
+2026-05-12T12:09:01.5502792Z remote: Counting objects:  13% (75/576)        
+2026-05-12T12:09:01.5504474Z remote: Counting objects:  14% (81/576)        
+2026-05-12T12:09:01.5506150Z remote: Counting objects:  15% (87/576)        
+2026-05-12T12:09:01.5507967Z remote: Counting objects:  16% (93/576)        
+2026-05-12T12:09:01.5509210Z remote: Counting objects:  17% (98/576)        
+2026-05-12T12:09:01.5510342Z remote: Counting objects:  18% (104/576)        
+2026-05-12T12:09:01.5511454Z remote: Counting objects:  19% (110/576)        
+2026-05-12T12:09:01.5512827Z remote: Counting objects:  20% (116/576)        
+2026-05-12T12:09:01.5513898Z remote: Counting objects:  21% (121/576)        
+2026-05-12T12:09:01.5514966Z remote: Counting objects:  22% (127/576)        
+2026-05-12T12:09:01.5516041Z remote: Counting objects:  23% (133/576)        
+2026-05-12T12:09:01.5517117Z remote: Counting objects:  24% (139/576)        
+2026-05-12T12:09:01.5518480Z remote: Counting objects:  25% (144/576)        
+2026-05-12T12:09:01.5519911Z remote: Counting objects:  26% (150/576)        
+2026-05-12T12:09:01.5521374Z remote: Counting objects:  27% (156/576)        
+2026-05-12T12:09:01.5522885Z remote: Counting objects:  28% (162/576)        
+2026-05-12T12:09:01.5524367Z remote: Counting objects:  29% (168/576)        
+2026-05-12T12:09:01.5525822Z remote: Counting objects:  30% (173/576)        
+2026-05-12T12:09:01.5527316Z remote: Counting objects:  31% (179/576)        
+2026-05-12T12:09:01.5528928Z remote: Counting objects:  32% (185/576)        
+2026-05-12T12:09:01.5530418Z remote: Counting objects:  33% (191/576)        
+2026-05-12T12:09:01.5531897Z remote: Counting objects:  34% (196/576)        
+2026-05-12T12:09:01.5533367Z remote: Counting objects:  35% (202/576)        
+2026-05-12T12:09:01.5534915Z remote: Counting objects:  36% (208/576)        
+2026-05-12T12:09:01.5536486Z remote: Counting objects:  37% (214/576)        
+2026-05-12T12:09:01.5538143Z remote: Counting objects:  38% (219/576)        
+2026-05-12T12:09:01.5539703Z remote: Counting objects:  39% (225/576)        
+2026-05-12T12:09:01.5541278Z remote: Counting objects:  40% (231/576)        
+2026-05-12T12:09:01.5542858Z remote: Counting objects:  41% (237/576)        
+2026-05-12T12:09:01.5544433Z remote: Counting objects:  42% (242/576)        
+2026-05-12T12:09:01.5546018Z remote: Counting objects:  43% (248/576)        
+2026-05-12T12:09:01.5547588Z remote: Counting objects:  44% (254/576)        
+2026-05-12T12:09:01.5549600Z remote: Counting objects:  45% (260/576)        
+2026-05-12T12:09:01.5551208Z remote: Counting objects:  46% (265/576)        
+2026-05-12T12:09:01.5552785Z remote: Counting objects:  47% (271/576)        
+2026-05-12T12:09:01.5554355Z remote: Counting objects:  48% (277/576)        
+2026-05-12T12:09:01.5555934Z remote: Counting objects:  49% (283/576)        
+2026-05-12T12:09:01.5557548Z remote: Counting objects:  50% (288/576)        
+2026-05-12T12:09:01.5559246Z remote: Counting objects:  51% (294/576)        
+2026-05-12T12:09:01.5560788Z remote: Counting objects:  52% (300/576)        
+2026-05-12T12:09:01.5562284Z remote: Counting objects:  53% (306/576)        
+2026-05-12T12:09:01.5563780Z remote: Counting objects:  54% (312/576)        
+2026-05-12T12:09:01.5565260Z remote: Counting objects:  55% (317/576)        
+2026-05-12T12:09:01.5566733Z remote: Counting objects:  56% (323/576)        
+2026-05-12T12:09:01.5568316Z remote: Counting objects:  57% (329/576)        
+2026-05-12T12:09:01.5569806Z remote: Counting objects:  58% (335/576)        
+2026-05-12T12:09:01.5571312Z remote: Counting objects:  59% (340/576)        
+2026-05-12T12:09:01.5572784Z remote: Counting objects:  60% (346/576)        
+2026-05-12T12:09:01.5574238Z remote: Counting objects:  61% (352/576)        
+2026-05-12T12:09:01.5575665Z remote: Counting objects:  62% (358/576)        
+2026-05-12T12:09:01.5577117Z remote: Counting objects:  63% (363/576)        
+2026-05-12T12:09:01.5578685Z remote: Counting objects:  64% (369/576)        
+2026-05-12T12:09:01.5580123Z remote: Counting objects:  65% (375/576)        
+2026-05-12T12:09:01.5581581Z remote: Counting objects:  66% (381/576)        
+2026-05-12T12:09:01.5583039Z remote: Counting objects:  67% (386/576)        
+2026-05-12T12:09:01.5584509Z remote: Counting objects:  68% (392/576)        
+2026-05-12T12:09:01.5585989Z remote: Counting objects:  69% (398/576)        
+2026-05-12T12:09:01.5587473Z remote: Counting objects:  70% (404/576)        
+2026-05-12T12:09:01.5589248Z remote: Counting objects:  71% (409/576)        
+2026-05-12T12:09:01.5590752Z remote: Counting objects:  72% (415/576)        
+2026-05-12T12:09:01.5592406Z remote: Counting objects:  73% (421/576)        
+2026-05-12T12:09:01.5593872Z remote: Counting objects:  74% (427/576)        
+2026-05-12T12:09:01.5595348Z remote: Counting objects:  75% (432/576)        
+2026-05-12T12:09:01.5596819Z remote: Counting objects:  76% (438/576)        
+2026-05-12T12:09:01.5598446Z remote: Counting objects:  77% (444/576)        
+2026-05-12T12:09:01.5599938Z remote: Counting objects:  78% (450/576)        
+2026-05-12T12:09:01.5601408Z remote: Counting objects:  79% (456/576)        
+2026-05-12T12:09:01.5602897Z remote: Counting objects:  80% (461/576)        
+2026-05-12T12:09:01.5604361Z remote: Counting objects:  81% (467/576)        
+2026-05-12T12:09:01.5605874Z remote: Counting objects:  82% (473/576)        
+2026-05-12T12:09:01.5607349Z remote: Counting objects:  83% (479/576)        
+2026-05-12T12:09:01.5608982Z remote: Counting objects:  84% (484/576)        
+2026-05-12T12:09:01.5610450Z remote: Counting objects:  85% (490/576)        
+2026-05-12T12:09:01.5611918Z remote: Counting objects:  86% (496/576)        
+2026-05-12T12:09:01.5613359Z remote: Counting objects:  87% (502/576)        
+2026-05-12T12:09:01.5614796Z remote: Counting objects:  88% (507/576)        
+2026-05-12T12:09:01.5616246Z remote: Counting objects:  89% (513/576)        
+2026-05-12T12:09:01.5617810Z remote: Counting objects:  90% (519/576)        
+2026-05-12T12:09:01.5619273Z remote: Counting objects:  91% (525/576)        
+2026-05-12T12:09:01.5620728Z remote: Counting objects:  92% (530/576)        
+2026-05-12T12:09:01.5622169Z remote: Counting objects:  93% (536/576)        
+2026-05-12T12:09:01.5623650Z remote: Counting objects:  94% (542/576)        
+2026-05-12T12:09:01.5625113Z remote: Counting objects:  95% (548/576)        
+2026-05-12T12:09:01.5626585Z remote: Counting objects:  96% (553/576)        
+2026-05-12T12:09:01.5628318Z remote: Counting objects:  97% (559/576)        
+2026-05-12T12:09:01.5629813Z remote: Counting objects:  98% (565/576)        
+2026-05-12T12:09:01.5631275Z remote: Counting objects:  99% (571/576)        
+2026-05-12T12:09:01.5632946Z remote: Counting objects: 100% (576/576)        
+2026-05-12T12:09:01.5635569Z remote: Counting objects: 100% (576/576), done.        
+2026-05-12T12:09:01.5638226Z remote: Compressing objects:   0% (1/508)        
+2026-05-12T12:09:01.5640444Z remote: Compressing objects:   1% (6/508)        
+2026-05-12T12:09:01.5642390Z remote: Compressing objects:   2% (11/508)        
+2026-05-12T12:09:01.5643836Z remote: Compressing objects:   3% (16/508)        
+2026-05-12T12:09:01.5645264Z remote: Compressing objects:   4% (21/508)        
+2026-05-12T12:09:01.5646686Z remote: Compressing objects:   5% (26/508)        
+2026-05-12T12:09:01.5648288Z remote: Compressing objects:   6% (31/508)        
+2026-05-12T12:09:01.5649709Z remote: Compressing objects:   7% (36/508)        
+2026-05-12T12:09:01.5651162Z remote: Compressing objects:   8% (41/508)        
+2026-05-12T12:09:01.5652603Z remote: Compressing objects:   9% (46/508)        
+2026-05-12T12:09:01.5654059Z remote: Compressing objects:  10% (51/508)        
+2026-05-12T12:09:01.5655481Z remote: Compressing objects:  11% (56/508)        
+2026-05-12T12:09:01.5656955Z remote: Compressing objects:  12% (61/508)        
+2026-05-12T12:09:01.5658494Z remote: Compressing objects:  13% (67/508)        
+2026-05-12T12:09:01.5659936Z remote: Compressing objects:  14% (72/508)        
+2026-05-12T12:09:01.5661367Z remote: Compressing objects:  15% (77/508)        
+2026-05-12T12:09:01.5662797Z remote: Compressing objects:  16% (82/508)        
+2026-05-12T12:09:01.5664234Z remote: Compressing objects:  17% (87/508)        
+2026-05-12T12:09:01.5665672Z remote: Compressing objects:  18% (92/508)        
+2026-05-12T12:09:01.5667121Z remote: Compressing objects:  19% (97/508)        
+2026-05-12T12:09:01.5668677Z remote: Compressing objects:  20% (102/508)        
+2026-05-12T12:09:01.5670145Z remote: Compressing objects:  21% (107/508)        
+2026-05-12T12:09:01.5671601Z remote: Compressing objects:  22% (112/508)        
+2026-05-12T12:09:01.5673255Z remote: Compressing objects:  23% (117/508)        
+2026-05-12T12:09:01.5674732Z remote: Compressing objects:  24% (122/508)        
+2026-05-12T12:09:01.5676170Z remote: Compressing objects:  25% (127/508)        
+2026-05-12T12:09:01.5677619Z remote: Compressing objects:  26% (133/508)        
+2026-05-12T12:09:01.5679259Z remote: Compressing objects:  27% (138/508)        
+2026-05-12T12:09:01.5680714Z remote: Compressing objects:  28% (143/508)        
+2026-05-12T12:09:01.5682172Z remote: Compressing objects:  29% (148/508)        
+2026-05-12T12:09:01.5683624Z remote: Compressing objects:  30% (153/508)        
+2026-05-12T12:09:01.5685074Z remote: Compressing objects:  31% (158/508)        
+2026-05-12T12:09:01.5686522Z remote: Compressing objects:  32% (163/508)        
+2026-05-12T12:09:01.5696701Z remote: Compressing objects:  33% (168/508)        
+2026-05-12T12:09:01.5699073Z remote: Compressing objects:  34% (173/508)        
+2026-05-12T12:09:01.5700590Z remote: Compressing objects:  35% (178/508)        
+2026-05-12T12:09:01.5704620Z remote: Compressing objects:  36% (183/508)        
+2026-05-12T12:09:01.5706124Z remote: Compressing objects:  37% (188/508)        
+2026-05-12T12:09:01.5710352Z remote: Compressing objects:  38% (194/508)        
+2026-05-12T12:09:01.5715338Z remote: Compressing objects:  39% (199/508)        
+2026-05-12T12:09:01.5725154Z remote: Compressing objects:  40% (204/508)        
+2026-05-12T12:09:01.5733037Z remote: Compressing objects:  41% (209/508)        
+2026-05-12T12:09:01.5739788Z remote: Compressing objects:  42% (214/508)        
+2026-05-12T12:09:01.5758274Z remote: Compressing objects:  43% (219/508)        
+2026-05-12T12:09:01.5767004Z remote: Compressing objects:  44% (224/508)        
+2026-05-12T12:09:01.5774238Z remote: Compressing objects:  45% (229/508)        
+2026-05-12T12:09:01.5781382Z remote: Compressing objects:  46% (234/508)        
+2026-05-12T12:09:01.5784001Z remote: Compressing objects:  47% (239/508)        
+2026-05-12T12:09:01.5788066Z remote: Compressing objects:  48% (244/508)        
+2026-05-12T12:09:01.5801210Z remote: Compressing objects:  49% (249/508)        
+2026-05-12T12:09:01.5807364Z remote: Compressing objects:  50% (254/508)        
+2026-05-12T12:09:01.5816075Z remote: Compressing objects:  51% (260/508)        
+2026-05-12T12:09:01.5831153Z remote: Compressing objects:  52% (265/508)        
+2026-05-12T12:09:01.5843779Z remote: Compressing objects:  53% (270/508)        
+2026-05-12T12:09:01.5851489Z remote: Compressing objects:  54% (275/508)        
+2026-05-12T12:09:01.5862901Z remote: Compressing objects:  55% (280/508)        
+2026-05-12T12:09:01.5873714Z remote: Compressing objects:  56% (285/508)        
+2026-05-12T12:09:01.5887603Z remote: Compressing objects:  57% (290/508)        
+2026-05-12T12:09:01.5897666Z remote: Compressing objects:  58% (295/508)        
+2026-05-12T12:09:01.5915529Z remote: Compressing objects:  59% (300/508)        
+2026-05-12T12:09:01.5921138Z remote: Compressing objects:  60% (305/508)        
+2026-05-12T12:09:01.5927244Z remote: Compressing objects:  61% (310/508)        
+2026-05-12T12:09:01.5946805Z remote: Compressing objects:  62% (315/508)        
+2026-05-12T12:09:01.5956525Z remote: Compressing objects:  63% (321/508)        
+2026-05-12T12:09:01.5966362Z remote: Compressing objects:  64% (326/508)        
+2026-05-12T12:09:01.5969210Z remote: Compressing objects:  65% (331/508)        
+2026-05-12T12:09:01.5976290Z remote: Compressing objects:  66% (336/508)        
+2026-05-12T12:09:01.5988379Z remote: Compressing objects:  67% (341/508)        
+2026-05-12T12:09:01.5998831Z remote: Compressing objects:  68% (346/508)        
+2026-05-12T12:09:01.6003945Z remote: Compressing objects:  69% (351/508)        
+2026-05-12T12:09:01.6009980Z remote: Compressing objects:  70% (356/508)        
+2026-05-12T12:09:01.6016572Z remote: Compressing objects:  71% (361/508)        
+2026-05-12T12:09:01.6025289Z remote: Compressing objects:  72% (366/508)        
+2026-05-12T12:09:01.6037394Z remote: Compressing objects:  73% (371/508)        
+2026-05-12T12:09:01.6041800Z remote: Compressing objects:  74% (376/508)        
+2026-05-12T12:09:01.6044022Z remote: Compressing objects:  75% (381/508)        
+2026-05-12T12:09:01.6045663Z remote: Compressing objects:  76% (387/508)        
+2026-05-12T12:09:01.6047325Z remote: Compressing objects:  77% (392/508)        
+2026-05-12T12:09:01.6049810Z remote: Compressing objects:  78% (397/508)        
+2026-05-12T12:09:01.6051716Z remote: Compressing objects:  79% (402/508)        
+2026-05-12T12:09:01.6053465Z remote: Compressing objects:  80% (407/508)        
+2026-05-12T12:09:01.6055355Z remote: Compressing objects:  81% (412/508)        
+2026-05-12T12:09:01.6056823Z remote: Compressing objects:  82% (417/508)        
+2026-05-12T12:09:01.6058543Z remote: Compressing objects:  83% (422/508)        
+2026-05-12T12:09:01.6060014Z remote: Compressing objects:  84% (427/508)        
+2026-05-12T12:09:01.6061462Z remote: Compressing objects:  85% (432/508)        
+2026-05-12T12:09:01.6062923Z remote: Compressing objects:  86% (437/508)        
+2026-05-12T12:09:01.6064373Z remote: Compressing objects:  87% (442/508)        
+2026-05-12T12:09:01.6065953Z remote: Compressing objects:  88% (448/508)        
+2026-05-12T12:09:01.6067424Z remote: Compressing objects:  89% (453/508)        
+2026-05-12T12:09:01.6069021Z remote: Compressing objects:  90% (458/508)        
+2026-05-12T12:09:01.6070488Z remote: Compressing objects:  91% (463/508)        
+2026-05-12T12:09:01.6071927Z remote: Compressing objects:  92% (468/508)        
+2026-05-12T12:09:01.6073460Z remote: Compressing objects:  93% (473/508)        
+2026-05-12T12:09:01.6074961Z remote: Compressing objects:  94% (478/508)        
+2026-05-12T12:09:01.6076407Z remote: Compressing objects:  95% (483/508)        
+2026-05-12T12:09:01.6077969Z remote: Compressing objects:  96% (488/508)        
+2026-05-12T12:09:01.6079635Z remote: Compressing objects:  97% (493/508)        
+2026-05-12T12:09:01.6081092Z remote: Compressing objects:  98% (498/508)        
+2026-05-12T12:09:01.6082528Z remote: Compressing objects:  99% (503/508)        
+2026-05-12T12:09:01.6083961Z remote: Compressing objects: 100% (508/508)        
+2026-05-12T12:09:01.6085484Z remote: Compressing objects: 100% (508/508), done.        
+2026-05-12T12:09:01.6117262Z Receiving objects:   0% (1/576)
+2026-05-12T12:09:01.6119234Z Receiving objects:   1% (6/576)
+2026-05-12T12:09:01.6122704Z Receiving objects:   2% (12/576)
+2026-05-12T12:09:01.6124461Z Receiving objects:   3% (18/576)
+2026-05-12T12:09:01.6151081Z Receiving objects:   4% (24/576)
+2026-05-12T12:09:01.6159399Z Receiving objects:   5% (29/576)
+2026-05-12T12:09:01.6161077Z Receiving objects:   6% (35/576)
+2026-05-12T12:09:01.6291877Z Receiving objects:   7% (41/576)
+2026-05-12T12:09:01.6293884Z Receiving objects:   8% (47/576)
+2026-05-12T12:09:01.6298823Z Receiving objects:   9% (52/576)
+2026-05-12T12:09:01.6340372Z Receiving objects:  10% (58/576)
+2026-05-12T12:09:01.6346368Z Receiving objects:  11% (64/576)
+2026-05-12T12:09:01.6359879Z Receiving objects:  12% (70/576)
+2026-05-12T12:09:01.6375553Z Receiving objects:  13% (75/576)
+2026-05-12T12:09:01.6392636Z Receiving objects:  14% (81/576)
+2026-05-12T12:09:01.6411373Z Receiving objects:  15% (87/576)
+2026-05-12T12:09:01.6425731Z Receiving objects:  16% (93/576)
+2026-05-12T12:09:01.6535046Z Receiving objects:  17% (98/576)
+2026-05-12T12:09:01.6588483Z Receiving objects:  18% (104/576)
+2026-05-12T12:09:01.6591508Z Receiving objects:  19% (110/576)
+2026-05-12T12:09:01.6593600Z Receiving objects:  20% (116/576)
+2026-05-12T12:09:01.6620787Z Receiving objects:  21% (121/576)
+2026-05-12T12:09:01.6637026Z Receiving objects:  22% (127/576)
+2026-05-12T12:09:01.6639510Z Receiving objects:  23% (133/576)
+2026-05-12T12:09:01.6641395Z Receiving objects:  24% (139/576)
+2026-05-12T12:09:01.6645893Z Receiving objects:  25% (144/576)
+2026-05-12T12:09:01.6744137Z Receiving objects:  26% (150/576)
+2026-05-12T12:09:01.6746890Z Receiving objects:  27% (156/576)
+2026-05-12T12:09:01.6749112Z Receiving objects:  28% (162/576)
+2026-05-12T12:09:01.6753504Z Receiving objects:  29% (168/576)
+2026-05-12T12:09:01.6755801Z Receiving objects:  30% (173/576)
+2026-05-12T12:09:01.6768037Z Receiving objects:  31% (179/576)
+2026-05-12T12:09:01.6796511Z Receiving objects:  32% (185/576)
+2026-05-12T12:09:01.6808637Z Receiving objects:  33% (191/576)
+2026-05-12T12:09:01.6818532Z Receiving objects:  34% (196/576)
+2026-05-12T12:09:01.6820530Z Receiving objects:  35% (202/576)
+2026-05-12T12:09:01.6823179Z Receiving objects:  36% (208/576)
+2026-05-12T12:09:01.6848322Z Receiving objects:  37% (214/576)
+2026-05-12T12:09:01.6850832Z Receiving objects:  38% (219/576)
+2026-05-12T12:09:01.6860436Z Receiving objects:  39% (225/576)
+2026-05-12T12:09:01.6862310Z Receiving objects:  40% (231/576)
+2026-05-12T12:09:01.6870485Z Receiving objects:  41% (237/576)
+2026-05-12T12:09:01.6872294Z Receiving objects:  42% (242/576)
+2026-05-12T12:09:01.6874135Z Receiving objects:  43% (248/576)
+2026-05-12T12:09:01.6898670Z Receiving objects:  44% (254/576)
+2026-05-12T12:09:01.6900915Z Receiving objects:  45% (260/576)
+2026-05-12T12:09:01.6902611Z Receiving objects:  46% (265/576)
+2026-05-12T12:09:01.6920371Z Receiving objects:  47% (271/576)
+2026-05-12T12:09:01.7091812Z Receiving objects:  48% (277/576)
+2026-05-12T12:09:01.7094401Z Receiving objects:  49% (283/576)
+2026-05-12T12:09:01.7095893Z Receiving objects:  50% (288/576)
+2026-05-12T12:09:01.7097409Z Receiving objects:  51% (294/576)
+2026-05-12T12:09:01.7098838Z Receiving objects:  52% (300/576)
+2026-05-12T12:09:01.7120441Z Receiving objects:  53% (306/576)
+2026-05-12T12:09:01.7124636Z Receiving objects:  54% (312/576)
+2026-05-12T12:09:01.7126272Z Receiving objects:  55% (317/576)
+2026-05-12T12:09:01.7128624Z Receiving objects:  56% (323/576)
+2026-05-12T12:09:01.7141500Z Receiving objects:  57% (329/576)
+2026-05-12T12:09:01.7143573Z Receiving objects:  58% (335/576)
+2026-05-12T12:09:01.7144794Z Receiving objects:  59% (340/576)
+2026-05-12T12:09:01.7145971Z Receiving objects:  60% (346/576)
+2026-05-12T12:09:01.7258886Z Receiving objects:  61% (352/576)
+2026-05-12T12:09:01.7304472Z Receiving objects:  62% (358/576)
+2026-05-12T12:09:01.7306290Z Receiving objects:  63% (363/576)
+2026-05-12T12:09:01.7308345Z Receiving objects:  64% (369/576)
+2026-05-12T12:09:01.7310139Z Receiving objects:  65% (375/576)
+2026-05-12T12:09:01.7311906Z Receiving objects:  66% (381/576)
+2026-05-12T12:09:01.7313659Z Receiving objects:  67% (386/576)
+2026-05-12T12:09:01.7385674Z Receiving objects:  68% (392/576)
+2026-05-12T12:09:01.7387298Z Receiving objects:  69% (398/576)
+2026-05-12T12:09:01.7389046Z Receiving objects:  70% (404/576)
+2026-05-12T12:09:01.7390221Z Receiving objects:  71% (409/576)
+2026-05-12T12:09:01.7391745Z Receiving objects:  72% (415/576)
+2026-05-12T12:09:01.7393362Z Receiving objects:  73% (421/576)
+2026-05-12T12:09:01.7394484Z Receiving objects:  74% (427/576)
+2026-05-12T12:09:01.7395615Z Receiving objects:  75% (432/576)
+2026-05-12T12:09:01.7396718Z Receiving objects:  76% (438/576)
+2026-05-12T12:09:01.7398161Z Receiving objects:  77% (444/576)
+2026-05-12T12:09:01.7399336Z Receiving objects:  78% (450/576)
+2026-05-12T12:09:01.7400506Z Receiving objects:  79% (456/576)
+2026-05-12T12:09:01.7401599Z Receiving objects:  80% (461/576)
+2026-05-12T12:09:01.7403132Z Receiving objects:  81% (467/576)
+2026-05-12T12:09:01.7404369Z Receiving objects:  82% (473/576)
+2026-05-12T12:09:01.7405657Z Receiving objects:  83% (479/576)
+2026-05-12T12:09:01.7406751Z Receiving objects:  84% (484/576)
+2026-05-12T12:09:01.7408160Z Receiving objects:  85% (490/576)
+2026-05-12T12:09:01.7409687Z Receiving objects:  86% (496/576)
+2026-05-12T12:09:01.7411186Z Receiving objects:  87% (502/576)
+2026-05-12T12:09:01.7412564Z Receiving objects:  88% (507/576)
+2026-05-12T12:09:01.7413657Z Receiving objects:  89% (513/576)
+2026-05-12T12:09:01.7414750Z Receiving objects:  90% (519/576)
+2026-05-12T12:09:01.7415856Z Receiving objects:  91% (525/576)
+2026-05-12T12:09:01.7416955Z Receiving objects:  92% (530/576)
+2026-05-12T12:09:01.7418538Z Receiving objects:  93% (536/576)
+2026-05-12T12:09:01.7419814Z Receiving objects:  94% (542/576)
+2026-05-12T12:09:01.7421147Z Receiving objects:  95% (548/576)
+2026-05-12T12:09:01.7422794Z Receiving objects:  96% (553/576)
+2026-05-12T12:09:01.7423912Z Receiving objects:  97% (559/576)
+2026-05-12T12:09:01.7425027Z Receiving objects:  98% (565/576)
+2026-05-12T12:09:01.7456616Z Receiving objects:  99% (571/576)
+2026-05-12T12:09:01.7459510Z remote: Total 576 (delta 57), reused 354 (delta 41), pack-reused 0 (from 0)        
+2026-05-12T12:09:01.7462287Z Receiving objects: 100% (576/576)
+2026-05-12T12:09:01.7464575Z Receiving objects: 100% (576/576), 819.21 KiB | 5.98 MiB/s, done.
+2026-05-12T12:09:01.7466974Z Resolving deltas:   0% (0/57)
+2026-05-12T12:09:01.7468861Z Resolving deltas:   1% (1/57)
+2026-05-12T12:09:01.7470531Z Resolving deltas:   3% (2/57)
+2026-05-12T12:09:01.7472194Z Resolving deltas:   5% (3/57)
+2026-05-12T12:09:01.7473846Z Resolving deltas:   7% (4/57)
+2026-05-12T12:09:01.7475512Z Resolving deltas:   8% (5/57)
+2026-05-12T12:09:01.7477184Z Resolving deltas:  10% (6/57)
+2026-05-12T12:09:01.7479098Z Resolving deltas:  12% (7/57)
+2026-05-12T12:09:01.7486672Z Resolving deltas:  14% (8/57)
+2026-05-12T12:09:01.7488657Z Resolving deltas:  15% (9/57)
+2026-05-12T12:09:01.7490257Z Resolving deltas:  17% (10/57)
+2026-05-12T12:09:01.7491502Z Resolving deltas:  19% (11/57)
+2026-05-12T12:09:01.7492476Z Resolving deltas:  21% (12/57)
+2026-05-12T12:09:01.7493457Z Resolving deltas:  22% (13/57)
+2026-05-12T12:09:01.7495068Z Resolving deltas:  24% (14/57)
+2026-05-12T12:09:01.7496748Z Resolving deltas:  26% (15/57)
+2026-05-12T12:09:01.7498661Z Resolving deltas:  28% (16/57)
+2026-05-12T12:09:01.7500264Z Resolving deltas:  29% (17/57)
+2026-05-12T12:09:01.7501823Z Resolving deltas:  31% (18/57)
+2026-05-12T12:09:01.7503241Z Resolving deltas:  33% (19/57)
+2026-05-12T12:09:01.7504438Z Resolving deltas:  35% (20/57)
+2026-05-12T12:09:01.7505427Z Resolving deltas:  36% (21/57)
+2026-05-12T12:09:01.7506774Z Resolving deltas:  38% (22/57)
+2026-05-12T12:09:01.7508267Z Resolving deltas:  40% (23/57)
+2026-05-12T12:09:01.7509268Z Resolving deltas:  42% (24/57)
+2026-05-12T12:09:01.7510213Z Resolving deltas:  43% (25/57)
+2026-05-12T12:09:01.7511177Z Resolving deltas:  45% (26/57)
+2026-05-12T12:09:01.7512148Z Resolving deltas:  47% (27/57)
+2026-05-12T12:09:01.7513112Z Resolving deltas:  49% (28/57)
+2026-05-12T12:09:01.7514686Z Resolving deltas:  50% (29/57)
+2026-05-12T12:09:01.7516316Z Resolving deltas:  52% (30/57)
+2026-05-12T12:09:01.7517609Z Resolving deltas:  54% (31/57)
+2026-05-12T12:09:01.7518852Z Resolving deltas:  56% (32/57)
+2026-05-12T12:09:01.7519824Z Resolving deltas:  57% (33/57)
+2026-05-12T12:09:01.7521041Z Resolving deltas:  59% (34/57)
+2026-05-12T12:09:01.7522102Z Resolving deltas:  61% (35/57)
+2026-05-12T12:09:01.7523132Z Resolving deltas:  63% (36/57)
+2026-05-12T12:09:01.7524101Z Resolving deltas:  64% (37/57)
+2026-05-12T12:09:01.7525054Z Resolving deltas:  66% (38/57)
+2026-05-12T12:09:01.7526015Z Resolving deltas:  68% (39/57)
+2026-05-12T12:09:01.7526987Z Resolving deltas:  70% (40/57)
+2026-05-12T12:09:01.7528162Z Resolving deltas:  71% (41/57)
+2026-05-12T12:09:01.7529144Z Resolving deltas:  73% (42/57)
+2026-05-12T12:09:01.7530109Z Resolving deltas:  75% (43/57)
+2026-05-12T12:09:01.7531066Z Resolving deltas:  77% (44/57)
+2026-05-12T12:09:01.7532017Z Resolving deltas:  78% (45/57)
+2026-05-12T12:09:01.7532979Z Resolving deltas:  80% (46/57)
+2026-05-12T12:09:01.7533920Z Resolving deltas:  82% (47/57)
+2026-05-12T12:09:01.7534867Z Resolving deltas:  84% (48/57)
+2026-05-12T12:09:01.7535860Z Resolving deltas:  85% (49/57)
+2026-05-12T12:09:01.7536802Z Resolving deltas:  87% (50/57)
+2026-05-12T12:09:01.7537961Z Resolving deltas:  89% (51/57)
+2026-05-12T12:09:01.7538930Z Resolving deltas:  91% (52/57)
+2026-05-12T12:09:01.7539887Z Resolving deltas:  92% (53/57)
+2026-05-12T12:09:01.7540835Z Resolving deltas:  94% (54/57)
+2026-05-12T12:09:01.7541792Z Resolving deltas:  96% (55/57)
+2026-05-12T12:09:01.7542737Z Resolving deltas:  98% (56/57)
+2026-05-12T12:09:01.7543916Z Resolving deltas: 100% (57/57)
+2026-05-12T12:09:01.7544889Z Resolving deltas: 100% (57/57), done.
+2026-05-12T12:09:01.7601113Z From https://github.com/Aros-Technology-Studio/AST-Aros-Financial-Paradigm
+2026-05-12T12:09:01.7603213Z  * [new ref]         7d50be93d2cd55b6e8d33247db56984aa1f9e420 -> pull/85/merge
+2026-05-12T12:09:01.7631479Z ##[endgroup]
+2026-05-12T12:09:01.7633784Z ##[group]Determining the checkout info
+2026-05-12T12:09:01.7636415Z ##[endgroup]
+2026-05-12T12:09:01.7639208Z ##[group]Checking out the ref
+2026-05-12T12:09:01.7641563Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/85/merge
+2026-05-12T12:09:01.7961628Z Note: switching to 'refs/remotes/pull/85/merge'.
+2026-05-12T12:09:01.7962636Z 
+2026-05-12T12:09:01.7963404Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-05-12T12:09:01.7965639Z changes and commit them, and you can discard any commits you make in this
+2026-05-12T12:09:01.7969209Z state without impacting any branches by switching back to a branch.
+2026-05-12T12:09:01.7971310Z 
+2026-05-12T12:09:01.7972646Z If you want to create a new branch to retain commits you create, you may
+2026-05-12T12:09:01.7975916Z do so (now or later) by using -c with the switch command. Example:
+2026-05-12T12:09:01.7977671Z 
+2026-05-12T12:09:01.7978652Z   git switch -c <new-branch-name>
+2026-05-12T12:09:01.7979878Z 
+2026-05-12T12:09:01.7980650Z Or undo this operation with:
+2026-05-12T12:09:01.7981288Z 
+2026-05-12T12:09:01.7981622Z   git switch -
+2026-05-12T12:09:01.7982115Z 
+2026-05-12T12:09:01.7982923Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-05-12T12:09:01.7984123Z 
+2026-05-12T12:09:01.7986272Z HEAD is now at 7d50be9 Merge d209f4b4f7690e9f23a0a1020faba9518766c7e6 into 1bb829380953dce8ea76e37ead19019b41df7e26
+2026-05-12T12:09:01.7990774Z ##[endgroup]
+2026-05-12T12:09:01.8006337Z [command]/usr/bin/git log -1 --format='%H'
+2026-05-12T12:09:01.8026845Z '7d50be93d2cd55b6e8d33247db56984aa1f9e420'
+2026-05-12T12:09:01.8324388Z ##[group]Run actions/setup-node@v3
+2026-05-12T12:09:01.8325383Z with:
+2026-05-12T12:09:01.8326071Z   node-version: 20.x
+2026-05-12T12:09:01.8326846Z   cache: npm
+2026-05-12T12:09:01.8327564Z   always-auth: false
+2026-05-12T12:09:01.8328563Z   check-latest: false
+2026-05-12T12:09:01.8329614Z   token: ***
+2026-05-12T12:09:01.8330321Z ##[endgroup]
+2026-05-12T12:09:02.1245063Z Found in cache @ /opt/hostedtoolcache/node/20.20.2/x64
+2026-05-12T12:09:02.1249997Z ##[group]Environment details
+2026-05-12T12:09:02.9878418Z node: v20.20.2
+2026-05-12T12:09:02.9879816Z npm: 10.8.2
+2026-05-12T12:09:02.9880914Z yarn: 1.22.22
+2026-05-12T12:09:02.9882774Z ##[endgroup]
+2026-05-12T12:09:02.9898418Z [command]/opt/hostedtoolcache/node/20.20.2/x64/bin/npm config get cache
+2026-05-12T12:09:03.1079666Z /home/runner/.npm
+2026-05-12T12:09:03.2151430Z Cache hit for: node-cache-Linux-npm-fe742eda00c7aaab27391b0001748efe4958e3364d5974ef3c7a076f6f2ce665
+2026-05-12T12:09:04.2460324Z Received 190635018 of 190635018 (100.0%), 182.0 MBs/sec
+2026-05-12T12:09:04.2461509Z Cache Size: ~182 MB (190635018 B)
+2026-05-12T12:09:04.2524022Z [command]/usr/bin/tar -xf /home/runner/work/_temp/1518f26e-57be-4257-92a4-5a2472c4fa22/cache.tzst -P -C /home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm --use-compress-program unzstd
+2026-05-12T12:09:04.7594294Z Cache restored successfully
+2026-05-12T12:09:04.7678724Z Cache restored from key: node-cache-Linux-npm-fe742eda00c7aaab27391b0001748efe4958e3364d5974ef3c7a076f6f2ce665
+2026-05-12T12:09:04.7851610Z ##[group]Run npm ci
+2026-05-12T12:09:04.7851980Z [36;1mnpm ci[0m
+2026-05-12T12:09:04.7884709Z shell: /usr/bin/bash -e {0}
+2026-05-12T12:09:04.7885002Z ##[endgroup]
+2026-05-12T12:09:08.0083682Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2026-05-12T12:09:08.1307919Z npm warn deprecated supertest@6.3.4: Please upgrade to supertest v7.1.3+, see release notes at https://github.com/forwardemail/supertest/releases/tag/v7.1.3 - maintenance is supported by Forward Email @ https://forwardemail.net
+2026-05-12T12:09:08.1547418Z npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+2026-05-12T12:09:08.1659203Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+2026-05-12T12:09:08.2640098Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+2026-05-12T12:09:08.2741604Z npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+2026-05-12T12:09:09.1386419Z npm warn deprecated superagent@8.1.2: Please upgrade to superagent v10.2.2+, see release notes at https://github.com/forwardemail/superagent/releases/tag/v10.2.2 - maintenance is supported by Forward Email @ https://forwardemail.net
+2026-05-12T12:09:11.5971509Z npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2026-05-12T12:09:14.1077050Z 
+2026-05-12T12:09:14.1078139Z > aros-paradigm-ast@0.1.0 prepare
+2026-05-12T12:09:14.1078604Z > npx husky install
+2026-05-12T12:09:14.1078769Z 
+2026-05-12T12:09:15.1086437Z husky - install command is DEPRECATED
+2026-05-12T12:09:15.1388223Z 
+2026-05-12T12:09:15.1389177Z added 834 packages, and audited 835 packages in 10s
+2026-05-12T12:09:15.1393843Z 
+2026-05-12T12:09:15.1394200Z 152 packages are looking for funding
+2026-05-12T12:09:15.1394729Z   run `npm fund` for details
+2026-05-12T12:09:15.4252529Z 
+2026-05-12T12:09:15.4253483Z 41 vulnerabilities (6 low, 14 moderate, 21 high)
+2026-05-12T12:09:15.4253947Z 
+2026-05-12T12:09:15.4254395Z To address issues that do not require attention, run:
+2026-05-12T12:09:15.4254975Z   npm audit fix
+2026-05-12T12:09:15.4255198Z 
+2026-05-12T12:09:15.4255614Z To address all issues (including breaking changes), run:
+2026-05-12T12:09:15.4256314Z   npm audit fix --force
+2026-05-12T12:09:15.4256574Z 
+2026-05-12T12:09:15.4256814Z Run `npm audit` for details.
+2026-05-12T12:09:15.4770142Z ##[group]Run npm run build
+2026-05-12T12:09:15.4770430Z [36;1mnpm run build[0m
+2026-05-12T12:09:15.4800218Z shell: /usr/bin/bash -e {0}
+2026-05-12T12:09:15.4800474Z ##[endgroup]
+2026-05-12T12:09:15.5904137Z 
+2026-05-12T12:09:15.5904838Z > aros-paradigm-ast@0.1.0 build
+2026-05-12T12:09:15.5905511Z > tsc -p tsconfig.build.json
+2026-05-12T12:09:15.5905731Z 
+2026-05-12T12:09:18.2315489Z ##[group]Run npm test
+2026-05-12T12:09:18.2315767Z [36;1mnpm test[0m
+2026-05-12T12:09:18.2336768Z shell: /usr/bin/bash -e {0}
+2026-05-12T12:09:18.2337020Z ##[endgroup]
+2026-05-12T12:09:18.3479010Z 
+2026-05-12T12:09:18.3479686Z > aros-paradigm-ast@0.1.0 test
+2026-05-12T12:09:18.3480164Z > jest
+2026-05-12T12:09:18.3480338Z 
+2026-05-12T12:09:25.6306149Z PASS src/nodechain_engine/quorum.engine.spec.ts (5.076 s)
+2026-05-12T12:09:25.6313207Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=4.0000/4.0000, reached=true[39m
+2026-05-12T12:09:25.6316239Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=6/6, weight=6.0000/6.0000, reached=true[39m
+2026-05-12T12:09:25.6319402Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=10, approved=8/8, weight=8.0000/8.0000, reached=true[39m
+2026-05-12T12:09:25.6322170Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=0/6, weight=0.0000/6.0000, reached=false[39m
+2026-05-12T12:09:25.6324859Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=5/6, weight=5.0000/6.0000, reached=false[39m
+2026-05-12T12:09:25.6369789Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=3/6, weight=3.0000/6.0000, reached=false[39m
+2026-05-12T12:09:25.6417615Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=3/4, weight=5.0000/5.0000, reached=false[39m
+2026-05-12T12:09:25.6449102Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=6.0000/5.0000, reached=true[39m
+2026-05-12T12:09:25.6459685Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=0.4000/2.0000, reached=false[39m
+2026-05-12T12:09:25.6484258Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=10, approved=8/8, weight=8.0000/8.0000, reached=true[39m
+2026-05-12T12:09:25.6486817Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=20.0000/15.0000, reached=true[39m
+2026-05-12T12:09:25.6490009Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=4, approved=4/4, weight=2.0000/3.0000, reached=false[39m
+2026-05-12T12:09:25.6492547Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=6/6, weight=6.0000/6.0000, reached=true[39m
+2026-05-12T12:09:25.6495072Z [95m[Nest] 2557  - [39m05/12/2026, 12:09:25 PM [95m  DEBUG[39m [38;5;3m[QuorumEngine] [39m[95mQuorum eval: n=7, approved=0/6, weight=0.0000/6.0000, reached=false[39m
+2026-05-12T12:09:27.0009138Z PASS src/governance/governance.service.spec.ts
+2026-05-12T12:09:27.0045244Z PASS tests/unit/governance/governance_logic.spec.ts (6.349 s)
+2026-05-12T12:09:27.3329299Z PASS src/nodechain_engine/nodechain.service.spec.ts
+2026-05-12T12:09:27.4250136Z [31m[Nest] 2564  - [39m05/12/2026, 12:09:27 PM [31m  ERROR[39m [38;5;3m[TokenService] [39m[31mMint failed: Ledger Error[39m
+2026-05-12T12:09:27.4684934Z PASS src/token/token.service.spec.ts (6.814 s)
+2026-05-12T12:09:27.6006040Z PASS tests/unit/ai_agents/active_agent.spec.ts
+2026-05-12T12:09:27.8128966Z PASS tests/unit/supervisory/anomaly_detection.spec.ts
+2026-05-12T12:09:27.8819360Z FAIL src/fee_distribution/fee_distribution.service.test.ts
+2026-05-12T12:09:27.8838986Z   ● FeeDistributionService › should be defined
+2026-05-12T12:09:27.8868737Z 
+2026-05-12T12:09:27.8871493Z     Nest can't resolve dependencies of the FeeDistributionService (EpochEntityRepository, DistributionLogEntityRepository, TransactionRepository, PoTService, TokenService, ?, NodeChainService, SmartContractIntegration, DataSource). Please make sure that the argument EmissionService at index [5] is available in the RootTestModule context.
+2026-05-12T12:09:27.8898130Z 
+2026-05-12T12:09:27.8928310Z     Potential solutions:
+2026-05-12T12:09:27.8928975Z     - Is RootTestModule a valid NestJS module?
+2026-05-12T12:09:27.8958732Z     - If EmissionService is a provider, is it part of the current RootTestModule?
+2026-05-12T12:09:27.9018846Z     - If EmissionService is exported from a separate @Module, is that module imported within RootTestModule?
+2026-05-12T12:09:27.9019793Z       @Module({
+2026-05-12T12:09:27.9020365Z         imports: [ /* the Module containing EmissionService */ ]
+2026-05-12T12:09:27.9021020Z       })
+2026-05-12T12:09:27.9064022Z 
+2026-05-12T12:09:27.9078717Z     [0m [90m 65 |[39m
+2026-05-12T12:09:27.9085155Z      [90m 66 |[39m     beforeEach([36masync[39m () [33m=>[39m {
+2026-05-12T12:09:27.9091754Z     [31m[1m>[22m[39m[90m 67 |[39m         [36mconst[39m module[33m:[39m [33mTestingModule[39m [33m=[39m [36mawait[39m [33mTest[39m[33m.[39mcreateTestingModule({
+2026-05-12T12:09:27.9093621Z      [90m    |[39m                                       [31m[1m^[22m[39m
+2026-05-12T12:09:27.9094754Z      [90m 68 |[39m             providers[33m:[39m [
+2026-05-12T12:09:27.9096302Z      [90m 69 |[39m                 [33mFeeDistributionService[39m[33m,[39m
+2026-05-12T12:09:27.9098630Z      [90m 70 |[39m                 { provide[33m:[39m getRepositoryToken([33mEpochEntity[39m)[33m,[39m useValue[33m:[39m mockEpochRepo }[33m,[39m[0m
+2026-05-12T12:09:27.9099864Z 
+2026-05-12T12:09:27.9100853Z       at TestingInjector.lookupComponentInParentModules (node_modules/@nestjs/core/injector/injector.js:262:19)
+2026-05-12T12:09:27.9102707Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/core/injector/injector.js:215:33)
+2026-05-12T12:09:27.9104494Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/testing/testing-injector.js:19:45)
+2026-05-12T12:09:27.9106000Z       at resolveParam (node_modules/@nestjs/core/injector/injector.js:129:38)
+2026-05-12T12:09:27.9107035Z           at async Promise.all (index 5)
+2026-05-12T12:09:27.9108532Z       at TestingInjector.resolveConstructorParams (node_modules/@nestjs/core/injector/injector.js:144:27)
+2026-05-12T12:09:27.9110209Z       at TestingInjector.loadInstance (node_modules/@nestjs/core/injector/injector.js:70:13)
+2026-05-12T12:09:27.9111749Z       at TestingInjector.loadProvider (node_modules/@nestjs/core/injector/injector.js:98:9)
+2026-05-12T12:09:27.9113068Z       at node_modules/@nestjs/core/injector/instance-loader.js:56:13
+2026-05-12T12:09:27.9114025Z           at async Promise.all (index 3)
+2026-05-12T12:09:27.9115458Z       at TestingInstanceLoader.createInstancesOfProviders (node_modules/@nestjs/core/injector/instance-loader.js:55:9)
+2026-05-12T12:09:27.9117009Z       at node_modules/@nestjs/core/injector/instance-loader.js:40:13
+2026-05-12T12:09:27.9118207Z           at async Promise.all (index 1)
+2026-05-12T12:09:27.9119530Z       at TestingInstanceLoader.createInstances (node_modules/@nestjs/core/injector/instance-loader.js:39:9)
+2026-05-12T12:09:27.9121451Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/core/injector/instance-loader.js:22:13)
+2026-05-12T12:09:27.9123528Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-instance-loader.js:9:9)
+2026-05-12T12:09:27.9125596Z       at TestingModuleBuilder.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-module.builder.js:118:9)
+2026-05-12T12:09:27.9127482Z       at TestingModuleBuilder.compile (node_modules/@nestjs/testing/testing-module.builder.js:74:9)
+2026-05-12T12:09:27.9129654Z       at Object.<anonymous> (src/fee_distribution/fee_distribution.service.test.ts:67:39)
+2026-05-12T12:09:27.9130594Z 
+2026-05-12T12:09:27.9131525Z   ● FeeDistributionService › startNewEpoch › should create a new epoch if none exists
+2026-05-12T12:09:27.9132440Z 
+2026-05-12T12:09:27.9135239Z     Nest can't resolve dependencies of the FeeDistributionService (EpochEntityRepository, DistributionLogEntityRepository, TransactionRepository, PoTService, TokenService, ?, NodeChainService, SmartContractIntegration, DataSource). Please make sure that the argument EmissionService at index [5] is available in the RootTestModule context.
+2026-05-12T12:09:27.9153013Z 
+2026-05-12T12:09:27.9153410Z     Potential solutions:
+2026-05-12T12:09:27.9154202Z     - Is RootTestModule a valid NestJS module?
+2026-05-12T12:09:27.9155333Z     - If EmissionService is a provider, is it part of the current RootTestModule?
+2026-05-12T12:09:27.9156925Z     - If EmissionService is exported from a separate @Module, is that module imported within RootTestModule?
+2026-05-12T12:09:27.9158433Z       @Module({
+2026-05-12T12:09:27.9159244Z         imports: [ /* the Module containing EmissionService */ ]
+2026-05-12T12:09:27.9160085Z       })
+2026-05-12T12:09:27.9160479Z 
+2026-05-12T12:09:27.9160924Z     [0m [90m 65 |[39m
+2026-05-12T12:09:27.9161903Z      [90m 66 |[39m     beforeEach([36masync[39m () [33m=>[39m {
+2026-05-12T12:09:27.9164008Z     [31m[1m>[22m[39m[90m 67 |[39m         [36mconst[39m module[33m:[39m [33mTestingModule[39m [33m=[39m [36mawait[39m [33mTest[39m[33m.[39mcreateTestingModule({
+2026-05-12T12:09:27.9166099Z      [90m    |[39m                                       [31m[1m^[22m[39m
+2026-05-12T12:09:27.9167299Z      [90m 68 |[39m             providers[33m:[39m [
+2026-05-12T12:09:27.9168722Z      [90m 69 |[39m                 [33mFeeDistributionService[39m[33m,[39m
+2026-05-12T12:09:27.9170675Z      [90m 70 |[39m                 { provide[33m:[39m getRepositoryToken([33mEpochEntity[39m)[33m,[39m useValue[33m:[39m mockEpochRepo }[33m,[39m[0m
+2026-05-12T12:09:27.9171906Z 
+2026-05-12T12:09:27.9172900Z       at TestingInjector.lookupComponentInParentModules (node_modules/@nestjs/core/injector/injector.js:262:19)
+2026-05-12T12:09:27.9174749Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/core/injector/injector.js:215:33)
+2026-05-12T12:09:27.9176517Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/testing/testing-injector.js:19:45)
+2026-05-12T12:09:27.9178335Z       at resolveParam (node_modules/@nestjs/core/injector/injector.js:129:38)
+2026-05-12T12:09:27.9179375Z           at async Promise.all (index 5)
+2026-05-12T12:09:27.9180663Z       at TestingInjector.resolveConstructorParams (node_modules/@nestjs/core/injector/injector.js:144:27)
+2026-05-12T12:09:27.9182260Z       at TestingInjector.loadInstance (node_modules/@nestjs/core/injector/injector.js:70:13)
+2026-05-12T12:09:27.9184030Z       at TestingInjector.loadProvider (node_modules/@nestjs/core/injector/injector.js:98:9)
+2026-05-12T12:09:27.9194193Z       at node_modules/@nestjs/core/injector/instance-loader.js:56:13
+2026-05-12T12:09:27.9195117Z           at async Promise.all (index 3)
+2026-05-12T12:09:27.9196379Z       at TestingInstanceLoader.createInstancesOfProviders (node_modules/@nestjs/core/injector/instance-loader.js:55:9)
+2026-05-12T12:09:27.9198017Z       at node_modules/@nestjs/core/injector/instance-loader.js:40:13
+2026-05-12T12:09:27.9199009Z           at async Promise.all (index 1)
+2026-05-12T12:09:27.9200193Z       at TestingInstanceLoader.createInstances (node_modules/@nestjs/core/injector/instance-loader.js:39:9)
+2026-05-12T12:09:27.9201984Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/core/injector/instance-loader.js:22:13)
+2026-05-12T12:09:27.9204055Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-instance-loader.js:9:9)
+2026-05-12T12:09:27.9206471Z       at TestingModuleBuilder.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-module.builder.js:118:9)
+2026-05-12T12:09:27.9208530Z       at TestingModuleBuilder.compile (node_modules/@nestjs/testing/testing-module.builder.js:74:9)
+2026-05-12T12:09:27.9209955Z       at Object.<anonymous> (src/fee_distribution/fee_distribution.service.test.ts:67:39)
+2026-05-12T12:09:27.9210818Z 
+2026-05-12T12:09:27.9211725Z   ● FeeDistributionService › finalizeEpoch › should distribute rewards if totalFees > 0
+2026-05-12T12:09:27.9212578Z 
+2026-05-12T12:09:27.9215274Z     Nest can't resolve dependencies of the FeeDistributionService (EpochEntityRepository, DistributionLogEntityRepository, TransactionRepository, PoTService, TokenService, ?, NodeChainService, SmartContractIntegration, DataSource). Please make sure that the argument EmissionService at index [5] is available in the RootTestModule context.
+2026-05-12T12:09:27.9218181Z 
+2026-05-12T12:09:27.9218517Z     Potential solutions:
+2026-05-12T12:09:27.9219252Z     - Is RootTestModule a valid NestJS module?
+2026-05-12T12:09:27.9220289Z     - If EmissionService is a provider, is it part of the current RootTestModule?
+2026-05-12T12:09:27.9221730Z     - If EmissionService is exported from a separate @Module, is that module imported within RootTestModule?
+2026-05-12T12:09:27.9222789Z       @Module({
+2026-05-12T12:09:27.9223478Z         imports: [ /* the Module containing EmissionService */ ]
+2026-05-12T12:09:27.9224264Z       })
+2026-05-12T12:09:27.9224642Z 
+2026-05-12T12:09:27.9225063Z     [0m [90m 65 |[39m
+2026-05-12T12:09:27.9226318Z      [90m 66 |[39m     beforeEach([36masync[39m () [33m=>[39m {
+2026-05-12T12:09:27.9228542Z     [31m[1m>[22m[39m[90m 67 |[39m         [36mconst[39m module[33m:[39m [33mTestingModule[39m [33m=[39m [36mawait[39m [33mTest[39m[33m.[39mcreateTestingModule({
+2026-05-12T12:09:27.9230351Z      [90m    |[39m                                       [31m[1m^[22m[39m
+2026-05-12T12:09:27.9231444Z      [90m 68 |[39m             providers[33m:[39m [
+2026-05-12T12:09:27.9232637Z      [90m 69 |[39m                 [33mFeeDistributionService[39m[33m,[39m
+2026-05-12T12:09:27.9234417Z      [90m 70 |[39m                 { provide[33m:[39m getRepositoryToken([33mEpochEntity[39m)[33m,[39m useValue[33m:[39m mockEpochRepo }[33m,[39m[0m
+2026-05-12T12:09:27.9235550Z 
+2026-05-12T12:09:27.9236494Z       at TestingInjector.lookupComponentInParentModules (node_modules/@nestjs/core/injector/injector.js:262:19)
+2026-05-12T12:09:27.9238489Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/core/injector/injector.js:215:33)
+2026-05-12T12:09:27.9240239Z       at TestingInjector.resolveComponentInstance (node_modules/@nestjs/testing/testing-injector.js:19:45)
+2026-05-12T12:09:27.9241671Z       at resolveParam (node_modules/@nestjs/core/injector/injector.js:129:38)
+2026-05-12T12:09:27.9242682Z           at async Promise.all (index 5)
+2026-05-12T12:09:27.9243915Z       at TestingInjector.resolveConstructorParams (node_modules/@nestjs/core/injector/injector.js:144:27)
+2026-05-12T12:09:27.9245404Z       at TestingInjector.loadInstance (node_modules/@nestjs/core/injector/injector.js:70:13)
+2026-05-12T12:09:27.9246804Z       at TestingInjector.loadProvider (node_modules/@nestjs/core/injector/injector.js:98:9)
+2026-05-12T12:09:27.9248236Z       at node_modules/@nestjs/core/injector/instance-loader.js:56:13
+2026-05-12T12:09:27.9249102Z           at async Promise.all (index 3)
+2026-05-12T12:09:27.9250408Z       at TestingInstanceLoader.createInstancesOfProviders (node_modules/@nestjs/core/injector/instance-loader.js:55:9)
+2026-05-12T12:09:27.9251830Z       at node_modules/@nestjs/core/injector/instance-loader.js:40:13
+2026-05-12T12:09:27.9252740Z           at async Promise.all (index 1)
+2026-05-12T12:09:27.9253933Z       at TestingInstanceLoader.createInstances (node_modules/@nestjs/core/injector/instance-loader.js:39:9)
+2026-05-12T12:09:27.9256013Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/core/injector/instance-loader.js:22:13)
+2026-05-12T12:09:27.9258253Z       at TestingInstanceLoader.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-instance-loader.js:9:9)
+2026-05-12T12:09:27.9260345Z       at TestingModuleBuilder.createInstancesOfDependencies (node_modules/@nestjs/testing/testing-module.builder.js:118:9)
+2026-05-12T12:09:27.9290336Z       at TestingModuleBuilder.compile (node_modules/@nestjs/testing/testing-module.builder.js:74:9)
+2026-05-12T12:09:27.9291865Z       at Object.<anonymous> (src/fee_distribution/fee_distribution.service.test.ts:67:39)
+2026-05-12T12:09:27.9292718Z 
+2026-05-12T12:09:27.9293175Z PASS tests/unit/security_deposit/slashing.spec.ts
+2026-05-12T12:09:28.0359708Z PASS tests/unit/integration/ingestion.spec.ts
+2026-05-12T12:09:28.1242303Z PASS tests/unit/processing/tx_queue.spec.ts
+2026-05-12T12:09:28.1965229Z 
+2026-05-12T12:09:28.1969165Z Test Suites: 1 failed, 10 passed, 11 total
+2026-05-12T12:09:28.1969979Z Tests:       3 failed, 66 passed, 69 total
+2026-05-12T12:09:28.1970575Z Snapshots:   0 total
+2026-05-12T12:09:28.1970982Z Time:        7.976 s
+2026-05-12T12:09:28.1971372Z Ran all test suites.
+2026-05-12T12:09:28.2322294Z ##[error]Process completed with exit code 1.
+2026-05-12T12:09:28.2430190Z Post job cleanup.
+2026-05-12T12:09:28.3153287Z [command]/usr/bin/git version
+2026-05-12T12:09:28.3186398Z git version 2.53.0
+2026-05-12T12:09:28.3227536Z Temporarily overriding HOME='/home/runner/work/_temp/86b4f438-a1ad-4bf3-b216-0528cb85e75b' before making global git config changes
+2026-05-12T12:09:28.3228802Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-12T12:09:28.3231600Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AST-Aros-Financial-Paradigm/AST-Aros-Financial-Paradigm
+2026-05-12T12:09:28.3260405Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-12T12:09:28.3287495Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-12T12:09:28.3499934Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-12T12:09:28.3518294Z http.https://github.com/.extraheader
+2026-05-12T12:09:28.3529124Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-05-12T12:09:28.3555157Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-12T12:09:28.3857658Z Cleaning up orphan processes
+2026-05-12T12:09:28.4130238Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v3, actions/setup-node@v3. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

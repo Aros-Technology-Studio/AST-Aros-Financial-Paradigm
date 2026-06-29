@@ -988,6 +988,115 @@ All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 veri
 
 ---
 
+## 21. 2026-06-29 Full Re-Audit (branch: claude/inspiring-cannon-2bbcyf)
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/`.
+All files read from scratch; no prior session context assumed.
+
+### Directories Examined
+
+| Path | Content | Authority |
+|------|---------|-----------|
+| `01_coin_engine/` | 11 Markdown/JSON documentation files; zero TypeScript | Historical docs; no executable code |
+| `10_proof_of_transaction_engine/` | PoT documentation only (8 `.md` files) | Docs; runtime in `src/pot/` |
+| `src/token/` | Does not exist | — |
+| `src/emission/emission.service.ts` | Production EmissionService | Audited ✓ |
+| `src/aroscoin/aroscoin.service.ts` | Production ArosCoinService | Audited ✓ |
+| `src/commission/commission.service.ts` | Production CommissionService | Audited ✓ |
+| `src/reserve/reserve.service.ts` | Production ReserveService | Audited ✓ |
+| `src/orchestrator/orchestrator.service.ts` | Full lifecycle orchestration | Audited ✓ |
+
+`01_coin_engine` is NOT deprecated — it is documentation. No deprecated code module exists.
+All production emission logic lives in `src/emission/` and related modules.
+
+### Canonical Model Verified
+
+```
+Emission     = Transaction Amount (1:1, PoT-gated; verified === 1)
+Commission   = Transaction Amount × 0.005 (0.5%)
+  Node pool  = Commission × 0.75   (75% → nodes post-factum, PoT-confirmed weight)
+  AFC share  = Commission × 0.25   (25% → Reserve.addAfcAccrual → NodeChain audit event)
+Burn         = Emission amount     (processNet → 0 per cycle)
+reserveIndex = log10(1 + totalProcessVolume)  [spec I-RS-1/I-RS-2; AFC accruals audit-only]
+internalPrice = base × reserveIndex  (rises with each confirmed process)
+```
+
+### Line-by-Line Code Verification
+
+| Canonical Requirement | File | Line(s) | Value | Status |
+|-----------------------|------|---------|-------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 61, 111 | `minted = amount`; `emission = txAmount` | CONFIRMED |
+| PoT gate: verified === 1 required | `src/emission/emission.service.ts` | 57–59 | `if (!verdict \|\| verdict.verified !== 1) return { authorized: false, minted: 0, burned: 0 }` | CONFIRMED |
+| mint() throws without PoT gate | `src/emission/emission.service.ts` | 72–74 | throws `'emission refused … verified === 1 required'` | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `src/emission/emission.service.ts` | 85–88 | `recordBurn(amount); chain.append('emission.burned')` | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | `emission=txAmount; commission=txAmount×rate; nodeShare=commission×0.75; afcShare=commission×0.25; net=0` | CONFIRMED |
+| Orchestrator: mint → accrue → burn order | `src/orchestrator/orchestrator.service.ts` | 162, 172, 175 | `emission.mint` → `commission.accrue` → `emission.burn` | CONFIRMED |
+| Commission feeRate = 0.005 | `src/commission/commission.service.ts` | 65 | `readonly feeRate = 0.005` | CONFIRMED |
+| AFC marginRate = 0.25 | `src/commission/commission.service.ts` | 68 | `readonly marginRate = 0.25` | CONFIRMED |
+| 75% distributable to nodes | `src/commission/commission.service.ts` | 134 | `distributable = total * (1 - this.marginRate)` | CONFIRMED |
+| 25% → reserve.addAfcAccrual | `src/commission/commission.service.ts` | 155 | `await this.reserve.addAfcAccrual(allocatedMargin)` | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `src/commission/commission.service.ts` | 168 | `Math.abs(paid + allocatedMargin - total) < 1e-9` | CONFIRMED |
+| Supply identity (I6) | `src/aroscoin/aroscoin.service.ts` | 106 | `(processMinted - processBurned) + earnedRetained` | CONFIRMED |
+| reserveIndex = log10(1 + vol) | `src/reserve/reserve.service.ts` | 100 | `return log10(1 + volume)` | CONFIRMED |
+| AFC accruals recorded, not in formula | `src/reserve/reserve.service.ts` | 87–89 | `addAfcAccrual → chain.append('reserve.afc.accrual')`; not in `totalProcessVolume` calc | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | No staking, slashing, token-weighted governance, mint-on-deposit | CONFIRMED |
+
+### Transaction Example ($10,000) — Traced Through Code
+
+```
+amount = 10,000
+Step 5: pot.verify(processId) → verdict.verified = 1
+Step 6: emission.mint(processId, 10_000) → coin.recordMint(10_000)  [processMinted += 10_000]
+Step 7: commission.computeFee(10_000) = 10_000 × 0.005 = 50 ARO
+        commission.accrue(epoch, 50, participants)
+        emission.burn(processId, 10_000) → coin.recordBurn(10_000)  [processBurned += 10_000]
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned per node, post-factum)
+  margin        = 50 - 37.50 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit event only]
+  reconciled    = |37.50 + 12.50 − 50| < 1e-9  ✓
+
+reserve.reserveIndex() = log10(1 + 10,000) ≈ 4.0000
+internalPrice = 1 × 4.0000 = 4.0000 (rises with each additional confirmed process)
+
+totalSupply (in-cycle)   = (10,000 − 10,000) + 0      = 0     ARO
+totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO  (= earnedRetained, I6)
+```
+
+### Invariants
+
+| ID | Rule | Status |
+|----|------|--------|
+| I1 | Value only on PoT verified === 1 | CONFIRMED — `emit()` gate, orchestrator PoT check |
+| I2 | Every emission bound to confirmed process | CONFIRMED — `mint()` throws without verified===1 |
+| I3 | All significant events in NodeChain | CONFIRMED — mint, burn, commission, AFC accruals all appended |
+| I4 | Deterministic: same input → same result | CONFIRMED — sorted nodeId iteration |
+| I5 | Process part nets to 0 | CONFIRMED — `burn(minted)` called after commission accrual |
+| I6 | `totalSupply = earnedRetained` after burns | CONFIRMED — tally identity; AFC in reserve not in earnedRetained |
+| I7 | Pool reconciles: `paid + margin == fees` | CONFIRMED — epsilon check in `finalizeEpoch()` |
+| I8 | NodeChain append-only, hash-continuous | CONFIRMED — `NodeChainService` enforces |
+| I9 | Node influence from work+reputation | CONFIRMED — no stake/stakedBalance field |
+| I10 | All-Seeing Eye passive: no state change | CONFIRMED — Eye calls only log/compare |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED — `log10(1 + totalProcessVolume)` |
+| I-RS-2 | Derivable from NodeChain | CONFIRMED — recomputed from history on each call |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED — `log10(1 + x)` is monotonic |
+
+### Files Changed
+
+```
+AGENT_CORE_REPORT.md   §21 added (this session); audit trail updated
+```
+
+### Result
+
+**CONFIRMED CANONICAL. No production code changes required.**
+All 9 canonical emission requirements, I1–I10 invariants, and P1–P8 prohibitions verified against
+the live production source (`src/`). All prior fixes from previous sessions remain in place.
+
+---
+
 ## 9. Audit Trail
 
 | Session | Branch | Action |
@@ -1000,3 +1109,4 @@ All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 veri
 | Prior sessions | `agent/core-emission` | Burn ordering, calculate() added, docs corrected, comment fixes |
 | Prior session | `claude/inspiring-cannon-pl0dei` | Full re-audit; all components verified canonical |
 | **2026-06-29** | `claude/inspiring-cannon-jjvqg4` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |
+| **2026-06-29** | `claude/inspiring-cannon-2bbcyf` | Full re-audit (this session); canonical 1:1 emission confirmed; no code changes required |

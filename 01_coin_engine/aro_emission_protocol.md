@@ -55,8 +55,13 @@ Commission   = Transaction Amount × rate    (default 0.5%)
 Node Share   = Commission × 0.75
 AFC Reserve  = Commission × 0.25
 
-AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
+reserveIndex = log10(1 + totalProcessVolume)
 ```
+
+`totalProcessVolume` is the sum of confirmed-process amounts from NodeChain `emission.minted`
+events. AFC accruals are recorded in NodeChain as `reserve.afc.accrual` for audit purposes
+but do not enter the `reserveIndex` formula (spec I-RS-1). The index is derived, never set
+as a free authority (spec I-RS-2), and is monotonically non-decreasing (spec I-RS-4).
 
 ---
 

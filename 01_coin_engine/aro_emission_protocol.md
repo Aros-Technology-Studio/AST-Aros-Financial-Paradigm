@@ -55,7 +55,7 @@ Commission   = Transaction Amount × rate    (default 0.5%)
 Node Share   = Commission × 0.75
 AFC Reserve  = Commission × 0.25
 
-AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
+reserveIndex = log10(1 + totalProcessVolume)   (canonical; see reference/ast-core/src/reserve.ts)
 ```
 
 ---

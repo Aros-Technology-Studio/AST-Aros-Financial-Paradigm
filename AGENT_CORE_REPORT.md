@@ -1000,3 +1000,102 @@ All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 veri
 | Prior sessions | `agent/core-emission` | Burn ordering, calculate() added, docs corrected, comment fixes |
 | Prior session | `claude/inspiring-cannon-pl0dei` | Full re-audit; all components verified canonical |
 | **2026-06-29** | `claude/inspiring-cannon-jjvqg4` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |
+| **2026-06-29** | `claude/inspiring-cannon-bmf1uo` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |
+
+---
+
+## 21. 2026-06-29 Full Re-Audit (branch: claude/inspiring-cannon-bmf1uo)
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/`, `src/invariants/`.
+All files read from scratch; no prior session context assumed.
+
+### Directories Examined
+
+| Path | Content |
+|------|---------|
+| `01_coin_engine/` | Markdown/JSON documentation only — `coin_emission_model.md`, `burn_and_mint_rules.md`, etc. No executable code. **Not deprecated.** |
+| `10_proof_of_transaction_engine/` | PoT documentation only — `pot_engine_overview.md`, `pot_tx_validation_logic.md`, etc. Runtime in `src/pot/`. |
+| `src/token/` | **Does not exist.** Emission logic lives in `src/emission/` and `src/aroscoin/`. |
+| `src/emission/emission.service.ts` | EmissionService — PoT-gated mint/burn, `calculate()`, `totalSupply()`. Audited ✓ |
+| `src/aroscoin/aroscoin.service.ts` | ArosCoinService — three-tally ledger, derivable `totalSupply`. Audited ✓ |
+| `src/commission/commission.service.ts` | CommissionService — `feeRate=0.005`, `marginRate=0.25`, 75/25 distribution. Audited ✓ |
+| `src/reserve/reserve.service.ts` | ReserveService — `reserveIndex=log10(1+totalProcessVolume)`, AFC accrual audit trail. Audited ✓ |
+| `src/orchestrator/orchestrator.service.ts` | Full 9-step lifecycle: init→admissible→assign→execute→PoT→mint→accrue→burn→final. Audited ✓ |
+| `src/invariants/invariants.spec.ts` | I1–I10 invariant tests against the wired NestJS stack. Audited ✓ |
+
+### Canonical Model — All Requirements Confirmed
+
+```
+Emission     = Transaction Amount (1:1, no multiplier)
+Commission   = Transaction Amount × 0.005 (0.5%)
+  Node pool  = Commission × 0.75   (75% → nodes post-factum, PoT-confirmed weight)
+  AFC share  = Commission × 0.25   (25% → Reserve.addAfcAccrual → NodeChain audit event)
+Burn         = Emission amount     (processNet → 0 per cycle)
+reserveIndex = log10(1 + totalProcessVolume)  [spec I-RS-1/I-RS-2; AFC accruals are audit-only]
+internalPrice = base × reserveIndex  (rises with each confirmed process)
+```
+
+### Line-by-Line Verification
+
+| Canonical Requirement | File | Line(s) | Status |
+|-----------------------|------|---------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| PoT gate: verified === 1 required | `src/emission/emission.service.ts` | 57–59 | CONFIRMED |
+| mint() throws without PoT gate | `src/emission/emission.service.ts` | 73–75 | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| Commission feeRate = 0.005 (0.5%) | `src/commission/commission.service.ts` | 69 | CONFIRMED |
+| AFC marginRate = 0.25 (25%) | `src/commission/commission.service.ts` | 72 | CONFIRMED |
+| 75% distributable to nodes | `src/commission/commission.service.ts` | 134–149 | CONFIRMED |
+| 25% → reserve.addAfcAccrual | `src/commission/commission.service.ts` | 155–159 | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `src/commission/commission.service.ts` | 168 | CONFIRMED |
+| Supply identity: (minted-burned)+earned | `src/aroscoin/aroscoin.service.ts` | 104–106 | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `src/reserve/reserve.service.ts` | 97–99 | CONFIRMED |
+| AFC accruals recorded, not in formula | `src/reserve/reserve.service.ts` | 68–82 | CONFIRMED |
+| Orchestrator: mint → accrue → burn order | `src/orchestrator/orchestrator.service.ts` | 162–176 | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | CONFIRMED |
+| I1–I10 invariants covered by tests | `src/invariants/invariants.spec.ts` | all | CONFIRMED |
+
+### Transaction Example ($10,000) — Traced Through Code
+
+```
+amount = 10_000
+Step 5: pot.verify(processId) → verified = 1
+Step 6: emission.mint(processId, 10_000) → coin.recordMint(10_000)   [processMinted += 10_000]
+Step 7: commission.computeFee(10_000) = 10_000 × 0.005 = 50 ARO
+        commission.accrue(epoch, 50, participants)
+        emission.burn(processId, 10_000) → coin.recordBurn(10_000)    [processBurned += 10_000]
+        processNet = 0 ✓
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 ARO → nodes (coin.recordEarned post-factum)
+  margin        = 50 − 37.50 = 12.50 ARO → reserve.addAfcAccrual(12.50) [NodeChain audit only]
+  reconciliation: |37.50 + 12.50 − 50| < 1e-9  ✓
+
+Step 8: reserve.reserveIndex() = log10(1 + 10,000) ≈ 4.0000
+        internalPrice = 1 × 4.0000 = 4.0000 (rises with volume — I-RS-4)
+
+totalSupply (in-cycle)   = (10,000 − 10,000) + 0      = 0      ARO
+totalSupply (post-epoch) = (10,000 − 10,000) + 37.50  = 37.50  ARO (= earnedRetained, I6)
+```
+
+### Prohibited Constructs — Clean
+
+| Pattern | Result |
+|---------|--------|
+| `staking / stakedBalance / stake_freeze` | Clean |
+| `slashing against balance` | Clean |
+| `token-weighted governance` | Clean |
+| `farming / passive yield` | Clean |
+| `mint-on-deposit / crypto_to_aroscoin` | Clean |
+| Eye halting/reverting/voting | Clean |
+| Emission outside confirmed-process logic | Clean |
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
+All 9 canonical emission requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+`01_coin_engine/` contains documentation only — no deprecated code module exists.
+`src/token/` does not exist — production emission logic is in `src/emission/` and `src/aroscoin/`.

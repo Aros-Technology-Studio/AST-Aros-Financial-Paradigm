@@ -299,6 +299,130 @@ Audit trail updated to reflect re-confirmation of this session.
 
 ---
 
+## 11. 2026-06-29 Audit (branch: claude/inspiring-cannon-htd698)
+
+**Agent:** AGENT-CORE  
+**Scope:** Full canonical 1:1 emission audit per task specification.
+
+### 11.1 Directories Examined
+
+| Path | Content | Finding |
+|------|---------|---------|
+| `01_coin_engine/` | Markdown documentation only | No executable code; docs describe canonical model correctly |
+| `10_proof_of_transaction_engine/` | PoT documentation only | No executable code |
+| `src/token/` | Does NOT exist | Model-A artifact; all emission logic lives in `src/emission/` |
+| `src/emission/emission.service.ts` | NestJS EmissionService (122 lines) | Fully canonical — see §11.2 |
+| `src/aroscoin/aroscoin.service.ts` | NestJS ArosCoinService (149 lines) | Fully canonical — see §11.2 |
+| `src/pot/pot.service.ts` | NestJS PotService (141 lines) | Fully canonical — see §11.2 |
+| `src/commission/commission.service.ts` | NestJS CommissionService | Fully canonical — see §11.2 |
+| `src/reserve/reserve.service.ts` | NestJS ReserveService | Fully canonical — see §11.2 |
+| `reference/ast-core/src/emission.ts` | Reference implementation (20 lines) | Used as comparison baseline |
+| `reference/ast-core/src/aroscoin.ts` | Reference implementation (27 lines) | Used as comparison baseline |
+| `docs/specs/AST_Emission_AGENT_EN.md` | Authority spec | Cross-checked ✓ |
+| `docs/specs/AST_ArosCoin_AGENT_EN.md` | Authority spec | Cross-checked ✓ |
+| `docs/specs/AST_Commission_AGENT_EN.md` | Authority spec | Cross-checked ✓ |
+| `docs/specs/AST_Reserve_AGENT_EN.md` | Authority spec | Cross-checked ✓ |
+
+### 11.2 Per-Component Audit Results
+
+#### EmissionService (`src/emission/emission.service.ts`)
+
+| Requirement | Implementation | Status |
+|-------------|---------------|--------|
+| `emit = txAmount` (1:1, no multiplier) | `emit(processId, amount)` mints `amount` exactly | ✓ Canonical |
+| PoT gate: no mint without `verified === 1` | `emit()` returns `{authorized:false, minted:0}` if verdict missing or `verified !== 1` | ✓ Canonical |
+| `mint()` throws on unverified | `throw new Error('no PoT confirmation (verified === 1 required)')` | ✓ Canonical |
+| Burn mirrors mint exactly | `burn(processId, minted)` burns the exact minted amount | ✓ Canonical |
+| `processNet → 0` after cycle | `minted == burned` per cycle | ✓ Canonical |
+| Both recorded in NodeChain | `chain.append('emission.minted', ...)` / `chain.append('emission.burned', ...)` | ✓ Canonical |
+| `calculate()` pure formula | Returns `{emission, commission, nodeShare, afcShare, net}` with no side effects | ✓ Present |
+| Commission default 0.5% | `commissionRate = 0.005` | ✓ Canonical |
+| Node share 75% of commission | `nodeShare = commission * 0.75` | ✓ Canonical |
+| AFC share 25% of commission | `afcShare = commission * 0.25` | ✓ Canonical |
+| net = 0 always | `net: 0` (burn restores zero net) | ✓ Canonical |
+
+#### ArosCoinService (`src/aroscoin/aroscoin.service.ts`)
+
+| Requirement | Implementation | Status |
+|-------------|---------------|--------|
+| Three-tally ledger | `processMinted`, `processBurned`, `earnedRetained` persisted in PostgreSQL | ✓ Canonical |
+| Supply derived, not assigned | `totalSupply = (processMinted - processBurned) + earnedRetained` | ✓ Canonical |
+| `processNet → 0` | `processNet() = processMinted - processBurned` converges to 0 after cycles | ✓ Canonical |
+| `totalSupply = earnedRetained` post-cycle | Identity holds (I5/I6) | ✓ Canonical |
+| `internalPrice = base × reserveIndex` | `internalPrice(reserveIndex) = this.base * reserveIndex` (base = 1) | ✓ Canonical |
+| No deposit or purchase path | No `deposit()`, `buy()`, or `convert()` methods | ✓ Clean (P5) |
+
+#### CommissionService (`src/commission/commission.service.ts`)
+
+| Requirement | Implementation | Status |
+|-------------|---------------|--------|
+| Fee = amount × 0.5% | `feeRate = 0.005` | ✓ Canonical |
+| 75% to nodes (post-factum by PoT weight) | `distributable = totalFees * (1 - 0.25)` → distributed by `confirmedWeights` | ✓ Canonical |
+| 25% to AFC reserve | `allocatedMargin = total - paid` → `reserve.addAfcAccrual(allocatedMargin)` | ✓ Canonical |
+| Only PoT-confirmed participations earn | `confirmedWeights()` skips nodes where `verdict.verified !== 1` | ✓ Canonical |
+| Pool reconciles: `paid + margin == fees` | `Math.abs(paid + allocatedMargin - total) < 1e-9` | ✓ Canonical (I7) |
+| Deterministic iteration | Node IDs sorted before distribution | ✓ Canonical (I4) |
+
+#### ReserveService (`src/reserve/reserve.service.ts`)
+
+| Requirement | Implementation | Status |
+|-------------|---------------|--------|
+| `reserveIndex = log10(1 + totalProcessVolume)` | `log10(1 + volume)` where `volume` sums `emission.minted` + `commission.epoch.finalized.operationalMargin` | ✓ Canonical |
+| Grows only from confirmed work | Both feed sources are PoT-gated | ✓ Canonical (I-RS-1) |
+| Derivable from NodeChain history (never set manually) | Recomputed from `chain.list()` on every call | ✓ Canonical (I-RS-2) |
+| Monotonic non-decreasing | `log10` is monotonic; volume only grows | ✓ Canonical (I-RS-4) |
+| AFC accruals: audit trail only (not in formula) | `reserve.afc.accrual` events counted separately by `totalAfcReserve()`, not in `reserveIndex` | ✓ Canonical (I-RS-1) |
+
+### 11.3 Canonical Model Verified (Reference Example)
+
+```
+TX Amount     = 10,000 ARO
+Emission      = 10,000 ARO   ← MINT (1:1; PoT verified === 1)
+Commission    = 10,000 × 0.005 = 50 ARO
+  Node Share  = 50 × 0.75 = 37.50 ARO  → coin.recordEarned() (post-factum epoch finalization)
+  AFC Reserve = 50 × 0.25 = 12.50 ARO  → reserve.addAfcAccrual() → NodeChain (audit trail)
+Burn          = 10,000 ARO   ← BURN (net circulating change = 0)
+
+reserveIndex  = log10(1 + 10,000) ≈ 4.0004
+internalPrice = 1 × 4.0004 = 4.0004  → rises monotonically (I-RS-4)
+totalSupply   = (10,000 − 10,000) + 37.50 = 37.50 = earnedRetained ✓ (I6)
+```
+
+### 11.4 Prohibition Grep (src/ only)
+
+All prohibitions clear. No Model-A constructs present in production code:
+
+| ID | Forbidden Pattern | Result |
+|----|-------------------|--------|
+| P1 | `staking / stakedBalance / stake_freeze` | Clean |
+| P2 | `slashing against balance or stake` | Clean |
+| P3 | `token-weighted governance / vote-by-token-balance` | Clean |
+| P4 | `farming / passive yield for holding` | Clean |
+| P5 | `mint-on-deposit / crypto_to_aroscoin` | Clean |
+| P6 | `All-Seeing Eye halting/reverting/voting/enforcement` | Clean |
+| P7 | Emission outside confirmed-process logic | Clean |
+| P8 | Entities defined by negation in comments | Clean |
+
+### 11.5 Conclusion
+
+**No code changes required.** The canonical 1:1 emission model is fully and correctly
+implemented across all production modules. Every invariant (I1–I10) is satisfied and every
+prohibition (P1–P8) is clean. The emission model matches both the reference implementation
+(`reference/ast-core/src/emission.ts`) and the authority specs (`docs/specs/AST_Emission_AGENT_EN.md`).
+
+The `calculate()` method on `EmissionService` provides a pure, side-effect-free reference
+formula that precisely encodes the canonical model for documentation and testing purposes.
+
+| Audit session | Date | Branch | Outcome |
+|--------------|------|--------|---------|
+| Initial implementation | 2026-06-16 | `agent/core-emission` | Canonical model ported |
+| PR #289 rewrite | 2026-06-17 | `claude/ast-model1-rewrite` | All 11 modules implemented |
+| Conformance confirmed | 2026-06-19 | `agent/core-emission` | calculate() added; burn_and_mint_rules.md corrected |
+| Re-audit | 2026-06-20 | `agent/core-emission` | Full re-audit; no changes needed |
+| **This run** | **2026-06-29** | **`claude/inspiring-cannon-htd698`** | **Full audit; canonical model confirmed; no changes needed** |
+
+---
+
 ## 11. 2026-06-19 Full Re-Audit (branch: agent/core-emission, session 3)
 
 Fresh deep audit requested — surveyed `01_coin_engine/`, `10_proof_of_transaction_engine/`,

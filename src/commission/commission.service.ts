@@ -117,7 +117,8 @@ export class CommissionService {
      * Finalize an epoch post-factum: keep only PoT-confirmed participation (verified === 1),
      * sum each node's confirmed-participation weight, distribute 75% of the pool proportionally
      * to nodes (`paymentToNode = (weight * distributable) / Σweights`), route the canonical
-     * 25% AFC share to the Reserve so the capitalization index grows, record the distribution
+     * 25% AFC share to the Reserve as an audit-trail accrual (reserveIndex is driven by confirmed
+     * process volume, not by AFC accruals; I-RS-1), record the distribution
      * in NodeChain, and mark the epoch finalized. The pool reconciles with no remainder (I7).
      */
     async finalizeEpoch(epochNumber: number): Promise<FinalizeResult> {

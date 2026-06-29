@@ -223,4 +223,62 @@ describe('OrchestratorService (e2e lifecycle)', () => {
         expect(metrics.verifiedProcessCount).toBe(2);
         expect(metrics.nodeChainLength).toBeGreaterThan(0);
     });
+
+    // An explicit node assignment is honored as given, rather than the default roster.
+    it('honors an explicit node assignment', async () => {
+        const nodes = moduleRef.get((await import('../nodes/nodes.service')).NodesService);
+        await nodes.register('chosen-1', 'worker');
+        await nodes.register('chosen-2', 'worker');
+
+        const result = await orchestrator.runProcess({
+            processId: 'E-1', amount: 100, type: 'transfer', admissible: true,
+            nodeIds: ['chosen-1', 'chosen-2'], epoch: 1,
+        });
+
+        expect(result.assignedNodes).toEqual(['chosen-1', 'chosen-2']);
+    });
+
+    // A run that omits the epoch defaults to the first epoch.
+    it('defaults the fee to the first epoch when none is given', async () => {
+        await orchestrator.runProcess({ processId: 'DEF-1', amount: 100, type: 'transfer', admissible: true });
+        const metrics = await orchestrator.metrics();
+        expect(metrics.currentEpoch).toBe(1);
+        expect(metrics.epochPool).toBeGreaterThan(0);
+    });
+
+    // metrics() on a fresh stack reports the empty economy without an epoch row.
+    it('reports a zeroed snapshot on a fresh system', async () => {
+        const metrics = await orchestrator.metrics();
+        expect(metrics.totalSupply).toBe(0);
+        expect(metrics.epochPool).toBe(0);
+        expect(metrics.verifiedProcessCount).toBe(0);
+        expect(metrics.releaseActive).toBe(false);
+    });
+
+    // The Release maturity thresholds are exposed read-only for the readiness probe.
+    it('exposes the Release maturity thresholds', () => {
+        const thresholds = orchestrator.releaseThresholds;
+        expect(typeof thresholds.threshold).toBe('number');
+        expect(typeof thresholds.velocityTarget).toBe('number');
+    });
+
+    // Defensive guard: should a verdict come back unverified after admission, the run records a
+    // rejected final status and produces no value (I1/I2/P7). Forcing the verdict exercises the
+    // post-admission unverified path that a fully-recorded run never reaches on its own.
+    it('I1/P7: an unverified verdict after admission produces no value', async () => {
+        const pot = moduleRef.get((await import('../pot/pot.service')).PotService);
+        jest.spyOn(pot, 'verify').mockResolvedValue({ verified: 0, reasons: ['forced'], snapshotSequenceId: 0 });
+
+        const supplyBefore = await coin.totalSupply();
+        const result = await orchestrator.runProcess({
+            processId: 'U-1', amount: 100, type: 'transfer', admissible: true, epoch: 1,
+        });
+
+        expect(result.verified).toBe(0);
+        expect(result.reason).toBe('unverified');
+        expect(result.minted).toBe(0);
+        expect(result.fee).toBe(0);
+        expect(result.events).toContain('final_status');
+        expect(await coin.totalSupply()).toBe(supplyBefore);
+    });
 });

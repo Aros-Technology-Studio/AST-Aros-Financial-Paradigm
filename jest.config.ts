@@ -9,7 +9,15 @@ const config: Config = {
         '^.+\\.(t|j)s$': 'ts-jest',
     },
     collectCoverageFrom: [
-        '**/*.(t|j)s',
+        'src/**/*.ts',
+    ],
+    coveragePathIgnorePatterns: [
+        '/node_modules/',
+        '/dist/',
+        '/reference/',
+        '\\.module\\.ts$',   // dependency-injection wiring only
+        '\\.entity\\.ts$',   // TypeORM data shapes, exercised through service specs
+        'src/main\\.ts$',    // application bootstrap
     ],
     coverageDirectory: '../coverage',
     testEnvironment: 'node',

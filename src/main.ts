@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module.js';
+import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 // Wait, I need to check how nest-winston is exported. Usually it's WinstonModule.
 // Let me write standard code.

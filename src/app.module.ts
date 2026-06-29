@@ -1,42 +1,30 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { LedgerModule } from './ledger/ledger.module';
-import { TokenModule } from './token/token.module';
-import { BridgeModule } from './bridge/bridge.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { FeeDistributionModule } from './fee_distribution/fee_distribution.module';
-import { GovernanceModule } from './governance/governance.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { SupervisoryModule } from './supervisory/supervisory.module';
-import { AiAgentsModule } from './ai_agents/ai_agents.module';
-
-import { BullModule } from '@nestjs/bullmq';
-import { ProcessingModule } from './processing/processing.module';
-
-import { SecurityDepositModule } from './security_deposit/security_deposit.module';
-
-import { ValueCirculationModule } from './value_circulation/value_circulation.module';
-import { IngestionModule } from './integration/ingestion/ingestion.module';
-import { ReleaseDaemonModule } from './supervisory/release_daemon.module';
+import { AppController } from './app.controller';
+import { CommonModule } from './common/common.module';
+import { NodeChainModule } from './nodechain/nodechain.module';
+import { StateRecordingModule } from './state-recording/state-recording.module';
+import { PotModule } from './pot/pot.module';
+import { ArosCoinModule } from './aroscoin/aroscoin.module';
+import { EmissionModule } from './emission/emission.module';
+import { CommissionModule } from './commission/commission.module';
+import { ReserveModule } from './reserve/reserve.module';
+import { ReleaseModule } from './release/release.module';
+import { NodesModule } from './nodes/nodes.module';
+import { AllSeeingEyeModule } from './all-seeing-eye/all-seeing-eye.module';
+import { OrchestratorModule } from './orchestrator/orchestrator.module';
 
 @Module({
     imports: [
-        // ... (existing imports)
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: '.env',
         }),
-        BullModule.forRootAsync({
-            imports: [ConfigModule],
-            useFactory: (config: ConfigService) => ({
-                connection: {
-                    host: config.get('REDIS_HOST', 'localhost'),
-                    port: config.get('REDIS_PORT', 6379),
-                },
-            }),
-            inject: [ConfigService]
-        }),
+        EventEmitterModule.forRoot(),
+        ScheduleModule.forRoot(),
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
             useFactory: (configService: ConfigService) => ({
@@ -52,20 +40,19 @@ import { ReleaseDaemonModule } from './supervisory/release_daemon.module';
             }),
             inject: [ConfigService],
         }),
-        LedgerModule,
-        TokenModule,
-        BridgeModule,
-        ScheduleModule.forRoot(),
-        FeeDistributionModule,
-        GovernanceModule,
-        EventEmitterModule.forRoot(),
-        SupervisoryModule,
-        AiAgentsModule,
-        ProcessingModule,
-        SecurityDepositModule,
-        ValueCirculationModule,
-        IngestionModule,
-        ReleaseDaemonModule
+        CommonModule,
+        NodeChainModule,
+        StateRecordingModule,
+        PotModule,
+        ArosCoinModule,
+        EmissionModule,
+        CommissionModule,
+        ReserveModule,
+        ReleaseModule,
+        NodesModule,
+        AllSeeingEyeModule,
+        OrchestratorModule,
     ],
+    controllers: [AppController],
 })
 export class AppModule { }

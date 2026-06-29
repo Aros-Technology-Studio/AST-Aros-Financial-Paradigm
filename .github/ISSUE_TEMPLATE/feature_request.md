@@ -2,8 +2,9 @@
 name: Feature request
 about: Suggest an idea for this project
 title: "[Feature] "
-labels: ["enhancement"]
-assignees: []
+labels: enhancement
+assignees: ''
+
 ---
 
 ## Description
@@ -17,4 +18,3 @@ If applicable, describe steps illustrating the proposed feature.
 ## Expected Behavior
 
 Describe what you expect to happen when the feature is implemented.
-

@@ -999,4 +999,72 @@ All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 veri
 | PR #306 | `claude/inspiring-cannon-4m9xnj` | `reserveIndex()` formula aligned with spec |
 | Prior sessions | `agent/core-emission` | Burn ordering, calculate() added, docs corrected, comment fixes |
 | Prior session | `claude/inspiring-cannon-pl0dei` | Full re-audit; all components verified canonical |
-| **2026-06-29** | `claude/inspiring-cannon-jjvqg4` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |
+| 2026-06-29 | `claude/inspiring-cannon-jjvqg4` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |
+| **2026-06-29** | `claude/inspiring-cannon-7h6su3` | Full re-audit; fixed divergent `reserveIndex` formula in `aro_emission_protocol.md`; all production code CONFIRMED CANONICAL |
+
+---
+
+## 21. 2026-06-29 Full Re-Audit (branch: claude/inspiring-cannon-7h6su3)
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, `src/pot/`,
+`reference/ast-core/src/`, `docs/specs/`.
+
+### Canonical Model
+
+```
+Emission     = Transaction Amount (1:1, no multiplier)
+Commission   = Transaction Amount × 0.005 (0.5%)
+  Node pool  = Commission × 0.75   (75% → nodes post-factum, PoT-confirmed weight)
+  AFC share  = Commission × 0.25   (25% → Reserve.addAfcAccrual → NodeChain audit event)
+Burn         = Emission amount     (processNet → 0 per cycle)
+reserveIndex = log10(1 + totalProcessVolume)  [spec I-RS-1/I-RS-2; AFC accruals are audit-only]
+internalPrice = base × reserveIndex  (rises with each confirmed process)
+```
+
+### Structural Findings
+
+- `01_coin_engine/` — documentation only (11 markdown/JSON files). No deprecated code module. No executable content. Not marked Deprecated; it is a canonical spec reference folder.
+- `10_proof_of_transaction_engine/` — PoT documentation only. Runtime lives in `src/pot/`. The `pot_slashing_conditions.md` contains Model-A staking/slashing language — this is historical documentation and has no effect on production code.
+- `src/token/` — does NOT exist. All emission logic lives in `src/emission/` and `src/aroscoin/`.
+
+### Deviation Found and Fixed
+
+**`01_coin_engine/aro_emission_protocol.md` — Section IV: Wrong `reserveIndex` formula**
+
+| | Before | After |
+|--|--------|-------|
+| Formula | `AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000` | `reserveIndex = log10(1 + totalProcessVolume)` (canonical; see reference/ast-core/src/reserve.ts) |
+
+This was the only divergence from the canonical model. All other formula values in the doc (1:1 emission, 0.5% commission, 75/25 split) were already correct.
+
+### Production Code — All Canonical
+
+| Canonical Requirement | File | Line(s) | Status |
+|-----------------------|------|---------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| PoT gate: verified === 1 required | `src/emission/emission.service.ts` | 57–59 | CONFIRMED |
+| mint() throws without PoT gate | `src/emission/emission.service.ts` | 73–75 | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| Commission feeRate = 0.005 | `src/commission/commission.service.ts` | 69 | CONFIRMED |
+| AFC marginRate = 0.25 (25%) | `src/commission/commission.service.ts` | 72 | CONFIRMED |
+| 75% distributable to nodes | `src/commission/commission.service.ts` | 137 | CONFIRMED |
+| 25% → reserve.addAfcAccrual | `src/commission/commission.service.ts` | 159 | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `src/commission/commission.service.ts` | 172 | CONFIRMED |
+| Supply identity: (minted-burned)+earned | `src/aroscoin/aroscoin.service.ts` | 104 | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `src/reserve/reserve.service.ts` | 92–94 | CONFIRMED |
+| AFC accruals recorded, not in formula | `src/reserve/reserve.service.ts` | 64–84 | CONFIRMED |
+| PoT verdict idempotent, binary | `src/pot/pot.service.ts` | — | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | CONFIRMED |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `01_coin_engine/aro_emission_protocol.md` | Fixed wrong `reserveIndex` formula in section IV |
+| `AGENT_CORE_REPORT.md` | §21 added (this run) |
+
+### Result
+
+**CANONICAL. One documentation formula corrected. Production code fully conforms to canonical 1:1 emission model. No production logic changes required.**

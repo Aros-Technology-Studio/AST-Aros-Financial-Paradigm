@@ -988,6 +988,78 @@ All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 veri
 
 ---
 
+## 21. 2026-06-30 Full Re-Audit (branch: claude/inspiring-cannon-ucxsh5)
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, `src/orchestrator/`,
+`reference/ast-core/src/`, `docs/specs/AST_*_AGENT_EN.md`.
+All files read from scratch; no prior session context assumed.
+
+### Canonical Model Verified
+
+```
+Emission     = Transaction Amount (1:1, no multiplier)
+Commission   = Transaction Amount × 0.005 (0.5%)
+  Node pool  = Commission × 0.75   (75% → nodes post-factum, PoT-confirmed weight)
+  AFC share  = Commission × 0.25   (25% → Reserve.addAfcAccrual → NodeChain audit event)
+Burn         = Emission amount     (processNet → 0 per cycle)
+reserveIndex = log10(1 + totalProcessVolume)  [spec I-RS-1/I-RS-2; AFC accruals are audit-only]
+internalPrice = base × reserveIndex  (rises with each confirmed process)
+```
+
+### Structural Findings
+
+- `01_coin_engine/` — documentation only (aro_emission_protocol.md, coin_emission_model.md, etc.); no runnable code; not deprecated. Corrections to formulas and code paths confirmed present from §9.4.
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`.
+- `src/token/` — does NOT exist. All emission logic lives in `src/emission/` and `src/aroscoin/`.
+
+### Line-by-Line Canonical Verification
+
+| Canonical Requirement | File | Line(s) | Status |
+|-----------------------|------|---------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| PoT gate: verified === 1 required | `src/emission/emission.service.ts` | 57–59 | CONFIRMED |
+| mint() throws without PoT gate | `src/emission/emission.service.ts` | 73–75 | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| Commission feeRate = 0.005 | `src/commission/commission.service.ts` | 69 | CONFIRMED |
+| AFC marginRate = 0.25 (25%) | `src/commission/commission.service.ts` | 72 | CONFIRMED |
+| 75% distributable to nodes | `src/commission/commission.service.ts` | 137 | CONFIRMED |
+| 25% → reserve.addAfcAccrual | `src/commission/commission.service.ts` | 159 | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `src/commission/commission.service.ts` | 172 | CONFIRMED |
+| Supply identity: (minted-burned)+earned | `src/aroscoin/aroscoin.service.ts` | 86–89 | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `src/reserve/reserve.service.ts` | 92–101 | CONFIRMED |
+| AFC accruals recorded, not in formula | `src/reserve/reserve.service.ts` | 82–89 | CONFIRMED |
+| Orchestrator: mint → accrue → burn order | `src/orchestrator/orchestrator.service.ts` | 162–177 | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | CONFIRMED |
+
+### Transaction Example ($10,000) — Traced Through Code
+
+```
+TX Amount    = 10,000
+→ orchestrator step 5: pot.verify(processId) → verified = 1
+→ orchestrator step 6: emission.mint(processId, 10_000)
+      coin.recordMint(10_000)  [processMinted += 10_000]
+→ orchestrator step 7: commission.computeFee(10_000) = 50 ARO; commission.accrue(epoch, 50, …)
+→ orchestrator step 6 cont: emission.burn(processId, 10_000)
+      coin.recordBurn(10_000)  [processBurned += 10_000; processNet = 0]
+→ epoch finalization:
+      distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned post-factum)
+      margin        = 50 × 0.25 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit only]
+      reconciliation: |37.50 + 12.50 − 50| < 1e-9  ✓
+→ reserve.reserveIndex() = log10(1 + 10,000) ≈ 4.0000
+→ internalPrice = 1 × 4.0000 = 4.0000 (rises monotonically with each confirmed process)
+totalSupply (in-cycle)   = (10,000 − 10,000) + 0      = 0      ARO
+totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50  ARO (= earnedRetained, I6)
+```
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
+All 9 canonical emission requirements, invariants I1–I10, I-RS-1/I-RS-2/I-RS-4, and prohibitions P1–P8 verified.
+
+---
+
 ## 9. Audit Trail
 
 | Session | Branch | Action |
@@ -1000,3 +1072,4 @@ All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 veri
 | Prior sessions | `agent/core-emission` | Burn ordering, calculate() added, docs corrected, comment fixes |
 | Prior session | `claude/inspiring-cannon-pl0dei` | Full re-audit; all components verified canonical |
 | **2026-06-29** | `claude/inspiring-cannon-jjvqg4` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |
+| **2026-06-30** | `claude/inspiring-cannon-ucxsh5` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |

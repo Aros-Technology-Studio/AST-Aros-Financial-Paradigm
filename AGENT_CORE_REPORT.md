@@ -1116,3 +1116,68 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-06-30 Full Re-Audit (branch: `claude/inspiring-cannon-obh7x8`) — Regression Found and Fixed
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, `src/orchestrator/`,
+`reference/ast-core/src/`, `docs/specs/`. Every claim in §1–§26 was re-checked directly against
+the code on disk rather than taken on faith.
+
+### Folder structure — unchanged
+
+`src/token/` does not exist. `01_coin_engine/` and `10_proof_of_transaction_engine/` remain
+documentation-only (no executable content, no Deprecated marker). Production emission logic is
+unchanged in location: `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+
+### Regression found: `ReserveService.totalProcessVolume()` double-counted the AFC commission margin
+
+Despite §3, §13, and §19–§26 all asserting "AFC accruals are audit-only; do not enter the
+`reserveIndex` formula," the code on disk at the start of this session contradicted that claim:
+`totalProcessVolume()` summed both `emission.minted` snapshots **and** the `operationalMargin`
+field of `commission.epoch.finalized` events. The AFC share is `commission × 0.25`, itself a
+fraction of an amount already counted via `emission.minted` — adding it again inflated
+`reserveIndex` beyond confirmed process volume, violating spec invariant **I-RS-1** ("grows only
+from confirmed volume") and diverging from `reference/ast-core/src/reserve.ts`, where
+`totalProcessVolume` is fed only by confirmed process volume. Because `ReleaseService.check()`
+gates Release maturity on `reserveIndex > threshold` (I-RL-1), the inflated index could also
+trigger Release activation earlier than confirmed work actually warrants.
+
+An identical fix (same root cause, same diff shape) was independently found and opened as PR #487
+(`claude/inspiring-cannon-rtwnb2`) by a concurrent run of this same audit task shortly before this
+session — see "Note on duplicate automation runs" below.
+
+**Fix applied:**
+
+| File | Change |
+|------|--------|
+| `src/reserve/reserve.service.ts` | `totalProcessVolume()` now sums only `emission.minted` snapshots; removed the `commission.epoch.finalized` / `operationalMargin` branch and the now-unused `COMMISSION_EPOCH_EVENT` constant. Class/method doc comments corrected to state AFC accruals never enter the formula. |
+| `src/orchestrator/orchestrator.service.ts` | Step 8 comment corrected: reserve index is derived solely from `emission.minted` volume; AFC accruals are audit-only. |
+| `src/reserve/reserve.service.spec.ts` | Replaced the test asserting AFC margin grows `totalProcessVolume`/`reserveIndex` with `I-RS-1: AFC commission accruals do not affect totalProcessVolume or reserveIndex`. |
+
+`totalAfcReserve()` / `addAfcAccrual()` are unchanged and still provide the AFC audit-trail query;
+only their incorrect influence on `totalProcessVolume()` was removed.
+
+**Verification:** `npx tsc --noEmit` — no errors. `npx jest` — 20 suites, 150 tests, all pass.
+
+### Note on duplicate automation runs
+
+At audit time, **20 open pull requests** existed against `main`, all titled variants of "canonical
+1:1 emission model audit/implementation," created roughly hourly between 2026-06-29 and
+2026-06-30, each re-running this identical audit task from a fresh branch
+(`claude/inspiring-cannon-*`). Most of these (prior to PR #487) report "CONFIRMED CANONICAL, no
+code changes required" — consistent with the code having been canonical at the time they ran,
+before the `commission.epoch.finalized` regression was reintroduced. This volume of duplicate,
+unmerged PRs against the same files is itself an operational issue worth the user's attention
+(see notification).
+
+### Result
+
+**One real regression found and fixed**, matching PR #487's independently-derived fix.
+`reserveIndex` no longer double-counts the AFC commission margin; `totalProcessVolume` now grows
+strictly from PoT-confirmed `emission.minted` volume, matching
+`docs/specs/AST_Reserve_AGENT_EN.md` and `reference/ast-core/src/reserve.ts` exactly. All other
+components audited (`EmissionService`, `CommissionService`, NodeChain, PoT, Nodes,
+All-Seeing Eye, prohibitions P1–P8) remain canonical, unchanged from §26.

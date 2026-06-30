@@ -1116,3 +1116,60 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-06-30 Full Re-Audit (branch: claude/inspiring-cannon-6duzou)
+
+Independent re-verification of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/emission/`, `src/commission/`, `src/reserve/`, `src/aroscoin/`. No prior session
+context assumed; code read directly from disk and cross-checked against the canonical
+model in this prompt.
+
+### Structural Findings (unchanged)
+
+- `01_coin_engine/` — documentation only; no `Deprecated` marker on any file; no
+  executable content. Not a legacy module to migrate away from.
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`.
+- `src/token/` — does not exist. All emission/commission/reserve/ledger logic lives in
+  `src/emission/`, `src/commission/`, `src/reserve/`, `src/aroscoin/`.
+- `git log` shows no commits touching `src/emission/`, `src/commission/`, `src/reserve/`,
+  or `src/aroscoin/` since the 2026-06-29 audit (session 26) — no regression window to check.
+
+### Code Re-Read, Line-by-Line
+
+| Canonical Requirement | File:Line | Status |
+|---|---|---|
+| `emission = txAmount` (1:1, no multiplier) | `src/emission/emission.service.ts:111` | CONFIRMED |
+| PoT gate `verified === 1` on `emit()`/`mint()` | `src/emission/emission.service.ts:56-58, 72-75` | CONFIRMED |
+| `burn()` mirrors `mint()`; `processNet -> 0` | `src/emission/emission.service.ts:85-89` | CONFIRMED |
+| `feeRate = 0.005` (0.5%) | `src/commission/commission.service.ts:65` | CONFIRMED |
+| `marginRate = 0.25`; 75% nodes / 25% AFC | `src/commission/commission.service.ts:68, 134-160` | CONFIRMED |
+| Payment post-factum, PoT-weighted, presence alone earns nothing | `src/commission/commission.service.ts:198-217` | CONFIRMED |
+| Pool reconciliation `paid + margin == total` (ε = 1e-9) | `src/commission/commission.service.ts:168` | CONFIRMED |
+| `reserveIndex = log10(1 + totalProcessVolume)` | `src/reserve/reserve.service.ts:98-101` | CONFIRMED |
+| AFC accruals recorded for audit, excluded from index input duplication | `src/reserve/reserve.service.ts:64-89` | CONFIRMED |
+| `totalSupply = (processMinted - processBurned) + earnedRetained` | `src/aroscoin/aroscoin.service.ts:104-107` | CONFIRMED |
+| No deposit/purchase path into the ledger (P5) | `src/aroscoin/aroscoin.service.ts` (full file) | CONFIRMED |
+
+### Verification Run (this session)
+
+- `npm ci` — clean install, 942 packages, build toolchain restored.
+- `npx tsc -p tsconfig.build.json` — **build succeeds, zero errors.**
+- `npx jest src/invariants src/emission src/commission src/reserve src/aroscoin` —
+  **5 suites, 41 tests, all PASS.**
+- `grep -rniE "stakedBalance|slashing.*balance|tokenWeightedVote|crypto_to_aroscoin|mintOnDeposit" src/`
+  — only hit is a documentation comment in `src/nodes/nodes.service.ts:21` explaining the
+  *absence* of a stake column (positive-language description of what's NOT there) — no
+  actual prohibited construct. **Prohibitions P1–P8 clean.**
+- `grep -ril "deprecat" 01_coin_engine/ 10_proof_of_transaction_engine/` — no matches;
+  no deprecated module to migrate.
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required.** The 1:1 emission model, 0.5% fee with
+75/25 node/AFC split, log10 reserve index, and three-tally supply identity are all intact
+and match `reference/ast-core/src/` and `docs/specs/`. This session adds build/test
+verification (`tsc` + `jest`, 41/41 passing) on top of the line-by-line read that prior
+sessions performed, closing the gap between "code looks correct" and "code is verified
+correct" for this run.

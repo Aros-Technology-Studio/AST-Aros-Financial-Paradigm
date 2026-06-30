@@ -1116,3 +1116,111 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-06-30 Full Re-Audit (branch: claude/inspiring-cannon-t2uuk2, session 27)
+
+**Agent:** AGENT-CORE. Model: `claude-sonnet-4-6`.
+
+**Directories examined:**
+
+| Path | Content | Status |
+|------|---------|--------|
+| `01_coin_engine/` | Documentation only (aro_emission_protocol.md, coin_emission_model.md, burn_and_mint_rules.md, etc.) | No executable code. Corrections applied in §9.4/§9.5 confirmed in place |
+| `10_proof_of_transaction_engine/` | PoT documentation (pot_engine_overview.md, pot_tx_validation_logic.md, etc.) | No executable code; runtime is `src/pot/pot.service.ts` |
+| `src/token/` | Does not exist | Emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/` |
+| `src/emission/emission.service.ts` | Production EmissionService | Audited ✓ |
+| `src/aroscoin/aroscoin.service.ts` | Production ArosCoinService (unit ledger) | Audited ✓ |
+| `src/commission/commission.service.ts` | Production CommissionService | Audited ✓ |
+| `src/reserve/reserve.service.ts` | Production ReserveService | Audited ✓ |
+| `src/orchestrator/orchestrator.service.ts` | Full lifecycle orchestration | Audited ✓ |
+| `reference/ast-core/src/emission.ts` | Reference implementation | Cross-checked ✓ |
+
+Neither `01_coin_engine/` nor `10_proof_of_transaction_engine/` carries a Deprecated marker —
+both are historical Model-A documentation with no executable counterpart.
+
+**Canonical Model Verified:**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1 required)
+Commission   = Amount × 0.005      (0.5%)
+  Node Share = Commission × 0.75   (75% → nodes, post-factum at epoch finalization by PoT weight)
+  AFC Share  = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0 (I5)
+totalSupply  = (processMinted - processBurned) + earnedRetained     (I6)
+```
+
+**Line-by-line audit — all canonical:**
+
+| Canonical Requirement | File | Line(s) | Status |
+|-----------------------|------|---------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| PoT gate: verified === 1 required | `src/emission/emission.service.ts` | 57–59 | CONFIRMED |
+| mint() throws without PoT gate | `src/emission/emission.service.ts` | 73–75 | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| Orchestrator: mint → commission.accrue → burn | `src/orchestrator/orchestrator.service.ts` | 162–175 | CONFIRMED |
+| Commission feeRate = 0.005 | `src/commission/commission.service.ts` | 65 | CONFIRMED |
+| AFC marginRate = 0.25 (25%) | `src/commission/commission.service.ts` | 68 | CONFIRMED |
+| 75% distributable to nodes | `src/commission/commission.service.ts` | 134 | CONFIRMED |
+| 25% → reserve.addAfcAccrual | `src/commission/commission.service.ts` | 155 | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `src/commission/commission.service.ts` | 168 | CONFIRMED |
+| Supply identity: (minted-burned)+earned | `src/aroscoin/aroscoin.service.ts` | 86–89 | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `src/reserve/reserve.service.ts` | 98–100 | CONFIRMED |
+| AFC accruals recorded, not in formula | `src/reserve/reserve.service.ts` | 64–88 | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | CONFIRMED |
+
+**Transaction example — $10,000:**
+
+```
+TX Amount    = 10,000
+→ emission.mint(processId, 10_000)  : processMinted += 10,000  [PoT gate: verified === 1]
+→ commission.accrue(epoch, 50)       : epoch pool += 50
+→ emission.burn(processId, 10_000)  : processBurned += 10,000  [processNet → 0]
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned post-factum)
+  margin        = 50 × 0.25 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit only]
+  |37.50 + 12.50 − 50| < 1e-9  ✓  (I7)
+
+reserveIndex = log10(1 + 10,000) ≈ 4.0000
+internalPrice = 1 × 4.0000 = 4.0000 ARO/unit (rises with each confirmed process)
+
+totalSupply (in-cycle)   = (10,000 − 10,000) + 0     = 0      ARO
+totalSupply (post-epoch) = (10,000 − 10,000) + 37.50  = 37.50  ARO (= earnedRetained, I6)
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees (ε = 1e-9) | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation (no stake) | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain history | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Prohibition scan:**
+
+| Prohibition | Description | Status |
+|-------------|-------------|--------|
+| P1 | No staking / stakedBalance | CLEAN |
+| P2 | No slashing against balance | CLEAN |
+| P3 | No token-weighted governance | CLEAN |
+| P4 | No farming / passive yield | CLEAN |
+| P5 | No mint-on-deposit / crypto→ArosCoin conversion | CLEAN |
+| P6 | No All-Seeing Eye state-change / halting | CLEAN |
+| P7 | No emission outside confirmed-process logic | CLEAN |
+| P8 | No negative-language comments/docs | CLEAN |
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified.**

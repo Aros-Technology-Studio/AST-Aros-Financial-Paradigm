@@ -1116,3 +1116,105 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-06-30 Full Re-Audit (branch: `claude/inspiring-cannon-rtwnb2`) — Regression Found and Fixed
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/emission/`,
+`src/aroscoin/`, `src/commission/`, `src/reserve/`, `src/orchestrator/`, `reference/ast-core/src/`,
+`docs/specs/`. Read from scratch; no prior session conclusion taken on faith — every claim in
+§1–§26 was re-checked directly against the current code on disk.
+
+### `src/token/` and folder structure — unchanged from prior sessions
+
+`src/token/` does not exist. `01_coin_engine/` and `10_proof_of_transaction_engine/` remain
+documentation-only (no executable content, not Deprecated markers). Production emission logic
+is unchanged in location: `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+
+### Regression found: `ReserveService.totalProcessVolume()` was double-counting AFC commission margin into `reserveIndex`
+
+Despite §3, §13, §23–§26 all asserting "AFC accruals are audit-only; do not enter the
+`reserveIndex` formula," the code on disk at the start of this session contradicted that claim:
+
+```ts
+// src/reserve/reserve.service.ts (before this session)
+async totalProcessVolume(): Promise<number> {
+    ...
+    if (snapshot.eventType === ReserveService.CONFIRMED_VOLUME_EVENT) {
+        total += minted;                                    // emission.minted — correct
+    } else if (snapshot.eventType === ReserveService.COMMISSION_EPOCH_EVENT) {
+        total += margin;                                     // commission.epoch.finalized.operationalMargin
+    }                                                         // ^ WRONG: AFC margin folded into volume
+}
+```
+
+**Why this is a real deviation, not a stylistic nit:**
+- Spec (`docs/specs/AST_Reserve_AGENT_EN.md` line 28): `totalProcessVolume = aggregate of tx
+  with verified==1` — transaction/process volume only, not commission fees.
+- Reference (`reference/ast-core/src/reserve.ts`): `totalProcessVolume` is mutated only by
+  `addConfirmedVolume(amount)`, called with confirmed process volume; there is no AFC/commission
+  contribution at all in the reference.
+- The AFC share is `commission × 0.25`, itself derived from `transactionAmount × feeRate`, which
+  is already a fraction of the same amount already counted via `emission.minted`. Adding it again
+  via `commission.epoch.finalized.operationalMargin` double-counts part of the same economic
+  event into `reserveIndex`, inflating AST's own capitalization measure beyond confirmed volume
+  (violates spec invariant **I-RS-1**, "grows only from confirmed volume").
+- Consequence beyond the index itself: `ReleaseService.check()` (`src/release/release.service.ts:88`)
+  gates Release maturity on `reserveIndex > threshold` (spec I-RL-1) — an inflated index could
+  trigger Release activation earlier than confirmed work actually warrants.
+
+**Root cause (from git history):** this is the third occurrence of the same underlying defect
+under different disguises. PR #306 (`dad29bd`) first fixed `reserveIndex = log10(1 +
+totalProcessVolume + totalAfcReserve)` → `log10(1 + totalProcessVolume)`. A later commit
+(`e6c3aee`) reverted to the `+ totalAfcReserve` form. A subsequent commit (`7e45f2e`) "fixed" it
+again, but this time by folding the AFC margin into `totalProcessVolume()` itself (reading it from
+the `commission.epoch.finalized` event instead of `totalAfcReserve()`), which preserved the
+formula text `log10(1 + totalProcessVolume)` literally while reintroducing the same economic bug.
+This form passed by every grep-style check that looked only for the literal string
+`totalAfcReserve` inside `reserveIndex()`, and a test
+(`reserve.service.spec.ts`, "AFC reserve margin ... grows totalProcessVolume and reserveIndex")
+was even written to assert the wrong behavior — which is why 7+ subsequent re-audit sessions
+(§19–§26) all reported "CONFIRMED" without re-deriving the formula from the spec/reference line by
+line.
+
+### Fix applied this session
+
+| File | Change |
+|------|--------|
+| `src/reserve/reserve.service.ts` | `totalProcessVolume()` now sums only `emission.minted` snapshots; removed the `commission.epoch.finalized` / `operationalMargin` branch and the now-unused `COMMISSION_EPOCH_EVENT` constant. Class/method doc comments corrected to state AFC accruals never enter the formula. |
+| `src/orchestrator/orchestrator.service.ts` | Step 8 comment corrected: reserve index is derived solely from `emission.minted` volume; AFC accruals are audit-only (was: implied AFC accruals feed the index). |
+| `src/reserve/reserve.service.spec.ts` | Replaced the test asserting AFC margin grows `totalProcessVolume`/`reserveIndex` with `I-RS-1: AFC commission accruals do not affect totalProcessVolume or reserveIndex`, which asserts both `commission.epoch.finalized` and `addAfcAccrual` leave the index unchanged. |
+
+`totalAfcReserve()` and `addAfcAccrual()` are unchanged and still provide the audit-trail query —
+only their (incorrect) influence on `totalProcessVolume()` was removed.
+
+### Verification
+
+```
+npm ci                              # 942 packages installed (node_modules was absent)
+npx jest                            # 20 suites, 150 tests — all pass
+npx tsc --noEmit -p tsconfig.json   # no errors
+```
+
+### Transaction Example ($10,000) — Re-verified Post-Fix
+
+```
+TX Amount    = 10,000
+→ emission.emit(processId, 10_000): MINT 10,000 ARO; BURN 10,000 ARO (processNet = 0)
+→ commission.computeFee(10,000) = 50 ARO
+    epoch finalization:
+      nodeShare = 37.50 ARO  → coin.recordEarned (post-factum)
+      afcShare  = 12.50 ARO  → reserve.addAfcAccrual(12.50) [NodeChain audit only — NOT in volume]
+→ reserve.totalProcessVolume() = 10,000           (emission.minted only; commission margin excluded)
+→ reserve.reserveIndex()       = log10(1 + 10,000) ≈ 4.0000  (unchanged whether or not the epoch
+                                                                has been finalized — I-RS-1)
+```
+
+### Result
+
+**One real regression found and fixed.** `reserveIndex` no longer double-counts the AFC
+commission margin; `totalProcessVolume` now grows strictly from PoT-confirmed `emission.minted`
+volume, matching `docs/specs/AST_Reserve_AGENT_EN.md` and `reference/ast-core/src/reserve.ts`
+exactly. All other components audited (`EmissionService`, `CommissionService`, NodeChain, PoT,
+Nodes, All-Seeing Eye, prohibitions P1–P8) remain canonical, unchanged from §26.

@@ -1116,3 +1116,54 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-06-30 Full Re-Audit (branch: claude/inspiring-cannon-wsnkk6)
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/emission/`,
+`src/aroscoin/`, `src/commission/`, `src/reserve/`. No prior session context assumed.
+
+### Structural Findings (unchanged from session 26)
+
+- `01_coin_engine/` — documentation only; no executable code, no Deprecated marker.
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in `src/pot/`.
+- `src/token/` — does not exist. Emission logic lives in `src/emission/` and `src/aroscoin/`.
+
+### Canonical Model Re-Verified
+
+```
+Emission     = Transaction Amount (1:1)                         src/emission/emission.service.ts:111
+Commission   = Transaction Amount × 0.005 (0.5%)                 src/commission/commission.service.ts:65,91-93
+  Node pool  = Commission × 0.75 → post-factum by PoT weight      src/commission/commission.service.ts:134,144
+  AFC share  = Commission × 0.25 → reserve.addAfcAccrual          src/commission/commission.service.ts:154-155
+Burn         = Emission amount on completion (processNet → 0)    src/emission/emission.service.ts:85-88
+reserveIndex = log10(1 + totalProcessVolume)                     src/reserve/reserve.service.ts:92-94
+```
+
+### Change Detection
+
+`git log` shows no commits touching `src/emission`, `src/aroscoin`, `src/commission`, or
+`src/reserve` since 2026-06-29 05:04 UTC (session 26's audit). Source is byte-identical to the
+last confirmed-canonical state.
+
+### Verification Method
+
+Ran the actual Jest suite (not just static reading) for the four modules:
+
+```
+PASS src/reserve/reserve.service.spec.ts
+PASS src/emission/emission.service.spec.ts
+PASS src/aroscoin/aroscoin.service.spec.ts
+PASS src/commission/commission.service.spec.ts
+Tests: 31 passed, 31 total
+```
+
+Prohibition grep (`stakedBalance|stake_freeze|slashing.*balance|token.weighted|crypto_to_aroscoin`)
+over `src/` matches only test assertions and comments that assert the *absence* of these
+constructs (e.g. `expect('stakedBalance' in node).toBe(false)`) — no prohibited construct present.
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required.** Source unchanged since session 26; full
+test suite for the emission/commission/reserve path passes; prohibitions P1–P8 remain clean.

@@ -1000,3 +1000,118 @@ All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 veri
 | Prior sessions | `agent/core-emission` | Burn ordering, calculate() added, docs corrected, comment fixes |
 | Prior session | `claude/inspiring-cannon-pl0dei` | Full re-audit; all components verified canonical |
 | **2026-06-29** | `claude/inspiring-cannon-jjvqg4` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |
+| **2026-06-30** | `claude/inspiring-cannon-7kzx5f` | Full re-audit; canonical 1:1 emission confirmed; no code changes required |
+
+---
+
+## 21. 2026-06-30 Full Re-Audit (branch: claude/inspiring-cannon-7kzx5f)
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/orchestrator/`,
+`reference/ast-core/src/emission.ts`.
+All files read from scratch; no prior session context assumed.
+
+### Canonical Model Under Audit
+
+```
+Emission     = Transaction Amount (1:1, no multiplier)
+Commission   = Transaction Amount × 0.005 (0.5%)
+  Node pool  = Commission × 0.75   (75% → nodes post-factum, PoT-confirmed weight)
+  AFC share  = Commission × 0.25   (25% → Reserve.addAfcAccrual → NodeChain audit event)
+Burn         = Emission amount     (processNet → 0 per cycle)
+reserveIndex = log10(1 + totalProcessVolume)  [spec I-RS-1/I-RS-2; AFC accruals audit-only]
+internalPrice = base × reserveIndex  (rises with each additional confirmed process)
+```
+
+### Directory Survey
+
+| Directory | Content | Status |
+|---|---|---|
+| `01_coin_engine/` | Markdown/JSON spec docs (coin_emission_model.md, aro_emission_protocol.md, burn_and_mint_rules.md, etc.) | Documentation only. Not deprecated. Active source: `src/emission/`. |
+| `10_proof_of_transaction_engine/` | PoT specification docs (pot_engine_overview.md, pot_tx_validation_logic.md, etc.) | Documentation only. Runtime: `src/pot/`. |
+| `src/token/` | Does not exist | — |
+
+No modules marked Deprecated anywhere in the repository.
+
+### Line-by-Line Canonical Verification
+
+| Canonical Requirement | File | Line(s) | Status |
+|-----------------------|------|---------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts` | 61, 111 | CONFIRMED |
+| PoT gate: `verified === 1` required | `src/emission/emission.service.ts` | 55–59 | CONFIRMED |
+| `mint()` throws without PoT gate | `src/emission/emission.service.ts` | 71–75 | CONFIRMED |
+| `burn()` mirrors mint (processNet → 0) | `src/emission/emission.service.ts` | 85–88 | CONFIRMED |
+| `calculate()` pure canonical formula | `src/emission/emission.service.ts` | 107–120 | CONFIRMED |
+| Commission `feeRate = 0.005` | `src/commission/commission.service.ts` | 65 | CONFIRMED |
+| AFC `marginRate = 0.25` (25%) | `src/commission/commission.service.ts` | 68 | CONFIRMED |
+| 75% distributable to nodes | `src/commission/commission.service.ts` | 134 | CONFIRMED |
+| 25% → `reserve.addAfcAccrual` | `src/commission/commission.service.ts` | 155 | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `src/commission/commission.service.ts` | 168 | CONFIRMED |
+| Supply identity: `(minted-burned)+earned` | `src/aroscoin/aroscoin.service.ts` | 104–107 | CONFIRMED |
+| Orchestrator: mint → accrue → burn order | `src/orchestrator/orchestrator.service.ts` | 162–176 | CONFIRMED |
+| Reference implementation matches | `reference/ast-core/src/emission.ts` | 8–18 | CONFIRMED |
+| No Model-A prohibitions (P1–P8) | `src/` tree | — | CONFIRMED |
+
+### Prohibition Scan
+
+| ID | Prohibited Pattern | Result |
+|---|---|---|
+| P1 | `staking / stakedBalance / stake_freeze` | CLEAN |
+| P2 | `slashing against balance` | CLEAN |
+| P3 | `token-weighted governance / vote-by-balance` | CLEAN |
+| P4 | `farming / passive yield for holding` | CLEAN |
+| P5 | `mint-on-deposit / crypto_to_aroscoin` | CLEAN |
+| P6 | Eye halting / reverting / voting | CLEAN |
+| P7 | Emission outside confirmed-process logic | CLEAN |
+| P8 | Entities defined by negation | CLEAN |
+
+### Transaction Example ($10,000) — Code-Traced
+
+```
+amount = 10_000; processId = "proc-X"
+
+Step 5:  pot.verify("proc-X") → { verified: 1 }
+
+Step 6:  emission.mint("proc-X", 10_000)
+           → coin.recordMint(10_000)      [processMinted += 10_000]
+           → chain.append('emission.minted', { processId, minted: 10_000 })
+
+Step 7:  commission.computeFee(10_000) = 10_000 × 0.005 = 50 ARO
+         commission.accrue(epoch, 50, participants)
+
+         emission.burn("proc-X", 10_000)
+           → coin.recordBurn(10_000)      [processBurned += 10_000; processNet = 0]
+           → chain.append('emission.burned', { processId, burned: 10_000 })
+
+Epoch finalization:
+  distributable = 50 × 0.75 = 37.50 ARO → nodes (coin.recordEarned per node by PoT weight)
+  margin        = 50 - 37.50 = 12.50 ARO → reserve.addAfcAccrual(12.50) [audit only]
+  reconciliation: |37.50 + 12.50 − 50| < 1e-9  ✓
+
+reserve.reserveIndex() = log10(1 + 10_000) ≈ 4.0000
+internalPrice          = 1 × 4.0000 = 4.0000 ARO/unit
+
+totalSupply (in-cycle)   = (10_000 − 10_000) + 0      = 0 ARO
+totalSupply (post-epoch) = (10_000 − 10_000) + 37.50  = 37.50 ARO  (= earnedRetained, I6)
+```
+
+### Invariants I1–I10
+
+| Invariant | Status |
+|---|---|
+| I1 — Value only on `verified === 1` | CONFIRMED |
+| I2 — Every emission bound to confirmed process | CONFIRMED |
+| I3 — Significant events in NodeChain | CONFIRMED |
+| I4 — Deterministic computation | CONFIRMED |
+| I5 — Process part nets to 0 (`mint = burn`) | CONFIRMED |
+| I6 — `totalSupply = earnedRetained` after completed cycles | CONFIRMED |
+| I7 — Commission pool reconciles (`paid + margin = fees`) | CONFIRMED |
+| I8 — NodeChain append-only & hash-continuous | CONFIRMED |
+| I9 — Node influence from work+reputation, not balance | CONFIRMED |
+| I10 — All-Seeing Eye passive (no state mutations) | CONFIRMED |
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required.**
+All canonical model elements verified against production source. All prior fixes confirmed in place.
+All 10 invariants and 8 prohibitions satisfied.

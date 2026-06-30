@@ -17,9 +17,8 @@ import { NodeEntity } from './entities/node.entity';
  * Reputation formula (per spec): `reputation = successes/total * uptime`
  * (returns 1 when `total === 0`, matching the reference's "fresh node" semantics).
  *
- * Influence here flows purely from confirmed work and reputation: the entity holds no
- * stake or stakedBalance column and the service never mutates a token balance to
- * reward or punish a node. That keeps invariant I9 and prohibitions P1/P2 intact.
+ * Influence flows from confirmed work and reputation (execution counters, uptime, reputation
+ * score). Node weight is derived exclusively from the reputation formula per spec (I9, P1, P2).
  *
  * Spec: docs/specs/AST_Nodes_AGENT_EN.md
  * Reference: reference/ast-core/src/nodes.ts

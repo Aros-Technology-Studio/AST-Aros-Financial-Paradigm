@@ -1116,3 +1116,108 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-06-30 Full Re-Audit (branch: claude/inspiring-cannon-5tpy9y, session 20)
+
+**Agent:** AGENT-CORE. **Model:** `claude-sonnet-4-6`.
+Independent re-audit of all emission modules against the canonical 1:1 model.
+
+### Directories Examined
+
+| Path | Content | Status |
+|------|---------|--------|
+| `01_coin_engine/` | Documentation only (aro_emission_protocol.md, coin_emission_model.md, etc.) | Historical Model-A docs; no executable code; no Deprecated marker |
+| `10_proof_of_transaction_engine/` | PoT documentation (pot_engine_overview.md, pot_tx_validation_logic.md, etc.) | Documentation only; runtime lives in `src/pot/pot.service.ts` |
+| `src/token/` | Does not exist | Emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/` |
+| `src/emission/emission.service.ts` | Production EmissionService | Audited ✓ |
+| `src/aroscoin/aroscoin.service.ts` | Production ArosCoinService (unit ledger) | Audited ✓ |
+| `src/commission/commission.service.ts` | Production CommissionService | Audited ✓ |
+| `src/reserve/reserve.service.ts` | Production ReserveService | Audited ✓ |
+| `reference/ast-core/src/emission.ts` | Reference implementation | Cross-checked ✓ |
+
+### Canonical Model
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1 required)
+Commission   = Amount × 0.005      (0.5%)
+  Node Share = Commission × 0.75   (75% → nodes, post-factum at epoch finalization by PoT weight)
+  AFC Share  = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+Burn         = Emission amount on cycle completion; processNet → 0 (I5)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+totalSupply  = (processMinted - processBurned) + earnedRetained     (I6)
+internalPrice = base × reserveIndex  (rises monotonically with confirmed work)
+```
+
+### Line-by-Line Canonical Verification
+
+| Canonical Requirement | File | Status |
+|-----------------------|------|--------|
+| Emission = TX Amount (1:1) | `src/emission/emission.service.ts:emit()`, `calculate()` | CONFIRMED |
+| PoT gate: verified === 1 required | `src/emission/emission.service.ts:emit()` lines 57–59 | CONFIRMED |
+| mint() throws without PoT gate | `src/emission/emission.service.ts:mint()` lines 73–75 | CONFIRMED |
+| burn() mirrors mint (processNet → 0) | `src/emission/emission.service.ts:burn()` | CONFIRMED |
+| calculate() pure canonical formula | `src/emission/emission.service.ts:calculate()` | CONFIRMED |
+| Commission feeRate = 0.005 | `src/commission/commission.service.ts:69` | CONFIRMED |
+| AFC marginRate = 0.25 (25%) | `src/commission/commission.service.ts:72` | CONFIRMED |
+| 75% distributable to nodes post-factum | `src/commission/commission.service.ts:finalizeEpoch()` | CONFIRMED |
+| 25% → reserve.addAfcAccrual | `src/commission/commission.service.ts:finalizeEpoch()` | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `src/commission/commission.service.ts:172` | CONFIRMED |
+| Supply identity: (minted-burned)+earned | `src/aroscoin/aroscoin.service.ts:totalSupply()` | CONFIRMED |
+| processNet → 0 after cycle | `src/aroscoin/aroscoin.service.ts:processNet()` | CONFIRMED |
+| No deposit / purchase / mint-on-deposit path | `src/aroscoin/aroscoin.service.ts` | CONFIRMED |
+| reserveIndex = log10(1 + volume) | `src/reserve/reserve.service.ts:reserveIndex()` | CONFIRMED |
+| AFC accruals recorded but excluded from formula | `src/reserve/reserve.service.ts:totalAfcReserve()` | CONFIRMED |
+
+### Transaction Example ($10,000) — Verified
+
+```
+TX Amount    = 10,000
+→ emission.emit(processId, 10_000): MINT 10,000 ARO; BURN 10,000 ARO (processNet = 0)
+→ commission.computeFee(10,000) = 10,000 × 0.005 = 50 ARO
+    epoch finalization:
+      distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned post-factum)
+      margin        = 50 × 0.25 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit only]
+      reconciliation: |37.50 + 12.50 − 50| < 1e-9  ✓
+→ reserve.reserveIndex() = log10(1 + 10,000) ≈ 4.0000
+→ internalPrice = 1 × 4.0000 = 4.0000 (rises with each additional confirmed process)
+totalSupply (in-cycle)   = (10,000 − 10,000) + 0      = 0     ARO
+totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRetained, I6)
+```
+
+### Invariants
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees (ε = 1e-9) | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation (no stake) | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain history | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+### Prohibition Scan
+
+| Prohibition | Description | Status |
+|-------------|-------------|--------|
+| P1 | No staking / stakedBalance | CLEAN |
+| P2 | No slashing against balance | CLEAN |
+| P3 | No token-weighted governance | CLEAN |
+| P4 | No farming / passive yield | CLEAN |
+| P5 | No mint-on-deposit / crypto→ArosCoin conversion | CLEAN |
+| P6 | No All-Seeing Eye state-change / halting | CLEAN |
+| P7 | No emission outside confirmed-process logic | CLEAN |
+| P8 | No negative-language comments/docs | CLEAN |
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
+All 13 canonical requirements, invariants I1–I10 + I-RS-1/I-RS-2/I-RS-4, and prohibitions P1–P8 verified.

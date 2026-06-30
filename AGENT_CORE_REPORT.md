@@ -1116,3 +1116,95 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-06-30 Full Re-Audit (branch: claude/inspiring-cannon-xopcl1)
+
+**Agent:** AGENT-CORE. Model: `claude-sonnet-4-6`.
+
+**Directories examined:**
+
+| Path | Content | Status |
+|------|---------|--------|
+| `01_coin_engine/` | Documentation: aro_emission_protocol.md, coin_emission_model.md, burn_and_mint_rules.md, etc. | Documentation only — no executable code; no Deprecated marker |
+| `10_proof_of_transaction_engine/` | PoT documentation | Documentation only; runtime is `src/pot/pot.service.ts` |
+| `src/token/` | Does not exist | Emission logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/` |
+| `src/emission/emission.service.ts` | Production EmissionService | Audited ✓ |
+| `src/aroscoin/aroscoin.service.ts` | Production ArosCoinService (unit ledger) | Audited ✓ |
+| `src/emission/emission.service.spec.ts` | Emission tests (7 specs) | Audited ✓ |
+| `reference/ast-core/src/emission.ts` | Reference implementation | Cross-checked ✓ |
+
+**Canonical Model Verified:**
+
+```
+Emission     = Transaction Amount  (1:1, PoT-gated; verified === 1 required)
+Commission   = Amount × 0.005      (0.5%)
+  Node Share = Commission × 0.75   (75% → nodes, post-factum at epoch finalization by PoT weight)
+  AFC Share  = Commission × 0.25   (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (spec I-RS-1/I-RS-2; AFC accruals not in formula)
+Burn         = Emission amount on cycle completion; processNet → 0 (I5)
+totalSupply  = (processMinted - processBurned) + earnedRetained   (I6)
+```
+
+**Line-by-line code audit:**
+
+`src/emission/emission.service.ts`:
+- `emit()` (line 55–63): reads PoT verdict; returns `{authorized:false, minted:0, burned:0}` when not verified. CANONICAL.
+- `mint()` (line 71–79): guards on `verified === 1`; calls `coin.recordMint(amount)`; appends `emission.minted` to NodeChain. CANONICAL.
+- `burn()` (line 85–89): calls `coin.recordBurn(amount)`; appends `emission.burned` to NodeChain. CANONICAL.
+- `calculate()` (line 107–120): `emission = txAmount` (1:1), `commission = txAmount * 0.005`, `nodeShare = commission * 0.75`, `afcShare = commission * 0.25`, `net = 0`. CANONICAL.
+
+`reference/ast-core/src/emission.ts`:
+- `mint()` authorized only when `authorized === true`; throws otherwise (14.1 invariant). Matches NestJS gate.
+- `burn()` records burn symmetrically. Matches NestJS burn.
+
+**Example — $10,000 transaction:**
+
+```
+TX Amount    = 10,000
+→ emission.emit(processId, 10_000): MINT 10,000 ARO; BURN 10,000 ARO (processNet = 0)
+→ commission.computeFee(10,000) = 50 ARO
+    epoch finalization:
+      distributable = 50 × 0.75 = 37.50 → nodes (coin.recordEarned post-factum)
+      margin        = 50 × 0.25 = 12.50 → reserve.addAfcAccrual(12.50) [NodeChain audit only]
+      reconciliation: |37.50 + 12.50 − 50| < 1e-9  ✓
+→ reserve.reserveIndex() = log10(1 + 10,000) ≈ 4.0000
+→ internalPrice = 1 × 4.0000 = 4.0000 (rises with each confirmed process)
+totalSupply (in-cycle)   = (10,000 − 10,000) + 0      = 0     ARO
+totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRetained, I6)
+```
+
+**All Invariants Confirmed:**
+
+| Invariant | Description | Status |
+|-----------|-------------|--------|
+| I1 | Value only on verified === 1 | CONFIRMED |
+| I2 | Emission bound to confirmed process | CONFIRMED |
+| I3 | Significant events in NodeChain | CONFIRMED |
+| I4 | Deterministic computation | CONFIRMED |
+| I5 | Process part nets to 0 (mint = burn) | CONFIRMED |
+| I6 | totalSupply = earnedRetained after cycles | CONFIRMED |
+| I7 | Pool reconciles: paid + margin = fees (ε = 1e-9) | CONFIRMED |
+| I8 | NodeChain append-only | CONFIRMED |
+| I9 | Node influence from work+reputation (no stake) | CONFIRMED |
+| I10 | All-Seeing Eye passive (no mutations) | CONFIRMED |
+| I-RS-1 | reserveIndex from confirmed volume only | CONFIRMED |
+| I-RS-2 | Derivable from NodeChain history | CONFIRMED |
+| I-RS-4 | Monotonic non-decreasing | CONFIRMED |
+
+**Prohibition scan:**
+
+| Prohibition | Description | Status |
+|-------------|-------------|--------|
+| P1 | No staking / stakedBalance | CLEAN |
+| P2 | No slashing against balance | CLEAN |
+| P3 | No token-weighted governance | CLEAN |
+| P4 | No farming / passive yield | CLEAN |
+| P5 | No mint-on-deposit / crypto→ArosCoin conversion | CLEAN |
+| P6 | No All-Seeing Eye state-change / halting | CLEAN |
+| P7 | No emission outside confirmed-process logic | CLEAN |
+| P8 | No negative-language comments/docs | CLEAN |
+
+**No code changes required. Canonical 1:1 emission model fully implemented and verified.
+All 26 prior audit sessions' fixes confirmed in place.**

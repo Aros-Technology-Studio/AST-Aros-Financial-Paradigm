@@ -1172,4 +1172,52 @@ of the production emission path reaches the same conclusion as sessions §9–§
 all implemented exactly per `docs/specs/` and `reference/ast-core/`. `src/token/` and
 any "Module 01" code do not exist to be deprecated — `01_coin_engine/` has always been
 documentation, already corrected to reference the real code path.
+
+---
+
+## 28. 2026-07-01 Full Re-Audit (branch: `claude/inspiring-cannon-avea9b`)
+
+Independent re-verification against the assigned task: locate emission logic across
+`01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`, confirm conformance
+to the canonical 1:1 model, and correct any deviation found.
+
+### Directories Located
+
+- `src/token/` — still does not exist. No legacy/deprecated token module present.
+  Production emission logic remains in `src/emission/`, `src/aroscoin/`,
+  `src/commission/`, `src/reserve/`.
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` — documentation only
+  (`.md`/`.json`). No `Deprecated` marker in either directory's `README.md` or in
+  `coin_emission_model.md`; nothing to migrate.
+
+### Canonical Model Re-Verified
+
+Read `src/emission/emission.service.ts`, `src/commission/commission.service.ts`,
+`src/reserve/reserve.service.ts`, and the mint → commission.accrue → burn ordering in
+`src/orchestrator/orchestrator.service.ts:159-177` in full:
+
+| Canonical Requirement | File:Line | Status |
+|---|---|---|
+| `emission = txAmount` (1:1, no multiplier) | `emission.service.ts:111` | CONFIRMED |
+| Mint gated on `verified === 1`; throws otherwise | `emission.service.ts:71-75` | CONFIRMED |
+| Burn mirrors mint, `processNet → 0` | `emission.service.ts:85-89` | CONFIRMED |
+| `commission = txAmount × 0.005` | `commission.service.ts:65,91-94` | CONFIRMED |
+| 75% node pool / 25% AFC reserve split | `commission.service.ts:68,134,154-155` | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `commission.service.ts:168` | CONFIRMED |
+| `reserveIndex = log10(1 + totalProcessVolume)` | `reserve.service.ts:98-101` | CONFIRMED |
+| No staking/slashing/token-vote/farming/mint-on-deposit (P1-P5) | `src/` tree grep | CONFIRMED (only a comment documenting the deliberate absence of a stake column) |
+
+### Verification Run
+
+- `npm ci` (fresh install).
+- `npx jest src/emission src/commission src/reserve src/invariants src/orchestrator` →
+  **8 suites / 61 tests passed**, including `invariants.spec.ts` (I1–I10).
+
+### Result
+
+**CONFIRMED CANONICAL — no code changes required.** This session reaches the same
+conclusion as sessions §9–§27: the 1:1 emission, 0.5% commission with 75/25 split,
+PoT gating, and log10 reserve index are all implemented exactly per `docs/specs/` and
+`reference/ast-core/`. `src/token/` and any "Module 01" code do not exist to be
+deprecated.
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.

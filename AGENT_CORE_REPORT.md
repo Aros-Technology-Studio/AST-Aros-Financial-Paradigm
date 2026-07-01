@@ -240,6 +240,7 @@ All production modules verified against `reference/ast-core/src/` and
 | **2026-06-19** | `agent/core-emission` | Comment bug fixed, docs corrected, `calculate()` added, burn_and_mint_rules.md rewritten — see §9 |
 | **2026-06-27** | `claude/inspiring-cannon-acx35v` | Session 19 re-audit; canonical 1:1 emission confirmed; no code changes required — see §25 |
 | **2026-06-29** | `claude/inspiring-cannon-jjvqg4` | Full re-audit; canonical 1:1 emission confirmed; no code changes required — see §26 |
+| **2026-07-01** | `claude/inspiring-cannon-utonjt` | Deviation found: `reserveIndex` double-counted the AFC commission margin; fixed in `ReserveService.totalProcessVolume()` — see §27 |
 
 ---
 
@@ -1116,3 +1117,75 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-07-01 Re-Audit — Deviation Found and Fixed (branch: `claude/inspiring-cannon-utonjt`)
+
+Scope per task: `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (absent),
+plus the full active emission/commission/reserve chain, cross-checked against
+`docs/specs/AST_Reserve_AGENT_EN.md` and `reference/ast-core/src/reserve.ts` /
+`reference/ast-core/src/commission.ts` / `reference/ast-core/src/orchestrator.ts`.
+
+### 27.1 Deviation: `reserveIndex` double-counted the AFC commission margin
+
+`ReserveService.totalProcessVolume()` (`src/reserve/reserve.service.ts`) summed **two**
+NodeChain signals into the value feeding `reserveIndex`:
+
+1. `emission.minted` — the process part minted per PoT-verified process (correct; this is the
+   canonical `totalProcessVolume`).
+2. `commission.epoch.finalized`'s `operationalMargin` field — the 25% AFC commission share —
+   **added a second time** on top of the transaction volume already counted via (1).
+
+This contradicts:
+
+- **Spec** (`docs/specs/AST_Reserve_AGENT_EN.md`): `totalProcessVolume = aggregate of tx with
+  verified==1` — a transaction-volume aggregate, not a commission-fee aggregate.
+- **Reference** (`reference/ast-core/src/orchestrator.ts:63`): `this.reserve.addConfirmedVolume(req.amount)`
+  is called once per request with the transaction amount; `reference/ast-core/src/commission.ts`'s
+  `finalizeEpoch()` returns `margin` but the reference orchestrator only logs it
+  (`orchestrator.ts:79`) — it is never added to reserve volume.
+- **The module's own documentation**: `ReserveService.addAfcAccrual()`'s docstring and
+  `01_coin_engine/coin_emission_model.md:45-47` both state the AFC share "does not enter the
+  reserveIndex formula (spec I-RS-1)" — the code's `totalProcessVolume()` did the opposite via a
+  second, undocumented-as-such code path (the `commission.epoch.finalized` branch, distinct from
+  the `reserve.afc.accrual` event that `addAfcAccrual`/`totalAfcReserve` track).
+
+A pre-existing test (`reserve.service.spec.ts`, prior version) asserted the double-counting as
+intended behavior, which is how this survived 19+ prior re-audits (§9–§26): those audits checked
+`addAfcAccrual`'s docstring claim in isolation and did not trace the second branch of
+`totalProcessVolume()`.
+
+**Effect on the canonical $10,000 example (§5 above):** with the bug, after one $10,000 tx and
+one epoch finalization, `reserveIndex` was `log10(1 + 10,000 + 12.50) ≈ 4.00005` instead of the
+canonical `log10(1 + 10,000) = 4.0000` — a small but real, cumulative deviation that compounds
+across the AFC share of every commission fee ever collected, permanently overstating AST's
+capitalization index and internal price relative to confirmed transaction volume.
+
+### 27.2 Fix applied
+
+- `src/reserve/reserve.service.ts` — `totalProcessVolume()` now sums only `emission.minted`
+  snapshots; the `commission.epoch.finalized` branch and its `COMMISSION_EPOCH_EVENT` constant
+  were removed. Class-level and method-level doc comments updated to state plainly that
+  commission fees and the AFC share do not contribute to `totalProcessVolume`/`reserveIndex`,
+  matching the reference and the module's own (previously contradicted) `addAfcAccrual` docstring.
+  `addAfcAccrual()`/`totalAfcReserve()` are unchanged — the AFC share is still recorded as an
+  audit trail, just never added into the capitalization formula.
+- `src/orchestrator/orchestrator.service.ts` — corrected a comment above the reserve-index read
+  that claimed the index derives from "AFC commission accruals" in addition to emission volume.
+- `src/reserve/reserve.service.spec.ts` — replaced the test that asserted the AFC margin grows
+  `totalProcessVolume`/`reserveIndex` with a test asserting it does **not**, plus a new test
+  confirming `addAfcAccrual`/`totalAfcReserve` still work as an independent audit trail.
+
+### 27.3 Verification
+
+- `npx tsc -p tsconfig.build.json --noEmit` — clean.
+- `npx jest` — 20 suites, 151 tests, all passing (including the corrected reserve suite).
+- Re-ran the full canonical-model and prohibition (P1–P8) checklist from §3/§6 against current
+  code: all other components remain canonical; this was the only deviation found.
+
+### Result
+
+**One real deviation found and corrected.** Reserve capitalization now derives strictly from
+confirmed transaction volume, matching spec and reference. All other emission/commission logic
+confirmed canonical, no further changes required.

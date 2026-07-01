@@ -10,7 +10,7 @@ Define the architecture, lifecycle, and technical requirements of the decentrali
 
 | Node Type          | Role Description                                         |
 |--------------------|----------------------------------------------------------|
-| **Validator Node** | Actively processes transactions and signs blocks         |
+| **Processing Node**| Actively processes transactions and records signed work  |
 | **Observer Node**  | Standby node that monitors network health & rotates in   |
 | **Bootstrap Node** | Handles cold start of the system                         |
 | **Governance Node**| Participates in voting & anomaly detection (optional)    |
@@ -45,20 +45,22 @@ Each node runs:
 ```mermaid
 graph TD;
   A[Node Registration Request] --> B[Identity Verification];
-  B --> C[Smart Contract Validator Security Deposit];
+  B --> C[Register: reputation=1, weight=1, uptime=1];
   C --> D[Node Key Signing];
   D --> E[Start Observing];
-  E --> F[Active Validator Role via rotation];
+  E --> F[Active Processing Role via rotation];
 ```
 
 ---
 
-## 4. Registration and Security Deposit
+## 4. Registration
 
-- Validator node must stake minimum X ARO (configurable).
-- Smart contract verifies identity and stake.
-- Generates node keypair and tokenizes node ID.
-- Adds node to candidate pool.
+- A node registers with default metrics (`reputation = 1`, `weight = 1`, `uptime = 1`,
+  `successes = 0`, `total = 0`) — no ARO deposit or stake is required or held
+  (`src/nodes/nodes.service.ts`, `NodesService.register`; invariant I9, prohibitions P1/P2).
+- Identity verification generates a node keypair and tokenizes the node ID.
+- Registration is recorded as a `node.registered` NodeChain event; the node is admitted to the
+  active pool and earns weight purely from subsequent confirmed work.
 
 ---
 
@@ -85,11 +87,14 @@ graph TD;
 
 ## 7. Misbehavior Handling
 
-| Violation Type       | Penalty                           |
-| -------------------- | --------------------------------- |
-| Downtime > threshold | Temporary suspension              |
-| Malicious tampering  | Stake slashing & blacklist        |
-| Collusion behavior   | AI-auditor flag → governance vote |
+| Violation Type       | Effect on Standing                        |
+| -------------------- | ------------------------------------------ |
+| Downtime > threshold | Temporary suspension (`status` set inactive) |
+| Malicious tampering  | Failed executions lower `reputation`/`weight`, shrinking future payment share (see `10_proof_of_transaction_engine/pot_slashing_conditions.md`) |
+| Collusion behavior   | AI-auditor flag → governance vote          |
+
+No penalty confiscates already-earned value or a held balance — nodes hold no stake to seize
+(invariant I9, prohibitions P1/P2).
 
 ---
 

@@ -1116,3 +1116,60 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+## 27. 2026-07-01 Full Re-Audit (branch: agent/core-emission, session 20) — Documentation Drift Found & Fixed
+
+Independent audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/` (does
+not exist), plus `src/emission/`, `src/commission/`, `src/aroscoin/`, `src/reserve/`,
+`src/nodes/`, `src/orchestrator/`. All files read from scratch.
+
+### Code Verdict: unchanged from §9–§26 — still canonical
+
+Traced the full lifecycle in `OrchestratorService.runProcess` (`src/orchestrator/orchestrator.service.ts:162-177`):
+`emission.mint(processId, amount)` mints exactly `amount` (1:1) behind the PoT gate,
+`commission.computeFee(amount)` = `amount × 0.005`, `CommissionService.finalizeEpoch` splits
+75%/25%, and `emission.burn(processId, minted)` burns the identical amount afterward
+(`processNet → 0`). `ReserveService.reserveIndex()` = `log10(1 + totalProcessVolume)`.
+**No production code changes were made** — `src/emission`, `src/commission`, `src/aroscoin`,
+`src/reserve`, `src/orchestrator` are untouched this session.
+
+```
+npx jest src/emission src/commission src/reserve src/nodes src/invariants src/orchestrator
+Test Suites: 10 passed, 10 total
+Tests:       77 passed, 77 total
+```
+
+### New Finding This Session: Documentation Had Drifted From the Canonical Code
+
+Unlike sessions 9–26 (which checked code against the canonical formula and stopped), this
+session additionally diffed every doc file in the two scoped folders against the actual
+implementation and found several had regressed to a pre-canonical or simply incorrect state —
+none of which affects runtime behavior, but all of which would mislead a reader or a future
+agent into "fixing" already-correct code to match a wrong spec. Fixed:
+
+| File | Problem | Fix |
+|------|---------|-----|
+| `01_coin_engine/README.md` | Described a *different* emission formula entirely — `Fee Distribution = Base schedule × Network activity multiplier × Compliance factor` (a decay-curve model) — plus `R_validator/R_operator/R_ecosystem` pools and "slashing events" in the weighting text (P1/P2 violations). | Rewritten to state the canonical 1:1 formula and reputation-based (no stake/slash) weighting, with correct file references. |
+| `01_coin_engine/aro_emission_protocol.md` | Reserve formula `1.0 + sqrt(totalAfcReserve)/10_000` contradicts real `log10(1+totalProcessVolume)`. **All-Seeing Eye listed as an emergency-halt multi-sig signatory — direct P6 violation** (Eye must never halt/vote/enforce). Mermaid diagram called nonexistent `processTransactionEmission()`. | Fixed reserve formula, removed the Eye from the halt-authority list, replaced the diagram with the real `mint → accrue → burn` sequence. |
+| `01_coin_engine/payment_distribution.md` | Listed `penalty_reallocation`: "tokens confiscated from slashed nodes" as a fee source (P1/P2). Same wrong `sqrt` reserve formula. Referenced nonexistent `EmissionService.processTransactionEmission()`/`FeeDistributionService.distributeRewards()`. | Removed the slashing fee source, fixed the reserve formula and all method/file references. |
+| `01_coin_engine/burn_mechanism.md` | Described burning **15% of the transaction fee**, remainder "distributed to validators" — an entirely different mechanism than the canonical model (100% of the *minted process part* is burned; commission is a separate, never-burned 75/25 flow). | Rewritten to the real mint-then-burn-the-full-process-part flow. |
+| `01_coin_engine/coin_emission_model.md` | Minor "validator" terminology (formula itself was already correct). | Terminology fix only: "Node Rotation" / "active node". |
+| `01_coin_engine/AST Node Infrastructure Specification.md` | Explicit staking/slashing: "Validator node must stake minimum X ARO", "Smart Contract Validator Security Deposit", "Stake slashing & blacklist" (direct P1/P2 hits). | Replaced with real reputation-based admission (`NodesService.register`) and the real effect of misbehavior (lower reputation/weight, never confiscation). |
+| `10_proof_of_transaction_engine/pot_slashing_conditions.md` | Literal stake-slashing spec including a **Solidity `slash()`/`burnStake()` function** — the clearest P1/P2 violation found this session. | Rewritten as "PoT Reputation Penalty Conditions" mirroring `NodesService.recordExecution`. |
+| `10_proof_of_transaction_engine/pot_tx_incentive_distribution.md` | Nonexistent `src/token/emission.service.ts`, `src/fee_distribution/fee_distribution.service.ts`, `EmissionService.processTransactionEmission()`. | Corrected to real `src/emission/emission.service.ts` + `src/commission/commission.service.ts` paths/methods. |
+
+### Out of scope, flagged for a future pass (not fixed this session)
+
+- `01_coin_engine/coin_use_cases.md` — "staking privileges", "stake or spend ARO" service tiers.
+- `10_proof_of_transaction_engine/pot_node_role_assignment.md` — assigns a `'validator'` role label.
+- `pot_engine_overview.md`, `pot_tx_weighting_model.md` — stale references to a nonexistent
+  `11_validator_staking_payments/` directory (real: `11_node_security_and_payments/`).
+
+These sit outside the emission model proper and were left untouched to keep this session's
+diff focused and reviewable.
+
+### Result
+
+**Code: CONFIRMED CANONICAL, unchanged.** **Docs: 8 files corrected** to remove documentation
+drift and residual Model-A staking/slashing language, so the written spec now matches the
+already-correct implementation instead of contradicting it.

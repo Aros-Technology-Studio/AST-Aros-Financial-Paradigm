@@ -23,9 +23,9 @@ following the canonical 75/25 split defined in `01_coin_engine/payment_distribut
 4. Node pool is sub-distributed to individual validators by normalized PoT weight.
 
 > **Historical note:** Earlier drafts of this file used a 60%/30%/10% split (validators/attesters/burn).
-> The canonical protocol adopted by PR #72 consolidates all node actors into a single 75% node pool
-> with internal PoT-weight sub-distribution. The 10% burn is replaced by the post-emission BURN
-> step in `EmissionService.processTransactionEmission()`.
+> The canonical protocol consolidates all node actors into a single 75% node pool with internal
+> PoT-weight sub-distribution. The process part is burned separately by `EmissionService.burn()`
+> after commission accrual — burning is not a slice of the commission split.
 
 ## 4. Canonical Formulas
 
@@ -34,40 +34,48 @@ commission        = transactionAmount × rate          (default rate = 0.5%)
 nodePool          = commission × 0.75                 (75% → all participating nodes)
 afcReserve        = commission × 0.25                 (25% → AFC reserve)
 
-payment_per_node  = nodePool × node_weight
-node_weight       = potScore(node) / Σ potScore(all_nodes)
-potScore          = f(txCount, validations, penaltyScore)
+payment_per_node  = (weight × nodePool) / Σ weights
+weight            = reputation × uptime
+reputation        = successes / total × uptime         (work-based, no stake or balance)
 ```
 
-PoT weight is normalized so that `Σ node_weight = 1.0` across all active nodes.
+Weight is computed per node by `NodesService` and summed across nodes with PoT-confirmed
+participation in the epoch; `Σ weights` is the normalizing denominator (not fixed at 1.0).
 
 ## 5. TypeScript Reference
 
-The canonical implementation lives in `src/token/emission.service.ts`:
+The canonical implementation lives in `src/emission/emission.service.ts` and
+`src/commission/commission.service.ts`:
 
 ```typescript
-// Per-TX split
-const nodeShare = commission * 0.75;  // → SYSTEM_NODE_POOL
-const afcShare  = commission * 0.25;  // → SYSTEM_AFC_RESERVE
+// src/emission/emission.service.ts — EmissionService.calculate()
+const commission = txAmount * commissionRate;
+const nodeShare = commission * 0.75;  // → distributed by CommissionService.finalizeEpoch
+const afcShare  = commission * 0.25;  // → routed to ReserveService.addAfcAccrual
 ```
 
-Epoch-level distribution uses the same ratios via `FeeDistributionService.distributeRewards()`.
+Epoch-level distribution runs in `CommissionService.finalizeEpoch(epoch)`, which pays each
+confirmed-weight node its share of the 75% pool and routes the 25% remainder to
+`ReserveService`.
 
 ## 6. Example: $10,000 Transaction
 
 ```
 commission  = 10,000 × 0.005 = 50 ARO
 nodePool    = 50 × 0.75      = 37.50 ARO  (split by PoT weight across active nodes)
-afcReserve  = 50 × 0.25      = 12.50 ARO  (locked in AFC reserve)
+afcReserve  = 50 × 0.25      = 12.50 ARO  (routed to the AFC reserve accrual)
 ```
 
 ## 7. Dependencies
 
 - `01_coin_engine/payment_distribution.md` — canonical 75/25 split specification.
-- `src/token/emission.service.ts` — per-TX implementation (`EmissionService`).
-- `src/fee_distribution/fee_distribution.service.ts` — epoch-level implementation.
+- `src/emission/emission.service.ts` — per-TX emission (`EmissionService`).
+- `src/commission/commission.service.ts` — epoch-level distribution (`CommissionService`).
+- `src/nodes/nodes.service.ts` — reputation/weight computation (`NodesService`).
 
 ## 8. Notes
 
-- **Epoch-End:** Distribution runs at epoch close in NodeChain via `FeeDistributionService`.
-- **Audit:** Every split is recorded as a `FEE_DISTRIBUTION` ledger entry; fed to the All-Seeing Eye.
+- **Epoch-End:** Distribution runs at epoch finalization via `CommissionService.finalizeEpoch()`,
+  which records the outcome as a `commission.epoch.finalized` NodeChain event.
+- **Audit:** Every distribution is appended to NodeChain; the All-Seeing Eye observes and logs
+  it but never alters the distribution itself (P6).

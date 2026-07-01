@@ -1230,3 +1230,72 @@ update into `main`. Since the underlying code has not required a change since
 at least session §9-§10, further scheduled runs of this exact task are
 unlikely to find new work; the task's recurrence/trigger may be worth
 reviewing upstream.
+
+---
+
+## 29. 2026-07-01 Full Re-Audit — Real Deviation Found and Corrected (branch: `claude/inspiring-cannon-0gcdjx`, session 29)
+
+**Scope:** Independent re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`,
+`src/reserve/`, against `docs/specs/AST_Reserve_AGENT_EN.md` and
+`reference/ast-core/src/reserve.ts`, read from scratch with no prior-session
+context assumed.
+
+### Structural findings (reconfirmed)
+
+- `src/token/` does not exist. `01_coin_engine/` and `10_proof_of_transaction_engine/`
+  are documentation only — no `Deprecated` marker, no executable code, nothing to migrate.
+  Production logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+
+### Deviation found (contradicts sessions §12, §19, §26–§28, which asserted this was CONFIRMED clean)
+
+**`src/reserve/reserve.service.ts` — `totalProcessVolume()` mixed the AFC commission margin
+into the confirmed-volume total**, in direct contradiction of:
+- Spec `docs/specs/AST_Reserve_AGENT_EN.md`: `formulas.reserveIndex = "reserveIndex = log10(1 + totalProcessVolume)"`
+  and `invariants.I-RS-1: "grows only from confirmed volume"` — confirmed volume means PoT-verified
+  *process* volume (the emitted transaction amount), not a commission fee derivative.
+- Reference `reference/ast-core/src/reserve.ts`: `totalProcessVolume` is incremented **only** by
+  `addConfirmedVolume(amount)`, called from the reference orchestrator with the raw process
+  amount (`reference/ast-core/src/orchestrator.ts:63`, `this.reserve.addConfirmedVolume(req.amount)`).
+  The reference never adds commission/AFC margin to this total.
+
+The production code, however, summed **two** signals into `totalProcessVolume()`:
+```ts
+// before
+if (snapshot.eventType === 'emission.minted') total += minted;
+else if (snapshot.eventType === 'commission.epoch.finalized') total += operationalMargin; // WRONG
+```
+This double-counts value derived from the same underlying transactions (the AFC share is
+`0.25 × 0.005 × amount`, itself a function of the amount already counted via `emission.minted`)
+and inflates `reserveIndex`/`internalPrice` beyond the canonical formula. It also directly
+contradicted the file's own JSDoc on `reserveIndex()`, which stated "AFC accruals ... do not
+enter this formula" two methods above the code that added them anyway — an internal
+self-contradiction that should have been a signal for prior sessions.
+
+A test (`reserve.service.spec.ts`) had been written to assert this incorrect behavior as
+expected (`'AFC reserve margin from commission.epoch.finalized grows totalProcessVolume and
+reserveIndex'`), which is why the full suite passed in every prior "CONFIRMED CANONICAL" audit
+(§12 introduced it; §19/§26–§28 re-read the misleading comments and the passing test and
+concurred, without checking it against the spec/reference formula directly).
+
+### Fix applied
+
+| File | Change |
+|------|--------|
+| `src/reserve/reserve.service.ts` | `totalProcessVolume()` now sums only `emission.minted` snapshots. Removed the `COMMISSION_EPOCH_EVENT` branch and constant. Class/method JSDoc corrected to state the index derives solely from confirmed process volume; AFC accruals (`reserve.afc.accrual`) remain a separate audit-only signal via `totalAfcReserve()`/`addAfcAccrual()`, unchanged. |
+| `src/commission/commission.service.ts` | `finalizeEpoch()` comment corrected: AFC share is routed to Reserve as an audit-trail accrual, not as an index input. |
+| `src/commission/commission.module.ts` | Module-level doc comment corrected to match (index grows from confirmed volume only, per I-RS-1). |
+| `src/reserve/reserve.service.spec.ts` | Replaced the test that asserted AFC margin grows `totalProcessVolume`/`reserveIndex` with a test asserting AFC accruals (`commission.epoch.finalized` and `reserve.afc.accrual` events) do **not** change either value (I-RS-1). |
+
+No change was needed to `emission.service.ts`, `aroscoin.service.ts`, `commission.service.ts`'s
+feeRate/marginRate/distribution logic, or the orchestrator — those remain canonical as
+verified in prior sessions.
+
+### Result
+
+**One real deviation found and corrected**, despite 28 prior sessions asserting full
+compliance. `reserveIndex` and `internalPrice` now derive strictly from PoT-confirmed process
+volume (`emission.minted`), matching `docs/specs/AST_Reserve_AGENT_EN.md` and
+`reference/ast-core/src/reserve.ts` exactly. All other canonical-model components
+(1:1 emission, PoT gate, 0.5% fee, 75/25 split, burn symmetry, supply identity) remain
+confirmed correct.

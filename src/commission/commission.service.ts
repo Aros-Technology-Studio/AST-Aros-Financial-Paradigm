@@ -150,7 +150,8 @@ export class CommissionService {
         }
 
         // The AFC reserve share (25 %) is the pool remainder after node payments. Route it to
-        // ReserveService so the capitalization index grows (spec `margin_to: Reserve`, I-RS-1/4).
+        // ReserveService as an audit-trail accrual (spec `margin_to: Reserve`); reserveIndex is
+        // driven by confirmed process volume alone, not by AFC accruals (I-RS-1).
         const allocatedMargin = total - paid;
         await this.reserve.addAfcAccrual(allocatedMargin);
         distributionLog.push({

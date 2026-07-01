@@ -147,17 +147,18 @@ describe('ReserveService', () => {
         expect(await reserve.internalPrice(2)).toBeCloseTo(2 * index, 10);
     });
 
-    // Canonical 75/25 split: AFC reserve margin from commission.epoch.finalized events feeds
-    // totalProcessVolume so the reserveIndex grows as more fees are collected (spec
-    // `margin_from: Commission`). A fake finalized-epoch event is injected directly via
-    // NodeChain so the test stays isolated from CommissionService.
-    it('AFC reserve margin from commission.epoch.finalized grows totalProcessVolume and reserveIndex', async () => {
+    // I-RS-1: reserveIndex grows only from confirmed process volume (emission.minted), not
+    // from the AFC reserve share of commission fees. A fake finalized-epoch event (and a raw
+    // AFC accrual event) are injected directly via NodeChain so the test stays isolated from
+    // CommissionService and proves the index formula ignores both.
+    it('AFC reserve accruals do not feed totalProcessVolume or reserveIndex', async () => {
         // Establish baseline from a confirmed process.
         await confirmAndEmit('afc-base', 1000);
         const volumeBefore = await reserve.totalProcessVolume();
         const indexBefore = await reserve.reserveIndex();
 
-        // Simulate CommissionService recording its epoch-finalized event with an AFC margin.
+        // Simulate CommissionService recording its epoch-finalized event with an AFC margin,
+        // and the corresponding AFC accrual event.
         const afcMargin = 50; // the 25 % share that routes to Reserve
         await chain.append('commission.epoch.finalized', {
             epochNumber: 1,
@@ -167,12 +168,13 @@ describe('ReserveService', () => {
             reconciled: true,
             distributionLog: [],
         });
+        await reserve.addAfcAccrual(afcMargin);
 
         const volumeAfter = await reserve.totalProcessVolume();
         const indexAfter = await reserve.reserveIndex();
 
-        expect(volumeAfter).toBeCloseTo(volumeBefore + afcMargin, 10);
-        expect(indexAfter).toBeCloseTo(log10(1 + volumeAfter), 10);
-        expect(indexAfter).toBeGreaterThan(indexBefore);
+        expect(volumeAfter).toBe(volumeBefore);
+        expect(indexAfter).toBeCloseTo(indexBefore, 10);
+        expect(indexAfter).toBeCloseTo(log10(1 + volumeBefore), 10);
     });
 });

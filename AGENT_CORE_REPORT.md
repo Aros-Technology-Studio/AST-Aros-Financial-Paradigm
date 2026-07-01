@@ -1116,3 +1116,78 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-07-01 Scheduled Audit (branch: claude/inspiring-cannon-piba4q) — Deviation Found and Fixed
+
+Independent, from-scratch re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, against
+`reference/ast-core/src/` and `docs/specs/`.
+
+### Directory / logic location check
+
+- `01_coin_engine/`, `10_proof_of_transaction_engine/` — documentation only, neither is marked
+  Deprecated. Executable logic lives in `src/emission/`, `src/aroscoin/`, `src/commission/`,
+  `src/reserve/`, `src/pot/`.
+- `src/token/` does not exist and never has; no migration is pending there.
+
+### Deviation found: `ReserveService.totalProcessVolume()` double-counted AFC commission margin
+
+**Every prior session in this report (§9 onward) states, as a settled conclusion, that AFC
+reserve accruals "do not enter the reserveIndex formula" (I-RS-1) and that
+`reference/ast-core/src/reserve.ts` confirms `log10(1 + totalProcessVolume)` with no AFC term.**
+Despite that, the *running code* in `src/reserve/reserve.service.ts` (introduced in commit
+`7e45f2e`, 2026-06-18, and never reverted since) summed **both** `emission.minted` **and**
+`commission.epoch.finalized[operationalMargin]` into `totalProcessVolume`, directly inflating
+`reserveIndex`. The class-level doc comment even asserted this was intentional ("grows with...
+the AFC reserve share of commission fees") while the `reserveIndex()` method's own doc comment,
+two paragraphs below, asserted the opposite ("AFC accruals... do not enter this formula") — a
+self-contradiction that every subsequent audit read past without tracing the actual summation
+logic against the reference implementation line-by-line.
+
+This is a real double-count: `operationalMargin` is 25% of a commission fee that is itself
+`0.5% × txAmount`, and `txAmount` was already counted in full via `emission.minted`. Folding the
+margin back into `totalProcessVolume` inflates `reserveIndex` beyond what confirmed transaction
+volume alone justifies, contradicting `reference/ast-core/src/reserve.ts` (which has no AFC
+term at all) and the repeatedly-documented canonical model in `01_coin_engine/coin_emission_model.md`.
+
+A test (`reserve.service.spec.ts`, added in the same 2026-06-18 commit) explicitly asserted and
+locked in the double-counting behavior, which is why it survived ~15 subsequent "CONFIRMED
+CANONICAL" audits: the tests were green because they encoded the deviation as expected behavior.
+
+**Fix applied:**
+- `src/reserve/reserve.service.ts`: removed the `COMMISSION_EPOCH_EVENT` branch and constant
+  from `totalProcessVolume()`; it now sums `emission.minted` only, matching
+  `reference/ast-core/src/reserve.ts` exactly. Rewrote the class and method doc comments to
+  state, consistently, that AFC accruals are audit-only (`totalAfcReserve()`) and never enter
+  `reserveIndex`.
+- `src/reserve/reserve.service.spec.ts`: replaced the test that asserted AFC margin grows
+  `totalProcessVolume`/`reserveIndex` with one asserting it does **not** (I-RS-1), and added a
+  test confirming `addAfcAccrual` grows `totalAfcReserve` in isolation without touching
+  `totalProcessVolume`/`reserveIndex`.
+- `src/commission/commission.service.ts`, `src/aroscoin/aroscoin.service.ts`,
+  `src/emission/emission.service.ts`: read and re-verified against the corrected Reserve
+  contract; no changes needed — Commission already routes the AFC share exclusively via
+  `reserve.addAfcAccrual` (audit trail), never into `coin.recordEarned`/`totalProcessVolume`.
+
+**Verification:** `npx tsc -p tsconfig.build.json --noEmit` clean; full suite
+`npx jest` — 20 suites, 151 tests, all pass.
+
+### Canonical Model Re-Verified After Fix
+
+```
+Emission     = Transaction Amount (1:1, PoT-gated; verified === 1 required)
+Commission   = Amount × 0.005 (0.5%)
+  Node Share = Commission × 0.75  (75% → nodes, post-factum by PoT weight)
+  AFC Share  = Commission × 0.25  (25% → reserve.addAfcAccrual → NodeChain audit only)
+reserveIndex = log10(1 + totalProcessVolume)   (totalProcessVolume = Σ emission.minted only; I-RS-1)
+Burn         = Emission amount on cycle completion; processNet → 0 (I5)
+totalSupply  = (processMinted - processBurned) + earnedRetained     (I6)
+```
+
+### Result
+
+**One real deviation found and fixed: AFC-margin double-counting in `reserveIndex` removed.**
+All invariants I1–I10, I-RS-1–I-RS-4, and prohibitions P1–P8 reconfirmed against the corrected
+code. No other deviations found in `src/emission/`, `src/aroscoin/`, `src/commission/`.

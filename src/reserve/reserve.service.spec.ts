@@ -147,11 +147,12 @@ describe('ReserveService', () => {
         expect(await reserve.internalPrice(2)).toBeCloseTo(2 * index, 10);
     });
 
-    // Canonical 75/25 split: AFC reserve margin from commission.epoch.finalized events feeds
-    // totalProcessVolume so the reserveIndex grows as more fees are collected (spec
-    // `margin_from: Commission`). A fake finalized-epoch event is injected directly via
-    // NodeChain so the test stays isolated from CommissionService.
-    it('AFC reserve margin from commission.epoch.finalized grows totalProcessVolume and reserveIndex', async () => {
+    // I-RS-1: AFC reserve margin is a slice of a fee already derived from transaction volume
+    // that emission.minted has counted. Folding it into totalProcessVolume would double-count
+    // the same confirmed work, so commission.epoch.finalized events must not move the index.
+    // A fake finalized-epoch event is injected directly via NodeChain so the test stays
+    // isolated from CommissionService.
+    it('AFC reserve margin from commission.epoch.finalized does not affect totalProcessVolume or reserveIndex', async () => {
         // Establish baseline from a confirmed process.
         await confirmAndEmit('afc-base', 1000);
         const volumeBefore = await reserve.totalProcessVolume();
@@ -171,8 +172,21 @@ describe('ReserveService', () => {
         const volumeAfter = await reserve.totalProcessVolume();
         const indexAfter = await reserve.reserveIndex();
 
-        expect(volumeAfter).toBeCloseTo(volumeBefore + afcMargin, 10);
-        expect(indexAfter).toBeCloseTo(log10(1 + volumeAfter), 10);
-        expect(indexAfter).toBeGreaterThan(indexBefore);
+        expect(volumeAfter).toBe(volumeBefore);
+        expect(indexAfter).toBe(indexBefore);
+    });
+
+    // I-RS-1: addAfcAccrual records the AFC share for audit (totalAfcReserve) but keeps it
+    // out of totalProcessVolume / reserveIndex — the two figures track different things.
+    it('addAfcAccrual grows totalAfcReserve without affecting totalProcessVolume or reserveIndex', async () => {
+        await confirmAndEmit('afc-accrual-base', 1000);
+        const volumeBefore = await reserve.totalProcessVolume();
+        const indexBefore = await reserve.reserveIndex();
+
+        await reserve.addAfcAccrual(12.5);
+
+        expect(await reserve.totalAfcReserve()).toBeCloseTo(12.5, 10);
+        expect(await reserve.totalProcessVolume()).toBe(volumeBefore);
+        expect(await reserve.reserveIndex()).toBe(indexBefore);
     });
 });

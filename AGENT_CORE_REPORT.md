@@ -1116,3 +1116,60 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-07-01 Full Re-Audit (branch: claude/inspiring-cannon-vs2qk5)
+
+Scheduled routine audit. Read `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, `src/pot/`
+from scratch and independently re-verified against the canonical model.
+
+### Diff against last audit (§26, commit `fe67979`)
+
+```
+git log --oneline fe67979..HEAD -- src/emission src/aroscoin src/commission \
+  src/reserve src/pot 01_coin_engine 10_proof_of_transaction_engine \
+  reference/ast-core AST_RULES.yaml docs/specs
+→ 0 commits
+```
+No production code touching emission, commission, ArosCoin, reserve, or PoT has
+changed since the previous audit. The verification below re-derives the same
+conclusion from the unchanged source rather than assuming it.
+
+### Canonical Model Re-Verified
+
+```
+Emission     = Transaction Amount (1:1, no multiplier)      — emission.service.ts:111
+PoT gate     = verified === 1 required to mint               — emission.service.ts:57-59, 73-75
+Burn         = mirrors mint, processNet -> 0                 — emission.service.ts:85-88
+Commission   = Transaction Amount × 0.005 (0.5%)              — commission.service.ts:65, 92
+  Node pool  = Commission × 0.75 (post-factum, PoT weight)    — commission.service.ts:68, 134, 144
+  AFC share  = Commission × 0.25 → reserve.addAfcAccrual      — commission.service.ts:154-155
+totalSupply  = (processMinted - processBurned) + earnedRetained — aroscoin.service.ts:106
+reserveIndex = log10(1 + totalProcessVolume)                  — reserve.service.ts:98-101
+```
+
+### Structural Findings
+
+- `01_coin_engine/` — documentation only (spec/reference markdown). No executable
+  code, not marked Deprecated. Confirmed unchanged from §26.
+- `10_proof_of_transaction_engine/` — PoT documentation only; runtime lives in
+  `src/pot/pot.service.ts`, unchanged.
+- `src/token/` — still does not exist; emission logic remains correctly located
+  in `src/emission/` and `src/aroscoin/`.
+
+### Checks Run This Session
+
+| Check | Result |
+|-------|--------|
+| `npx jest src/emission src/aroscoin src/commission src/reserve src/pot` | 5 suites / 41 tests passed |
+| `bash scripts/check-prohibitions.sh` (P1–P8 grep gate) | OK — no prohibited construct found |
+| Manual grep for staking/slashing/token-vote/farming/mint-on-deposit in `src/`, `reference/` | Only positive-compliance comments and negative-assertion tests; no implementation matches |
+
+### Result
+
+**CONFIRMED CANONICAL. No deviations found; no code changes required.** The
+emission engine remains 1:1 PoT-gated mint/burn, commission remains 0.5% with
+a 75/25 node/AFC split, and the reserve index remains `log10(1 + volume)`,
+exactly as specified and as confirmed in sessions 9 through 26.

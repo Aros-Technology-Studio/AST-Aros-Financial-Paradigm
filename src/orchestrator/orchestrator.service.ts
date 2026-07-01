@@ -177,8 +177,8 @@ export class OrchestratorService {
         await this.eye.log('burn', 'token_management', `burned ${burned} for ${processId}`);
 
         // Step 8 — reserve update: the reserve index is derived from confirmed-work volume
-        // (emission.minted events) and AFC commission accruals (reserve.afc.accrual events
-        // appended on epoch finalization). Reading it reflects this run's emission contribution.
+        // (emission.minted events only; I-RS-1). Reading it reflects this run's emission
+        // contribution.
         const reserveIndex = await this.reserve.reserveIndex();
 
         // Step 9 — final record: mark the process done; the Eye logs and compares supply.

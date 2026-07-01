@@ -1230,3 +1230,98 @@ update into `main`. Since the underlying code has not required a change since
 at least session §9-§10, further scheduled runs of this exact task are
 unlikely to find new work; the task's recurrence/trigger may be worth
 reviewing upstream.
+
+---
+
+## 29. 2026-07-01 Full Re-Audit — Real Deviation Found and Fixed (branch: `claude/inspiring-cannon-07ogxa`, session 29)
+
+Every prior session (§9–§28) checked the top-level formulas
+(`emission = txAmount`, `commission = txAmount × 0.005`, `reserveIndex =
+log10(1 + totalProcessVolume)`) against `reserve.service.ts`'s own JSDoc and
+against the formula strings in the specs, and repeatedly stamped them
+"CONFIRMED." None of them traced what `totalProcessVolume()` actually sums
+over in `reference/ast-core/src/orchestrator.ts` (the call site of
+`Reserve.addConfirmedVolume`). Doing that this session surfaced a real,
+long-standing deviation.
+
+### Deviation Found
+
+**`src/reserve/reserve.service.ts` — `totalProcessVolume()` fed `reserveIndex`
+from two signals instead of one.**
+
+Reference (`reference/ast-core/src/orchestrator.ts:63`):
+```ts
+this.reserve.addConfirmedVolume(req.amount);   // transaction amount only
+```
+`Reserve.addConfirmedVolume` (`reference/ast-core/src/reserve.ts:7`) is called
+**exactly once per process**, with `req.amount` — never with any commission
+figure. `docs/specs/AST_Reserve_AGENT_EN.md` agrees: `derived_from: NodeChain
+# totalProcessVolume = aggregate of tx with verified==1`. The project's own
+`01_coin_engine/coin_emission_model.md` states the same thing explicitly:
+"AFC reserve accruals ... do not enter the `reserveIndex` formula directly."
+
+The production code, however, summed:
+1. `emission.minted` snapshots (correct — mirrors `addConfirmedVolume`), **and**
+2. `commission.epoch.finalized` snapshots' `operationalMargin` field — the
+   25% AFC share of each epoch's fee pool.
+
+Term (2) has no counterpart in the reference and contradicts both the spec's
+literal formula and the project's own emission-model doc. It was introduced in
+commit `7e45f2e` (2026-06-18) and then, starting at session §19 (2026-06-20),
+mis-rationalized in successive report entries as required "per spec
+`margin_from: Commission`" — a misreading of a YAML *dependency* label
+(`margin_from: Commission` just documents that Reserve receives its AFC
+*audit* inflow from Commission, not that the figure enters the
+`totalProcessVolume` formula). A dedicated test
+(`reserve.service.spec.ts`) was even written to lock the wrong behavior in,
+which is why `npx jest` kept passing while the deviation persisted.
+
+**Effect of the bug:** since the AFC share is itself a fraction of the same
+transaction amount already counted via `emission.minted`, every epoch
+finalization inflated `totalProcessVolume` — and therefore `reserveIndex` and
+`internalPrice` — with a partial double-count of already-counted transaction
+value, on top of adding a term the canonical model never specifies at all.
+
+### Fix Applied
+
+| File | Change |
+|---|---|
+| `src/reserve/reserve.service.ts` | Removed the `COMMISSION_EPOCH_EVENT` branch and the `COMMISSION_EPOCH_EVENT` constant from `totalProcessVolume()`; it now sums `emission.minted` only, matching `reference/ast-core/src/reserve.ts` exactly. Rewrote the class/method JSDoc to describe the single-signal design and correct the "spec `margin_from: Commission`" misreading. |
+| `src/orchestrator/orchestrator.service.ts` | Corrected the step-8 comment, which claimed the reserve index derives from "emission.minted events and AFC commission accruals"; it now says emission.minted only (I-RS-1). |
+| `src/reserve/reserve.service.spec.ts` | Replaced the test that asserted AFC margin *grows* `totalProcessVolume`/`reserveIndex` with one asserting it does **not** — matching I-RS-1 and the sibling `totalAfcReserve()` audit-only test already in the file. |
+
+`totalAfcReserve()` (the audit-only accrual counter fed by
+`reserve.afc.accrual` events via `addAfcAccrual`) was already correct and is
+unchanged — it still tracks the AFC share for audit purposes without feeding
+the index.
+
+### Verification Run
+
+- `npm ci` — clean install (942 packages).
+- `npx tsc -p tsconfig.build.json --noEmit` — clean, no errors.
+- `npx jest` (full suite) → **20 suites / 150 tests passed**, including the
+  corrected `reserve.service.spec.ts` and `src/invariants/invariants.spec.ts`
+  (I1–I10).
+
+### Transaction Example ($10,000) — Recomputed Post-Fix
+
+```
+amount = 10_000
+→ emission.emit(processId, 10_000): mint 10_000 ARO; burn 10_000 ARO (net = 0)
+→ commission.computeFee(10_000) = 50 ARO
+    On finalize: node pool = 50 × 0.75 = 37.50 → coin.recordEarned
+                 AFC share = 50 × 0.25 = 12.50 → reserve.addAfcAccrual (audit only)
+→ reserve.totalProcessVolume() = 10_000            (was 10_012.50 before this fix)
+→ reserve.reserveIndex()       = log10(1 + 10_000) ≈ 4.0000  (unchanged by AFC margin)
+→ internalPrice = base × 4.0000
+```
+
+### Result
+
+**One real deviation found and corrected** after 28 prior sessions missed it
+by checking formula strings rather than tracing the reference's actual data
+flow. `reserveIndex`/`internalPrice` now derive strictly from PoT-verified
+transaction volume, matching `reference/ast-core/src/reserve.ts`,
+`docs/specs/AST_Reserve_AGENT_EN.md`, and `01_coin_engine/coin_emission_model.md`.
+All other components (1:1 emission, 0.5% commission with 75/25 split, PoT
+gating, burn symmetry, `src/token/` absence) remain confirmed canonical.

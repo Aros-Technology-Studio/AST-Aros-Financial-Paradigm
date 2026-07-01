@@ -1116,3 +1116,47 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-07-01 Full Re-Audit (branch: claude/inspiring-cannon-jm5iat)
+
+Independent re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/emission/`,
+`src/aroscoin/`, `src/commission/`, `src/reserve/`. All source files read from scratch; no prior
+session context assumed.
+
+### Structural Findings (unchanged)
+
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` remain documentation-only folders
+  (specs, no executable code); neither is marked Deprecated. No migration is pending there.
+- `src/token/` still does not exist. Production emission logic lives entirely in
+  `src/emission/emission.service.ts`, `src/aroscoin/aroscoin.service.ts`,
+  `src/commission/commission.service.ts`, and `src/reserve/reserve.service.ts`.
+
+### Canonical Model Re-Verified Line-by-Line
+
+```
+Emission     = Transaction Amount                (1:1, verified === 1 gate)   emission.service.ts:57,61,111
+Commission   = Transaction Amount × 0.005        (0.5% feeRate)               commission.service.ts:65,91-93
+  Node Share = Commission × 0.75                 (75% → nodes post-factum)    commission.service.ts:134,144
+  AFC Share  = Commission × 0.25                 (25% → reserve.addAfcAccrual) commission.service.ts:68,154-155
+Burn         = Emission amount on cycle completion (processNet → 0, I5)       emission.service.ts:85-88
+totalSupply  = (processMinted - processBurned) + earnedRetained (I6)         aroscoin.service.ts:104-107
+reserveIndex = log10(1 + totalProcessVolume)     (I-RS-1/I-RS-2)             reserve.service.ts:98-101
+```
+
+Confirmed matching the canonical spec given in this session's task exactly: $10,000 tx →
+10,000 ARO minted 1:1, 50 ARO commission (0.5%), 37.50 ARO to nodes (75%), 12.50 ARO to AFC
+reserve (25%), process part burned on cycle completion.
+
+### Automated Verification
+
+Ran the full invariant and unit suite fresh (`npx jest src/invariants src/emission
+src/commission src/reserve src/aroscoin`): **5 suites, 41 tests, all passing.** No regressions
+since session 26.
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required.** The emission logic already implements the
+canonical 1:1 model exactly as specified; `01_coin_engine/` and `10_proof_of_transaction_engine/`
+remain documentation-only with no deprecated code to migrate.

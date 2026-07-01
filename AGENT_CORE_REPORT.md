@@ -1115,4 +1115,61 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 ### Result
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
+
+---
+
+## 27. 2026-07-01 Full Re-Audit (branch: `claude/inspiring-cannon-ddwokq`)
+
+Independent re-verification against the assigned task: locate emission logic across
+`01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`, confirm conformance
+to the canonical 1:1 model, and correct any deviation found.
+
+### Directories Located
+
+- `src/token/` — does **not** exist (confirmed again). No legacy/deprecated token module
+  to migrate away from. Production emission logic lives in `src/emission/`,
+  `src/aroscoin/`, `src/commission/`, `src/reserve/`.
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` — documentation only
+  (`.md`/`.json` spec files). Neither directory nor its `README.md` carries a
+  `Deprecated` marker; there is no code to migrate out of them. `coin_emission_model.md`
+  already points at the correct code path (`src/emission/emission.service.ts`) from the
+  fix applied in §3–4 above.
+
+### Canonical Model Re-Verified Line-by-Line
+
+Re-read `src/emission/emission.service.ts`, `src/commission/commission.service.ts`,
+`src/reserve/reserve.service.ts`, and `src/orchestrator/orchestrator.service.ts` in full
+against `docs/specs/AST_Emission_AGENT_EN.md`, `AST_Commission_AGENT_EN.md`,
+`AST_Reserve_AGENT_EN.md`, and `reference/ast-core/src/{emission,reserve}.ts`:
+
+| Canonical Requirement | File:Line | Status |
+|---|---|---|
+| `emission = txAmount` (1:1, no multiplier) | `emission.service.ts:111` | CONFIRMED |
+| Mint gated on `verified === 1`; throws otherwise | `emission.service.ts:71-75` | CONFIRMED |
+| Burn mirrors mint, `processNet → 0` | `emission.service.ts:85-89` | CONFIRMED |
+| `commission = txAmount × 0.005` | `commission.service.ts:65,91-94` | CONFIRMED |
+| 75% node pool / 25% AFC reserve split | `commission.service.ts:68,134,154-155` | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `commission.service.ts:168` | CONFIRMED |
+| `reserveIndex = log10(1 + totalProcessVolume)` | `reserve.service.ts:98-101` | CONFIRMED |
+| Orchestrator order: mint → commission.accrue → burn | `orchestrator.service.ts:162-176` | CONFIRMED |
+| No staking/slashing/token-vote/farming/mint-on-deposit (P1-P5) | `src/` tree grep | CONFIRMED (only negative-test assertions match) |
+
+### Verification Run
+
+- `npm ci` (fresh install, 942 packages).
+- `npx tsc -p tsconfig.build.json --noEmit` → clean, no errors.
+- `npx jest` (full suite) → **20 suites / 150 tests passed**, including
+  `src/invariants/invariants.spec.ts` (I1–I10) and `reserve.service.spec.ts`'s
+  explicit check that `reserve.afc.accrual` audit events do not enter `totalProcessVolume`
+  while `commission.epoch.finalized`'s `operationalMargin` does (per spec `margin_from: Commission`,
+  established and tested since §26 and earlier sessions).
+
+### Result
+
+**CONFIRMED CANONICAL — no code changes required.** This session's from-scratch reading
+of the production emission path reaches the same conclusion as sessions §9–§26: the
+1:1 emission, 0.5% commission with 75/25 split, PoT gating, and log10 reserve index are
+all implemented exactly per `docs/specs/` and `reference/ast-core/`. `src/token/` and
+any "Module 01" code do not exist to be deprecated — `01_coin_engine/` has always been
+documentation, already corrected to reference the real code path.
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.

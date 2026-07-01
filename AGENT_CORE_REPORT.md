@@ -1173,3 +1173,57 @@ all implemented exactly per `docs/specs/` and `reference/ast-core/`. `src/token/
 any "Module 01" code do not exist to be deprecated — `01_coin_engine/` has always been
 documentation, already corrected to reference the real code path.
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 28. 2026-07-01 Full Re-Audit (branch: `claude/inspiring-cannon-r1aodm`)
+
+Independent re-verification against the assigned task: locate emission logic across
+`01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`, confirm conformance
+to the canonical model (`Emission = txAmount` 1:1; `Commission = txAmount × rate` with
+75% to nodes / 25% to AFC reserve; ARO burned after the transaction cycle completes;
+reserve growth raising the price of subsequent emissions), and correct any deviation found.
+
+### Directories Located
+
+- `src/token/` — does **not** exist (confirmed again, 28th time). No legacy module to
+  migrate away from. Production emission logic lives in `src/emission/`, `src/aroscoin/`,
+  `src/commission/`, `src/reserve/`, wired together by `src/orchestrator/`.
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` — documentation only
+  (`.md`/`.json` spec files, no executable code). Neither carries a `Deprecated` marker;
+  there is no "Module 01" runtime to deprecate or migrate out of.
+
+### Canonical Model Re-Verified Line-by-Line
+
+| Canonical Requirement | File:Line | Status |
+|---|---|---|
+| `emission = txAmount` (1:1, no multiplier) | `emission.service.ts:111` | CONFIRMED |
+| Mint gated on `verified === 1`; refuses/throws otherwise | `emission.service.ts:56-59,71-75` | CONFIRMED |
+| Burn mirrors mint, `processNet → 0` | `emission.service.ts:85-89` | CONFIRMED |
+| `commission = txAmount × 0.005` (default rate) | `commission.service.ts:69,91-94` | CONFIRMED |
+| 75% node pool / 25% AFC reserve split | `commission.service.ts:68,72,134,159` | CONFIRMED |
+| Nodes paid post-factum by PoT-confirmed weight | `commission.service.ts:137-147` | CONFIRMED |
+| Pool reconciles: paid + margin = fees (ε = 1e-9, I7) | `commission.service.ts:172` | CONFIRMED |
+| Supply identity `(minted-burned)+earned` | `aroscoin.service.ts:86-89` | CONFIRMED |
+| `reserveIndex = log10(1 + totalProcessVolume)` | `reserve.service.ts:92-94` | CONFIRMED |
+| Reserve grows from confirmed volume + AFC accrual | `reserve.service.ts:39-58` | CONFIRMED |
+| No staking/slashing/token-vote/farming/mint-on-deposit (P1-P5) | `src/` tree grep | CONFIRMED (only positive-language doc comments mention their absence) |
+
+### Verification Run (this session, from a clean install)
+
+- `npm ci` — fresh install, 942 packages, no lockfile drift.
+- `npx tsc -p tsconfig.build.json --noEmit` → clean, no errors.
+- `npx jest` (full suite) → **20 suites / 150 tests passed**, including
+  `src/invariants/invariants.spec.ts` (I1–I10) and `reserve.service.spec.ts`.
+
+### Result
+
+**CONFIRMED CANONICAL — no code changes required.** This session's from-scratch reading
+of `01_coin_engine/`, `10_proof_of_transaction_engine/`, and the production emission path
+(`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`) reaches the same
+conclusion as sessions §9–§27: the 1:1 emission, 0.5% commission with 75/25 split,
+PoT gating, post-factum node payment, and log10 reserve index are all implemented exactly
+per `docs/specs/` and `reference/ast-core/`. `src/token/` continues not to exist, and
+`01_coin_engine/`'s Module 01 documentation has no deprecated runtime counterpart to
+migrate. All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified
+independently in this session.

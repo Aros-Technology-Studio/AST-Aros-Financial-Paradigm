@@ -1172,4 +1172,41 @@ of the production emission path reaches the same conclusion as sessions §9–§
 all implemented exactly per `docs/specs/` and `reference/ast-core/`. `src/token/` and
 any "Module 01" code do not exist to be deprecated — `01_coin_engine/` has always been
 documentation, already corrected to reference the real code path.
+
+---
+
+## 28. 2026-07-01 Full Re-Audit (branch: `claude/inspiring-cannon-ubvfmj`)
+
+Follow-up run of the same standing task (locate emission logic in `01_coin_engine/`,
+`10_proof_of_transaction_engine/`, `src/token/`; verify against the canonical 1:1 model;
+correct any deviation). Performed a clean-room verification rather than trusting §1–§27.
+
+### Findings
+
+- `src/token/` — still does not exist. No legacy/deprecated token module to migrate.
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` — still documentation only
+  (Markdown/JSON specs). Neither carries a `Deprecated` marker. `coin_emission_model.md`
+  still points at `src/emission/emission.service.ts` as the live code path.
+- Re-read `src/emission/emission.service.ts`, `src/aroscoin/aroscoin.service.ts`,
+  `src/commission/commission.service.ts` in full:
+  - `EmissionService.emit/mint/burn` — 1:1 mint gated on `verified === 1`, burn mirrors
+    mint, `calculate()` pure formula (`emission = txAmount`) — unchanged, correct.
+  - `ArosCoinService` — three-tally ledger, `totalSupply = (minted-burned)+earnedRetained`
+    — unchanged, correct.
+  - `CommissionService` — `feeRate = 0.005`, `marginRate = 0.25` (25% AFC / 75% nodes),
+    epoch pool reconciles within `1e-9`, AFC share routed via `reserve.addAfcAccrual` —
+    unchanged, correct.
+
+### Verification Run
+
+- `npm ci` (fresh install, 942 packages).
+- `npx tsc -p tsconfig.build.json --noEmit` → clean, no errors.
+- `npx jest` → **20 suites / 150 tests passed**, including `src/invariants/invariants.spec.ts`
+  (I1–I10).
+
+### Result
+
+**CONFIRMED CANONICAL — no code changes required.** Identical conclusion to §1–§27: the
+emission engine already implements the canonical 1:1 model exactly as specified by the
+task, and there is no deprecated Module 01 code to relocate.
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.

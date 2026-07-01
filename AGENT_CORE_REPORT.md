@@ -1173,3 +1173,34 @@ all implemented exactly per `docs/specs/` and `reference/ast-core/`. `src/token/
 any "Module 01" code do not exist to be deprecated — `01_coin_engine/` has always been
 documentation, already corrected to reference the real code path.
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 28. 2026-07-01 Scheduled Re-Audit (branch: `claude/inspiring-cannon-xhco3k`)
+
+Routine re-check of the assigned task: locate emission logic in `01_coin_engine/`,
+`10_proof_of_transaction_engine/`, `src/token/`; verify conformance to the canonical
+1:1 model; correct any deviation found.
+
+### Findings
+
+- `src/token/` still does not exist; no legacy module to migrate.
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` remain documentation-only,
+  with `coin_emission_model.md` already pointing at `src/emission/emission.service.ts`.
+- Read `src/emission/emission.service.ts`, `src/commission/commission.service.ts`,
+  and `src/reserve/reserve.service.ts` in full: `emission = txAmount` (1:1, PoT-gated
+  via `verified === 1`), `commission = txAmount × 0.005` split 75% nodes / 25% AFC
+  reserve, and `reserveIndex = log10(1 + totalProcessVolume)` all remain exactly as
+  specified and as confirmed in §9–§27.
+- `npm ci`, `npx tsc -p tsconfig.build.json --noEmit` (clean), and `npx jest`
+  (8 suites / 61 tests covering emission, commission, reserve, orchestrator, and
+  invariants I1–I10) all pass.
+- Grep for staking/slashing/token-weighted-voting/mint-on-deposit/farming across
+  `src/**/*.ts` (excluding spec files) returns no matches — prohibitions P1–P8 hold.
+
+### Result
+
+**CONFIRMED CANONICAL — no code changes required.** This is the same conclusion as
+every prior audit in this report (§9–§27): the production emission path already
+implements the canonical 1:1 model exactly per `docs/specs/` and `reference/ast-core/`,
+with no Model-A remnants in the emission/commission/reserve path.

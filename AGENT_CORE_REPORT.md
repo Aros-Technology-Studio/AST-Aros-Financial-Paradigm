@@ -1230,3 +1230,34 @@ update into `main`. Since the underlying code has not required a change since
 at least session §9-§10, further scheduled runs of this exact task are
 unlikely to find new work; the task's recurrence/trigger may be worth
 reviewing upstream.
+
+## 29. 2026-07-01 Full Re-Audit (branch: `claude/inspiring-cannon-cw246b`, session 29)
+
+Independent re-verification against the same assigned task (locate emission logic
+across `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`; confirm
+conformance to the canonical 1:1 model; correct any deviation).
+
+### Findings
+
+- `src/token/` still does not exist; `01_coin_engine/` and
+  `10_proof_of_transaction_engine/` remain documentation-only, with no `Deprecated`
+  marker and no code to migrate.
+- Read `src/emission/emission.service.ts`, `src/commission/commission.service.ts`,
+  and `src/reserve/reserve.service.ts` in full: emission is strictly PoT-gated
+  (`verified === 1`), mints exactly `txAmount` (1:1), burns the same amount on
+  completion (`processNet → 0`), commission is `0.005 × amount` split 75% nodes /
+  25% AFC reserve, and `reserveIndex = log10(1 + totalProcessVolume)` — unchanged
+  from session 28 and matching `docs/specs/` and `reference/ast-core/` verbatim.
+- `npm ci` + `npx jest`: **20 suites / 150 tests passed**, no failures.
+
+### Result
+
+**CONFIRMED CANONICAL — no code changes required.** This is the twelfth
+consecutive independent audit session (§18–§29) to re-derive the identical
+conclusion. Per the process note in §28, this exact task has now run at least
+29 times since 2026-06-19 — four times on 2026-07-01 alone (09:11, 12:32, 17:11,
+20:23 UTC, PRs #423/#495/#499 and this session) — with zero net code changes
+across the entire span. **Recommendation carried forward from §28, now stronger:**
+the upstream scheduler/trigger dispatching this task should be reviewed and its
+frequency reduced or the task retired, since it is producing recurring no-op
+branches/PRs rather than new findings.

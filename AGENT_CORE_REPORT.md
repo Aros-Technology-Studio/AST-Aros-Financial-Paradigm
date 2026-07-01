@@ -1172,4 +1172,46 @@ of the production emission path reaches the same conclusion as sessions §9–§
 all implemented exactly per `docs/specs/` and `reference/ast-core/`. `src/token/` and
 any "Module 01" code do not exist to be deprecated — `01_coin_engine/` has always been
 documentation, already corrected to reference the real code path.
+
+---
+
+## 28. 2026-07-01 Full Re-Audit (branch: `claude/inspiring-cannon-lpyax2`)
+
+Independent re-verification, repeating the assigned audit against `01_coin_engine/`,
+`10_proof_of_transaction_engine/`, `src/token/`, and the production emission path.
+
+### Directories Located (unchanged from §27)
+
+- `src/token/` — still does not exist. No legacy/deprecated token module to migrate.
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` — still documentation only
+  (`.md`/`.json`), no `Deprecated` marker, no code to migrate out of them.
+
+### Canonical Model Re-Verified
+
+Read `src/emission/emission.service.ts`, `src/commission/commission.service.ts`, and
+`src/reserve/reserve.service.ts` in full:
+
+| Canonical Requirement | File:Line | Status |
+|---|---|---|
+| `emission = txAmount` (1:1, no multiplier) | `emission.service.ts:111` | CONFIRMED |
+| Mint gated on `verified === 1` | `emission.service.ts:71-75` | CONFIRMED |
+| Burn mirrors mint, `processNet → 0` | `emission.service.ts:85-89` | CONFIRMED |
+| `commission = txAmount × 0.005` | `commission.service.ts:65,91-94` | CONFIRMED |
+| 75% node pool / 25% AFC reserve split | `commission.service.ts:68,134,154-155` | CONFIRMED |
+| Pool reconciles (I7, ε = 1e-9) | `commission.service.ts:168` | CONFIRMED |
+| `reserveIndex = log10(1 + totalProcessVolume)` | `reserve.service.ts:98-101` | CONFIRMED |
+| No staking/slashing/token-vote/farming/mint-on-deposit (P1-P5) | `src/` tree grep | CONFIRMED (only a positive-language comment noting the absence) |
+
+### Verification Run
+
+- `npm ci` (fresh install, 942 packages).
+- `npx tsc -p tsconfig.build.json --noEmit` → clean, no errors.
+- `npx jest` (full suite) → **20 suites / 150 tests passed**.
+
+### Result
+
+**CONFIRMED CANONICAL — no code changes required.** This is the fifth consecutive
+independent from-scratch audit (§19, §20, §26, §27, §28) to reach the same conclusion:
+the production emission path already implements the canonical 1:1 model exactly as
+specified, and there is no deprecated Module 01 or `src/token/` code left to migrate.
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.

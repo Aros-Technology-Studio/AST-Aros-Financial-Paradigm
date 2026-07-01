@@ -1173,3 +1173,60 @@ all implemented exactly per `docs/specs/` and `reference/ast-core/`. `src/token/
 any "Module 01" code do not exist to be deprecated — `01_coin_engine/` has always been
 documentation, already corrected to reference the real code path.
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 28. 2026-07-01 Full Re-Audit (branch: `claude/inspiring-cannon-hob4le`, session 28)
+
+Independent re-verification against the assigned task: locate emission logic across
+`01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`, confirm conformance
+to the canonical 1:1 model, and correct any deviation found.
+
+### Directories Located
+
+- `src/token/` — still does not exist. No legacy/deprecated token module to migrate.
+  Production emission logic remains in `src/emission/`, `src/aroscoin/`,
+  `src/commission/`, `src/reserve/`.
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` — documentation only
+  (`.md`/`.json`). No `Deprecated` marker, no code to migrate out of them.
+
+### Canonical Model Re-Verified
+
+Read `src/emission/emission.service.ts` in full: `emit()` gates on
+`pot.getVerdict(processId).verified === 1` (lines 55-63), mints via
+`coin.recordMint` + NodeChain `emission.minted` (71-79), then burns the same
+amount via `coin.recordBurn` + NodeChain `emission.burned` (85-89), so
+`processNet → 0`. The pure-formula helper `calculate()` (107-119) implements
+`emission = txAmount` (1:1, no multiplier), `commission = txAmount × 0.005`,
+75%/25% node/AFC split via `nodeShare: commission * 0.75` /
+`afcShare: commission * 0.25` — matching the canonical model verbatim.
+
+Confirmed in `src/commission/commission.service.ts`: `feeRate = 0.005` (line 65),
+`marginRate = 0.25` (line 68) → 75% to nodes. Confirmed in
+`src/reserve/reserve.service.ts`: `reserveIndex = log10(1 + totalProcessVolume)`
+(lines 98-101).
+
+### Verification Run
+
+- `npm ci` — clean install.
+- `npx jest` (full suite) → **20 suites / 150 tests passed**, including
+  `src/invariants/invariants.spec.ts` (I1–I10).
+
+### Result
+
+**CONFIRMED CANONICAL — no code changes required.** This is the eleventh
+consecutive independent audit session (§18–§28, spanning 2026-06-20 to
+2026-07-01) to re-derive the same conclusion from a fresh reading of the code:
+the production emission path in `src/emission/`, `src/commission/`, and
+`src/reserve/` already implements the canonical 1:1 emission model exactly as
+specified, and there is no deprecated Module 01 / `src/token/` code left to
+migrate. No further code changes are being made by this session.
+
+**Process note:** this task ("locate and, if needed, correct the emission
+model") has now been dispatched and independently re-confirmed as already-done
+across at least 28 sessions and ~390 `claude/inspiring-cannon-*` branches in
+this repository, each producing a new branch/PR that merges a no-op report
+update into `main`. Since the underlying code has not required a change since
+at least session §9-§10, further scheduled runs of this exact task are
+unlikely to find new work; the task's recurrence/trigger may be worth
+reviewing upstream.

@@ -2,7 +2,7 @@
 
 **Agent:** AGENT-CORE
 **Branch:** `agent/core-emission`
-**Date:** 2026-06-21 (updated — see §23 for latest session; §9–§22 for prior sessions)
+**Date:** 2026-07-01 (updated — see §27 for latest session, a real deviation found and fixed; §9–§26 for prior sessions)
 **Task:** Audit ArosCoin emission logic against the canonical model; correct remaining deviations.
 
 ---
@@ -240,6 +240,7 @@ All production modules verified against `reference/ast-core/src/` and
 | **2026-06-19** | `agent/core-emission` | Comment bug fixed, docs corrected, `calculate()` added, burn_and_mint_rules.md rewritten — see §9 |
 | **2026-06-27** | `claude/inspiring-cannon-acx35v` | Session 19 re-audit; canonical 1:1 emission confirmed; no code changes required — see §25 |
 | **2026-06-29** | `claude/inspiring-cannon-jjvqg4` | Full re-audit; canonical 1:1 emission confirmed; no code changes required — see §26 |
+| **2026-07-01** | `agent/core-emission` | Real deviation found: AFC commission margin was leaking into `reserveIndex` via `totalProcessVolume()`; fixed, test corrected — see §27 |
 
 ---
 
@@ -1116,3 +1117,68 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-07-01 Full Re-Audit — Real Deviation Found and Fixed (branch: `agent/core-emission`)
+
+**Scope:** Independent re-audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`,
+`src/token/` (absent), `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`,
+`src/orchestrator/`, `reference/ast-core/src/`, `docs/specs/`. Unlike sessions 3–26, this
+run traced the full body of `ReserveService.totalProcessVolume()` line by line against
+`reference/ast-core/src/reserve.ts` and `reference/ast-core/src/orchestrator.ts`, rather than
+only checking the shape of `reserveIndex() = log10(1 + totalProcessVolume)`.
+
+### Deviation Found: AFC commission margin was leaking into `reserveIndex`
+
+**File:** `src/reserve/reserve.service.ts`
+
+`totalProcessVolume()` summed **two** NodeChain event types:
+1. `emission.minted` — correct, matches `reference/ast-core/src/orchestrator.ts`
+   (`reserve.addConfirmedVolume(req.amount)`, called once per confirmed process with the
+   transaction amount).
+2. `commission.epoch.finalized`, adding its `operationalMargin` field (the 25% AFC share) —
+   **not present in the reference implementation at all**. `Reserve.addConfirmedVolume` in
+   `reference/ast-core/src/reserve.ts` is called only from the process lifecycle with
+   `req.amount`; `Commission.finalizeEpoch` never touches `Reserve` in the reference.
+
+This directly violated **I-RS-1** ("grows only from confirmed volume") as stated in the
+machine-readable spec (`docs/specs/AST_Reserve_AGENT_EN.md`: `totalProcessVolume = aggregate
+of tx with verified==1`) — and contradicted three other doc comments in the very same file
+(`reserveIndex()`, `addAfcAccrual()`, `totalAfcReserve()` docstrings), which all already
+stated AFC accruals do **not** enter the formula. Only the class-level JSDoc and the
+`totalProcessVolume()` docstring had been (incorrectly) written to match the buggy code,
+and a dedicated unit test in `reserve.service.spec.ts` asserted the wrong behavior directly
+(`'AFC reserve margin from commission.epoch.finalized grows totalProcessVolume and
+reserveIndex'`), which is why 20+ prior audit sessions did not catch it — they confirmed the
+`log10(1 + totalProcessVolume)` formula shape and the invariant-claiming comments elsewhere,
+but never re-derived what `totalProcessVolume()` itself actually summed.
+
+**Effect on the canonical model:** every epoch finalization silently inflated the reserve
+index (and therefore `internalPrice = base × reserveIndex`) by the AFC margin amount, on top
+of confirmed transaction volume — a real, compounding deviation from the 1:1 canonical model,
+not a comment-only issue.
+
+### Fix Applied
+
+| File | Change |
+|------|--------|
+| `src/reserve/reserve.service.ts` | Removed the `commission.epoch.finalized` branch (and its now-unused `COMMISSION_EPOCH_EVENT` constant) from `totalProcessVolume()`; it now sums `emission.minted` only. Corrected the class-level JSDoc and method docstring to match. |
+| `src/reserve/reserve.service.spec.ts` | Replaced the test that asserted the AFC margin *grows* `totalProcessVolume`/`reserveIndex` with one asserting it does **not** (I-RS-1), matching the pattern already used for the "unverified process contributes no volume" case. |
+| `src/orchestrator/orchestrator.service.ts` | Corrected the Step 8 comment, which had claimed `reserveIndex` is derived from both `emission.minted` and `reserve.afc.accrual` events; it is derived from `emission.minted` only. |
+| `src/commission/commission.service.ts` | Corrected a stale inline comment in `finalizeEpoch()` (line ~152) that said the AFC share routes to Reserve "so the capitalization index grows" — contradicted the method's own JSDoc two lines above (already fixed in session 12/§19) and I-RS-1. Now states the AFC share is an audit-trail accrual only. |
+
+### Verification
+
+- `npx tsc --noEmit` — clean.
+- `npx jest` — **150/150 tests pass** across 20 suites (updated `reserve.service.spec.ts` test passes with the corrected assertion).
+- `npm run check:prohibitions` — clean (P1–P8).
+- Re-traced the $10,000 example end-to-end: `reserveIndex` after one confirmed $10,000
+  process and its epoch finalization is now exactly `log10(1 + 10,000) ≈ 4.0000` — the AFC
+  margin (12.50) no longer perturbs it, matching the reference implementation exactly.
+
+### Result
+
+**ONE REAL DEVIATION FOUND AND FIXED** (the first substantive code fix since session 12/§19).
+All other canonical model components (emission 1:1, commission 0.5%/75-25 split, burn
+symmetry, PoT gate, invariants I1–I10, prohibitions P1–P8) remain confirmed correct.

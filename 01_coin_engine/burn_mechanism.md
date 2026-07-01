@@ -12,61 +12,65 @@ The burn logic is embedded directly in the transaction processing layer of AST. 
 
 ## III. Burn Logic Overview
 
-**1.Transaction-Based Burning**
-- A fixed percentage of each transaction fee is automatically burned.
+**1. Process-Part Burning (canonical, 1:1)**
+- The entire minted process part is burned on cycle completion — not a fraction of the fee.
 - Example:
-fee = 2.00 ARO  
-burn_rate = 15%  
-→ 0.30 ARO burned, 1.70 ARO distributed to validators
+  ```
+  txAmount = 2.00 ARO
+  emission (minted) = 2.00 ARO   (1:1 with txAmount)
+  burn (on completion) = 2.00 ARO
+  net circulating change = 0
+  ```
+- The commission (`txAmount × rate`, default 0.5%) is a *separate* flow: 75% to the node pool,
+  25% to the AFC reserve. It is never burned — see `payment_distribution.md` and
+  `coin_emission_model.md`.
 
+**2. NodeChain Incentive Alignment**
+- The process part's mint and burn are both recorded in NodeChain (`emission.minted`,
+  `emission.burned`), so `processMinted == processBurned` after every confirmed cycle (I5).
+- Node payment comes from the commission pool, not from the burned process part — burning the
+  process part has no effect on node earnings; it only keeps `totalSupply` derived purely from
+  `earnedRetained` once cycles complete (I6).
 
-**2.NodeChain Incentive Alignment**
-- Nodes benefit from reduced emission in high-burn epochs.
-- A feedback loop is established:
-- More burn → Less total supply → Potentially higher value per ARO → Higher validator incentive per unit
+**3. Reserve Growth (organic throttle)**
+- There is no separate overflow-burn schedule: the AFC reserve share (25% of commission) grows
+  `reserveIndex = log10(1 + totalProcessVolume)` monotonically with confirmed volume, making the
+  internal price of future emission rise organically as activity grows (`coin_volatility_controls.md`).
 
-**3.Overflow Burn (Emergency Throttle)**
-- If total circulation exceeds predefined threshold, additional burn rate is applied per epoch.
-- Triggered by:
-- total_supply > target_ceiling
-- velocity_of_token < minimum_velocity_threshold
-
-**4.Dead Wallet Strategy**
-- Burned tokens are sent to a verifiable unspendable address.
-- Example: aro1dead0000000000000000000000000000000000000000000burn
-- This address is monitored by an independent audit service (burn_audit_agent).
+**4. Audit Trail**
+- Every burn is an explicit NodeChain event (`emission.burned`, `{ processId, burned }`) rather
+  than a transfer to a dead-letter address; the append-only chain is itself the audit trail
+  (I3, I8).
 
 ⸻
 
 ## IV. Parameters and Constants
 
-| Parameter                  | Description                            | Default Value    |
-|----------------------------|----------------------------------------|------------------|
-| burn_rate                  | Percentage of transaction fee burned   | 15%              |
-| target_ceiling             | Max total supply before overflow logic | 1,000,000,000 ARO|
-| overflow_burn_rate         | Additional rate during overflow        | 10%              |
-| minimum_velocity_threshold | Velocity below which overflow triggers | 0.7              |
-
-```
+| Parameter        | Description                                      | Default Value |
+|-------------------|--------------------------------------------------|----------------|
+| commissionRate    | Fraction of `txAmount` charged as commission     | 0.5%           |
+| marginRate        | Share of commission routed to the AFC reserve    | 25%            |
 
 ⸻
 
 ## V. Execution Flow
 
-
+```
 flowchart TD
-    A[New Transaction] --> B[Calculate Fee]
-    B --> C[Apply Burn Rate]
-    C --> D[Send Portion to Burn Wallet]
-    C --> E[Distribute Remainder to Validators]
-    A --> F[Trigger Overflow Check]
-    F -->|Yes| G[Apply Extra Burn Rate]
-    F -->|No| H[Continue Standard Flow]
+    A[Confirmed Process, verified == 1] --> B[EmissionService.mint: process part = amount]
+    B --> C[NodeChain: emission.minted]
+    C --> D[CommissionService.accrue: fee = amount × rate]
+    D --> E[EmissionService.burn: process part]
+    E --> F[NodeChain: emission.burned]
+```
 
 ⸻
 
 ## VI. Monitoring and Audit
-•burn_audit_agent service publishes regular burn stats to the AST public dashboard.
-•Token explorers will tag burn transactions for full transparency.
-•Any anomaly in burn volume per epoch triggers an emission_safety_flag.
+
+- Every mint/burn is appended to NodeChain and readable by any auditor without replaying
+  transaction execution (I3, I8).
+- The All-Seeing Eye observes each cycle and compares supply (`AllSeeingEyeService.compareSupply`)
+  but never halts or reverses a burn itself (P6).
+- Reference implementation: `src/emission/emission.service.ts` (`EmissionService.mint`/`.burn`).
 

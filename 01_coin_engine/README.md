@@ -1,24 +1,24 @@
-**AROS Tokenomics — Coin Engine**
+# AROS Tokenomics — Coin Engine (Model-1)
 
 **Path: AROS-PARADIGM-AST/01_coin_engine/README.md**
 
-Core documentation for the AROS Coin Engine (ACE), the tokenomics module inside AST (Aros Studio Tokenomics). This README describes the crypto-native logic of ArosCoin. It is independent of AFC or ALB — integration with fiat systems happens only through AFC, outside this repository.
+Core documentation for the AROS Coin Engine (ACE), the tokenomics module inside AST (Aros Studio Tokenomics). This README describes the crypto-native logic of ArosCoin under the Model-1 canonical specification. It is independent of AFC or ALB — integration with fiat systems happens only through AFC, outside this repository.
 
 ⸻
 
 **1) What is the Coin Engine?**
 
 The Coin Engine (ACE) is the deterministic subsystem that defines:
-	•	Fee Distribution logic for AROS (base unit: arx),
-	•	Mint/Burn rules bound to Proof-of-Transaction (PoT),
-	•	Payment distribution for validators and network actors,
-	•	State transitions audited by NodeChain,
-	•	Architectural oversight via The All-Seeing Eye (meta-layer compliance control).
+- **1:1 Emission** bound to Proof-of-Transaction (PoT) — one ARO minted per one unit of confirmed transaction value.
+- **Mint/Burn rules** — the process part is minted on PoT confirmation and burned on cycle completion; net supply change per cycle is zero.
+- **Commission distribution** — 75% of the fee to processing nodes by PoT-confirmed weight; 25% to the AFC Reserve.
+- **State transitions** audited by NodeChain (append-only, hash-linked).
+- **All-Seeing Eye** — passive observation of every emission cycle; no enforcement, no state mutation.
 
 **Design principles:**
-	•	Determinism over discretion — every token movement must be reproducible from canonical inputs.
-	•	Separation of concerns — emission ≠ conversion ≠ settlement.
-	•	Legibility — each rule is expressed as a function with auditable inputs/outputs.
+- Determinism over discretion — every token movement is reproducible from canonical inputs.
+- Separation of concerns — emission ≠ conversion ≠ settlement.
+- Legibility — each rule is expressed as a function with auditable inputs/outputs.
 
 ⸻
 
@@ -26,155 +26,116 @@ The Coin Engine (ACE) is the deterministic subsystem that defines:
 
 ```
 01_coin_engine/
-├── README.md                    # This file
-├── coin_engine_overview.md      # Narrative architecture & invariants
-├── coin_emission_model.md       # Fee Distribution schedules & formulas (math spec)
-├── coin_use_cases.md            # Canonical flows: payments, fees, subsidies
-├── burn_and_mint_rules.md       # Allowed state transitions & guards
-├── payment_distribution.md       # Validator/actor payment logic
-├── AROS_Coin_TokenSpec.json     # Machine-readable token spec
-├── /specs                       # JSON schemas, OpenAPI fragments
-├── /src                         # Reference implementation (TS/Rust)
-├── /tests                       # Unit/integration/property tests
-└── /fixtures                    # Deterministic samples for test vectors
+├── README.md                       # This file
+├── coin_emission_model.md          # Canonical 1:1 emission formula & examples (Model-1)
+├── aro_emission_protocol.md        # Emission trigger sequence and supply invariants
+├── coin_use_cases.md               # Canonical flows: payments, fees
+├── burn_and_mint_rules.md          # PoT-gated mint/burn transitions & guards
+├── burn_mechanism.md               # Process part burn on cycle completion
+├── payment_distribution.md         # Node payment logic (work + reputation weight)
+├── node_participation_payments.md  # Post-factum payment formula
+├── coin_volatility_controls.md     # Reserve index & price stability
+└── AROS_Coin_TokenSpec.json        # Machine-readable token spec
 ```
-If some files are missing in your repo, keep this structure and create stubs. Tests should pass with --update-snapshots only when invariants remain intact.
 
 ⸻
 
-**3) Quick Start**
+**3) Token Specification (Essentials)**
 
-Prerequisites
-	•	Node.js ≥ 20 or Rust ≥ 1.78 (choose one track)
-	•	Docker (optional) for reproducible environments
+- **Symbol:** AROS
+- **Base unit:** arx (1 AROS = 10^6 arx, fixed)
+- **Supply type:** Demand-driven; bounded by real confirmed transaction volume
+- **Decimals:** 6
 
-Install (TypeScript track)
-
-pnpm i # or npm i / yarn
-
-Run tests
-
-pnpm test
-
-Lint & type check
-
-pnpm lint && pnpm typecheck
-
+Machine-readable spec lives in `AROS_Coin_TokenSpec.json`.
 
 ⸻
 
-**4) Token Specification (Essentials)**
-	•	Symbol: AROS
-	•	Base unit: arx (1 AROS = 10^6 arx, fixed)
-	•	Supply type: Fee Distribution-bounded with PoT-weighted payments
-	•	Decimals: 6
-	•	Pause switches:
-	•	EMISSION_PAUSE (governance circuit-breaker)
-	•	MINT_BURN_PAUSE (kill-switch for state transitions)
+**4) Canonical Emission Formula (Model-1)**
 
-Machine-readable spec lives in AROS_Coin_TokenSpec.json.
+```
+Emission     = Transaction Amount           (1:1, no multiplier)
+Commission   = Transaction Amount × rate    (default rate = 0.5%)
+  Node Share = Commission × 0.75            (75% → processing nodes by PoT weight)
+  AFC Share  = Commission × 0.25            (25% → AFC reserve)
+Burn         = Emission amount              (destroyed after TX completes)
+Net supply Δ = 0                            (process part minted then burned; cycle symmetric)
+```
 
-⸻
-
-**5) Fee Distribution Model (Summary)**
-
-Fee Distribution = Base schedule × Network activity multiplier × Compliance factor.
-
-Base schedule is a predictable curve (piecewise geometric decay). Activity multiplier derives from PoT (volume/uniques/latency buckets). Compliance factor is a capped modifier from The All-Seeing Eye (0.0–1.0).
-
-Mathematical details are in coin_emission_model.md with reference vectors in /fixtures/emission/.
+Emission is authorized only when PoT records `verified === 1` for the process; an unverified
+or inadmissible process mints nothing (`AST_RULES.yaml` invariants I1/I2, prohibition P7).
+Full derivation and worked examples: `coin_emission_model.md`.
 
 ⸻
 
-**6) Mint/Burn & Guards**
+**5) Mint/Burn & Guards**
 
 Allowed transitions:
-	•	MINT[payment] — payment issuance per finalized PoT epoch.
-	•	BURN[fees] — protocol fee sink.
+- `MINT[process]` — process part issuance, gated on a PoT `verified === 1` verdict for that process.
+- `BURN[process]` — burns the same process part on cycle completion (net 0).
 
 Each transition passes through guards:
-	1.	Supply invariant: totalSupply_next = totalSupply_prev + Σmint − Σburn.
-	2.	Policy window: emission caps per epoch, anti-burst throttling.
-	3.	Double-spend prevention via NodeChain event IDs.
+1. Supply invariant: `totalSupply = (processMinted − processBurned) + earnedRetained` (I6).
+2. PoT gate: no mint without a confirmed verdict (I1/I2, P7).
+3. Double-spend prevention via NodeChain event IDs (I3, I8).
 
-See burn_and_mint_rules.md for exhaustive truth tables and failure codes.
-
-⸻
-
-**7) Payments & Distribution**
-	•	Epoch: fixed 600s (example; configurable via env POT_EPOCH_SECS).
-	•	Pool split: R_validator, R_operator, R_ecosystem with governance-locked ratios.
-	•	Weighting: validator shares proportional to PoT-contributed verified transactions, adjusted by reliability score and slashing events.
-
-Formulas and proofs in payment_distribution.md.
+See `burn_and_mint_rules.md` for the full transition table.
 
 ⸻
 
-**8) Configuration**
+**6) Commission & Payments**
 
-Environment variables (TypeScript impl):
+- Epoch: caller-supplied `epochNumber` (see `src/commission/commission.service.ts`).
+- Pool split: 75% to the node pool (by PoT-confirmed weight), 25% to the AFC reserve — fixed
+  ratios, no token-weighted governance (P3).
+- Weighting: node shares are proportional to `weight = reputation × uptime`, where
+  `reputation = successes / total × uptime` — work and availability, never a held balance (I9,
+  P1/P2). See `payment_distribution.md` for formulas and `10_proof_of_transaction_engine/pot_slashing_conditions.md`
+  for how misbehavior lowers future weight (never confiscates paid value).
 
+⸻
+
+**7) Configuration**
+
+Environment variables (TypeScript / NestJS implementation):
+
+```
 AROS_DECIMALS=6
-POT_EPOCH_SECS=600
-EMISSION_BASE_RATE=1.0
-EMISSION_DECAY=0.965
-COMPLIANCE_MAX_REDUCTION=0.25
-NODECHAIN_RPC=http://nodechain:8545
+COMMISSION_RATE=0.005
+COMMISSION_MARGIN_RATE=0.25
 KILL_SWITCH=false
+```
 
 Never store secrets in repo. Use Docker secrets or CI variables. AST has no end-user auth; integration is service-to-service only.
 
 ⸻
 
-**9) Reference API (Internal)**
+**8) Reference Implementation (NestJS)**
 
-OpenAPI fragments live in /specs/openapi/*.yaml. Typical flows:
+- `src/emission/emission.service.ts` — `EmissionService.calculate()` / `.mint()` / `.burn()` / `.emit()`
+- `src/commission/commission.service.ts` — `CommissionService.computeFee()` / `.accrue()` / `.finalizeEpoch()`
+- `src/aroscoin/aroscoin.service.ts` — `ArosCoinService`, the unit ledger (`totalSupply`, `processNet`, `retained`)
+- `src/reserve/reserve.service.ts` — `ReserveService.reserveIndex()` (`log10(1 + totalProcessVolume)`)
+- `src/nodes/nodes.service.ts` — `NodesService`, reputation-derived weight
+- `src/orchestrator/orchestrator.service.ts` — `OrchestratorService.runProcess()`, the full lifecycle
 
-9.1 Calculate next emission
-
-POST /v1/emission/next
-
-{
-  "epoch": 102934,
-  "activity": {"tx_volume": "321904.200000", "unique_senders": 1842, "latency_bucket": "P50"},
-  "policy": {"base_rate": 1.0, "decay": 0.965},
-  "compliance_factor": 0.92
-}
-
-Response:
-
-{"mint_arx": "128900000", "cap_hit": false, "explanations": ["base*decay*activity*compliance"]}
-
-**9.2 Apply mint/burn**
-
-POST /v1/supply/transition
-
-{
-  "transition_id": "tx_01HXR...",
-  "kind": "MINT_payment",
-  "amount_arx": "128900000",
-  "evidence": {"nodechain_event": "evt_...", "proof": "0xabc..."}
-}
-
-Response:
-
-{"ok": true, "total_supply_arx": "123456789000000"}
-
+Reference core (behavior is correct by construction): `reference/ast-core/src/`.
 
 ⸻
 
-**10) Data & Audit**
-	•	Event store: append-only log (hash-chained) mirrored to NodeChain.
-	•	Deterministic snapshots: created per epoch; reproducible from fixtures.
-	•	Audit adapters: write-ahead to audit-logger service; external read to compliance tools.
+**9) Data & Audit**
+
+- Event store: append-only NodeChain, hash-chained (`src/nodechain`).
+- Deterministic execution: identical inputs yield identical verdicts and supply (I4).
+- The All-Seeing Eye observes every mint/burn/distribution and compares supply, but never
+  halts, reverts, votes, or mutates state (`src/all-seeing-eye`, I10, P6).
 
 ⸻
 
-**11) Security & Invariants**
-	•	Zero-trust networking: service identity → mutual TLS; no public endpoints.
-	•	KillSwitch: KILL_SWITCH=true halts transitions; read-only mode persists.
-	•	Time consistency: monotonic epoch clock synced via Gateway; drift alarms.
-	•	Invariants tested:
-	•	Supply conservation under random sequences,
-	•	Idempotency on transition replay,
-	•	Bounded emission per policy caps.
+**10) Security & Invariants**
+
+- `KILL_SWITCH=true` halts transitions; read-only mode persists.
+- Invariants tested in `src/invariants/invariants.spec.ts` and `reference/ast-core/src/invariants.test.ts`:
+  - Supply conservation (`totalSupply == earnedRetained` after cycles complete, I5/I6).
+  - Commission pool reconciliation (`Σpayments + margin == Σfees`, I7).
+  - NodeChain append-only and hash-continuous (I8).

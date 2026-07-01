@@ -12,7 +12,6 @@ This document outlines how fees (generated from transaction commission) are dist
 |----------------------|--------------------------------------------------------------|
 | `commission`         | Transaction Amount × commission rate (default 0.5%)         |
 | `epoch_fees`         | Aggregate of `tx.fee` fields across all epoch transactions   |
-| `penalty_reallocation` | Tokens confiscated from slashed nodes via governance vote  |
 
 ---
 
@@ -23,35 +22,37 @@ This document outlines how fees (generated from transaction commission) are dist
 | **Node Pool**         | **75%**             | `SYSTEM_NODE_POOL_00000000000000000000`   |
 | **AFC Reserve**       | **25%**             | `SYSTEM_AFC_RESERVE_000000000000000000`   |
 
-The node pool is then sub-distributed to individual validators by PoT-normalized weight (see §3).
+The node pool is then sub-distributed to individual nodes by PoT-normalized weight (see §3).
 
 > **Historical note**: Earlier documentation showed a 60/15/15/5/5 multi-actor split. The canonical protocol adopted by PR #72 consolidates this into the 75/25 model. Governance bounties and ecosystem grants are funded separately from the AFC reserve, not from the per-TX commission split.
 
 ---
 
-## 3. Validator-Level Distribution (Node Pool)
+## 3. Node-Level Distribution (Node Pool)
 
-Each active validator node receives a share of the **75% node pool** proportional to its PoT weight:
+Each active node receives a share of the **75% node pool** proportional to its PoT-confirmed
+weight:
 
 ```
-payment_per_node = nodePool × node_weight
+payment_per_node = (weight × nodePool) / Σ weights
 
-node_weight = potScore(node) / Σ potScore(all_nodes)
-
-potScore = f(txCount, validations, penaltyScore)
+weight     = reputation × uptime
+reputation = successes / total × uptime   (work-based; no stake, no balance mutation)
 ```
 
-PoT weight is normalized so that `Σ node_weight = 1.0` across all active nodes.
+The denominator `Σ weights` sums the weight of every node with PoT-confirmed participation in
+the epoch (`CommissionService.finalizeEpoch`, `src/commission/commission.service.ts`).
 
 ---
 
 ## 4. AFC Reserve Logic
 
-- Funds accumulate in `SYSTEM_AFC_RESERVE_000000000000000000`.
-- Drive the emission price index: `reserveIndex = 1.0 + sqrt(totalReserve) / 10_000`.
+- Accrued via `ReserveService.addAfcAccrual()` (`src/reserve/reserve.service.ts`), recorded as
+  `reserve.afc.accrual` NodeChain events for audit.
+- Drives the emission price index: `reserveIndex = log10(1 + totalProcessVolume)`, derived from
+  confirmed process volume in NodeChain history (spec I-RS-1/I-RS-2/I-RS-4).
 - Used for:
   - Ecosystem grants (via governance vote),
-  - Emergency compensation (slashing fallback),
   - Node bootstrap funding.
 
 ---
@@ -60,8 +61,8 @@ PoT weight is normalized so that `Σ node_weight = 1.0` across all active nodes.
 
 | Trigger              | Split Applied | Implementation                          |
 |----------------------|---------------|-----------------------------------------|
-| Per canonical TX     | 75/25         | `EmissionService.processTransactionEmission()` |
-| Per epoch finalization | 75/25       | `FeeDistributionService.distributeRewards()`   |
+| Per canonical TX     | 75/25         | `EmissionService.calculate()` / `mint()` / `burn()` |
+| Per epoch finalization | 75/25       | `CommissionService.finalizeEpoch()`     |
 
 Both layers apply the same canonical ratios.
 
@@ -72,7 +73,7 @@ Both layers apply the same canonical ratios.
 | Threat                      | Defense Mechanism                          |
 |-----------------------------|--------------------------------------------|
 | Payment spamming            | Minimum work unit requirement              |
-| Validator cartelization     | Max cap per validator (adjustable via gov) |
+| Node cartelization          | Max cap per node (adjustable via gov)      |
 | Fake observation nodes      | Continuous heartbeat + rotation mechanism  |
 | Self-funded governance loop | Hard quorum threshold + 3rd-party audit    |
 

@@ -51,13 +51,13 @@ AFC reserve accruals (the 25% commission share routed per epoch) are recorded in
 - **Burn Mechanism**: Every emitted ARO is burned after the transaction completes (net-zero supply impact per TX cycle).
 - **AFC Reserve Growth**: The rising price index makes future emissions costlier, organically throttling speculative activity.
 - **Dynamic Commission Rate**: Governance can adjust the commission rate within protocol-defined bounds.
-- **Validator Rotation**: Prevents cartelization of node reward capture.
+- **Node Rotation**: Prevents cartelization of node reward capture.
 
 ## Epoch-Level Distribution
 
 At each epoch finalization, all collected fees (from `tx.fee` fields) are distributed with the same canonical split:
 
-- **75%** → node pool (divided by PoT-normalized weight per active validator node)
+- **75%** → node pool (divided by PoT-normalized weight per active node)
 - **25%** → AFC reserve contract (`SYSTEM_AFC_RESERVE_000000000000000000`)
 
 ## AI-Driven Governance Adjustments
@@ -74,7 +74,7 @@ The emission logic includes:
 | Bootstrap   | Minimal emission for early transactions           | First 10,000 verified transactions          |
 | Expansion   | Normal 1:1 emission begins                        | After bootstrap phase                       |
 | Stability   | Adaptive commission scaling, AFC index meaningful | AFC reserve > threshold                     |
-| Correction  | Commission rate adjusted via governance           | Inflation risk or validator overloading     |
+| Correction  | Commission rate adjusted via governance           | Inflation risk or node overloading          |
 
 ## Reference Implementation
 

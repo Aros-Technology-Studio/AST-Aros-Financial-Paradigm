@@ -31,18 +31,20 @@ This document defines the **canonical emission protocol** for the native token A
 
 ```mermaid
 sequenceDiagram
-    participant T as Transaction Request
+    participant O as OrchestratorService
+    participant P as PotService
     participant E as EmissionService
-    participant L as Ledger
+    participant C as CommissionService
+    participant L as ArosCoinService (ledger)
 
-    T->>E: processTransactionEmission(amount, recipient, refId)
-    E->>E: calculate() → emission=amount, commission=amount×rate
-    E->>L: MINT emission → recipient (1:1)
-    E->>L: FEE_DISTRIBUTION nodeShare(75%) → NODE_POOL
-    E->>L: FEE_DISTRIBUTION afcShare(25%) → AFC_RESERVE
-    E->>E: updateAfcReserve(afcShare) → reserveIndex rises
-    E->>L: BURN emission → BURN_VAULT (ARO destroyed)
-    L->>T: Confirm (audit trail complete)
+    O->>P: verify(processId)
+    P-->>O: verdict.verified === 1
+    O->>E: mint(processId, amount)
+    E->>L: recordMint(amount) — emission = amount (1:1)
+    O->>C: accrue(epoch, fee=amount×rate, participants)
+    C->>C: pool[epoch] += fee (75%/25% split resolved at finalizeEpoch)
+    O->>E: burn(processId, amount)
+    E->>L: recordBurn(amount) — process part nets to 0
 ```
 
 ---
@@ -55,8 +57,13 @@ Commission   = Transaction Amount × rate    (default 0.5%)
 Node Share   = Commission × 0.75
 AFC Reserve  = Commission × 0.25
 
-AFC Reserve Index = 1.0 + sqrt(totalAfcReserve) / 10_000
+reserveIndex = log10(1 + totalProcessVolume)
 ```
+
+`totalProcessVolume` sums confirmed-work signals only (`emission.minted` amounts plus each
+epoch's AFC reserve share), read from NodeChain history — see
+`src/reserve/reserve.service.ts` (`ReserveService.reserveIndex`), which mirrors
+`reference/ast-core/src/reserve.ts`.
 
 ---
 
@@ -96,10 +103,11 @@ Per canonical TX cycle:
 
 ## VIII. Emergency Brake
 
-In case of protocol anomaly or exploit, the emission engine can be halted by multi-signature from:
-- All-Seeing Eye
-- Oracle Committee
-- Founder Authority (if defined in initial config)
+In case of protocol anomaly or exploit, the emission engine can be halted by governance
+multi-signature (Oracle Committee / Founder Authority, if defined in initial config).
+The All-Seeing Eye is not a signatory: per its spec it only observes, logs, and signals
+anomalies for governance to act on — it never halts, reverts, votes, or otherwise mutates
+state itself (`docs/specs/AST_AllSeeingEye_AGENT_EN.md`, `AST_RULES.yaml` prohibition P6).
 
 Environment variable `KILL_SWITCH=true` halts all emission transitions; read-only mode persists.
 

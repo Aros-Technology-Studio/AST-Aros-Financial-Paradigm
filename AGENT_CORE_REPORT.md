@@ -1116,3 +1116,52 @@ totalSupply (post-epoch) = (10,000 − 10,000) + 37.50   = 37.50 ARO (= earnedRe
 
 **CONFIRMED CANONICAL. No code changes required. All prior fixes in place.**
 All 9 canonical requirements, invariants I1–I10, and prohibitions P1–P8 verified.
+
+---
+
+## 27. 2026-07-01 Full Re-Audit (branch: claude/inspiring-cannon-bo8o96, session 20)
+
+Fresh audit of `01_coin_engine/`, `10_proof_of_transaction_engine/`, `src/token/`,
+`src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`, and the
+`reference/ast-core/src/` reference implementation, re-run from a new branch
+diverged directly off `main` after PR #423 (session 19). No prior-session
+context assumed; every file re-read from scratch.
+
+### Findings
+
+- `01_coin_engine/` and `10_proof_of_transaction_engine/` remain documentation-only
+  (specs, formulas, protocol notes). Neither contains executable code, and neither
+  is marked `Deprecated` anywhere in this run's search — they are the canonical
+  spec references, not legacy modules to migrate away from.
+- `src/token/` still does not exist. Production emission logic is unchanged since
+  session 19/26: it lives in `src/emission/emission.service.ts` (mint/burn cycle,
+  PoT gate, pure `calculate()` formula), `src/aroscoin/aroscoin.service.ts`
+  (three-tally unit ledger), `src/commission/commission.service.ts` (fee
+  computation and 75/25 epoch distribution), and `src/reserve/reserve.service.ts`
+  (`reserveIndex`/`internalPrice`).
+- Diffed `src/emission/`, `src/aroscoin/`, `src/commission/`, `src/reserve/`
+  against `origin/main` (`8879ce0`): byte-identical. No drift since the last
+  confirmed-canonical state.
+- Re-verified the canonical formula against `01_coin_engine/coin_emission_model.md`
+  and the reference implementation: emission is 1:1 on transaction amount,
+  commission defaults to 0.5%, and the fee splits 75% to nodes / 25% to the AFC
+  reserve — matching `CommissionService.feeRate = 0.005` and
+  `CommissionService.marginRate = 0.25` exactly.
+
+### Test Run
+
+```
+npx jest src/emission src/aroscoin src/commission src/reserve src/invariants
+Test Suites: 5 passed, 5 total
+Tests:       41 passed, 41 total
+
+scripts/check-prohibitions.sh
+OK: no prohibited Model-A construct found in production code.
+```
+
+### Result
+
+**CONFIRMED CANONICAL. No code changes required.** The 1:1 emission model,
+PoT gate, mint/burn symmetry, 75/25 commission split, and reserve index formula
+all match `docs/specs/` and `reference/ast-core/src/` exactly, with no
+Model-A prohibited constructs present.
